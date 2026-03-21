@@ -19,7 +19,7 @@ const PORT = 3000;
 
 // ─── Database setup ───────────────────────────────────────────────────────────
 
-function createTables(kavach: ReturnType<typeof createKavach>): void {
+function createTables(kavach: Awaited<ReturnType<typeof createKavach>>): void {
 	kavach.db.run(sql`
 		CREATE TABLE IF NOT EXISTS kavach_users (
 			id TEXT PRIMARY KEY,
@@ -104,7 +104,7 @@ function createTables(kavach: ReturnType<typeof createKavach>): void {
 	`);
 }
 
-function seedUser(kavach: ReturnType<typeof createKavach>): void {
+function seedUser(kavach: Awaited<ReturnType<typeof createKavach>>): void {
 	kavach.db
 		.insert(users)
 		.values({
@@ -306,7 +306,7 @@ curl http://localhost:${PORT}/api/audit</code>
 // ─── Server bootstrap ─────────────────────────────────────────────────────────
 
 async function main(): Promise<void> {
-	const kavach = createKavach({
+	const kavach = await createKavach({
 		database: { provider: "sqlite", url: "kavach.db" },
 		agents: {
 			enabled: true,

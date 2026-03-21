@@ -94,12 +94,12 @@ background: linear-gradient(135deg, #9A7B22, #6B4E0A);
 
 | Context | Font | Weight |
 |---------|------|--------|
-| Logo wordmark | JetBrains Mono | 700 (bold) |
-| "OS" suffix | JetBrains Mono | 200 (thin) |
-| Tagline | JetBrains Mono | 400, letter-spacing: 3px |
-| Headings | Inter | 700-800 |
-| Body | Inter | 400-500 |
-| Code | JetBrains Mono / Fira Code | 400 |
+| Logo wordmark | Space Grotesk | 700 (bold) |
+| "OS" suffix | Space Grotesk | 300 (light) |
+| Headings | Space Grotesk | 600-800 |
+| Body | Manrope | 300-500 |
+| UI labels | Manrope | 500-600 |
+| Code | JetBrains Mono | 400 |
 
 ### Wordmark Format
 

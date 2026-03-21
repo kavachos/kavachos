@@ -522,12 +522,12 @@ export function kavachExpress(kavach: Kavach, options?: { mcp?: McpAuthModule })
 	// ── MCP OAuth 2.1 Endpoints ─────────────────────────────────────
 
 	// OPTIONS preflight for MCP/well-known routes
-	router.options("/.well-known/*", (_req: Request, res: Response) => {
+	router.options("/.well-known/*path", (_req: Request, res: Response) => {
 		setMcpCors(res);
 		res.status(204).end();
 	});
 
-	router.options("/mcp/*", (_req: Request, res: Response) => {
+	router.options("/mcp/*path", (_req: Request, res: Response) => {
 		setMcpCors(res);
 		res.status(204).end();
 	});

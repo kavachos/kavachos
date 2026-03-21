@@ -4,9 +4,13 @@ import { createApiClient } from "./api/client.js";
 import { Layout } from "./components/layout.js";
 import { AgentsPage } from "./pages/agents.js";
 import { AuditPage } from "./pages/audit.js";
+import { DelegationsPage } from "./pages/delegations.js";
+import { McpServersPage } from "./pages/mcp-servers.js";
 import { OverviewPage } from "./pages/overview.js";
 import { PermissionsPage } from "./pages/permissions.js";
+import { SecurityPage } from "./pages/security.js";
 import { SettingsPage } from "./pages/settings.js";
+import { UsersPage } from "./pages/users.js";
 import type { DashboardProps, Page } from "./types.js";
 
 // ─── Query Client (module-scoped singleton for library mode) ──────────────────
@@ -37,10 +41,18 @@ function InnerDashboard({ apiUrl }: InnerDashboardProps) {
 				return <OverviewPage client={client} onNavigate={setCurrentPage} />;
 			case "agents":
 				return <AgentsPage client={client} />;
+			case "users":
+				return <UsersPage client={client} onNavigate={setCurrentPage} />;
 			case "audit":
 				return <AuditPage client={client} />;
 			case "permissions":
 				return <PermissionsPage client={client} />;
+			case "delegations":
+				return <DelegationsPage client={client} />;
+			case "mcp-servers":
+				return <McpServersPage client={client} />;
+			case "security":
+				return <SecurityPage client={client} />;
 			case "settings":
 				return <SettingsPage client={client} />;
 		}

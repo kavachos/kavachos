@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/black.css";
 @import "fumadocs-ui/css/preset.css";
 
 @source "../components/**/*.{ts,tsx}";
@@ -7,7 +7,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Layout dimensions */
+/* ===== Brand tokens ===== */
 :root {
 	--nav-height: 48px;
 	--kavach-gold-bright: #f0d87a;
@@ -16,33 +16,249 @@
 	--kavach-gold-deep: #9a7b22;
 	--kavach-gold-shadow: #8b6914;
 	--kavach-gold-darkest: #6b4e0a;
-	--font-sans: var(--font-inter);
-	--font-mono: var(--font-jetbrains-mono);
+	--font-sans: var(--font-body);
+	--font-mono: var(--font-mono);
 }
 
-/* Override fumadocs accent with gold */
+/* ===== Override fumadocs accent with gold ===== */
 :root {
-	--fd-primary: oklch(0.7 0.12 85);
-	--fd-primary-foreground: oklch(0.15 0.02 85);
+	--color-fd-primary: hsl(43, 50%, 40%);
+	--color-fd-primary-foreground: hsl(0, 0%, 98%);
 }
 
 .dark {
-	--fd-primary: oklch(0.78 0.14 85);
-	--fd-primary-foreground: oklch(0.12 0.02 85);
+	--color-fd-background: hsl(0, 0%, 3%);
+	--color-fd-foreground: hsl(0, 0%, 95%);
+	--color-fd-muted: hsl(0, 0%, 7%);
+	--color-fd-muted-foreground: hsl(0, 0%, 55%);
+	--color-fd-popover: hsl(0, 0%, 5%);
+	--color-fd-popover-foreground: hsl(0, 0%, 95%);
+	--color-fd-card: hsl(0, 0%, 5%);
+	--color-fd-card-foreground: hsl(0, 0%, 95%);
+	--color-fd-border: hsl(0, 0%, 100%, 0.08);
+	--color-fd-primary: hsl(43, 55%, 55%);
+	--color-fd-primary-foreground: hsl(0, 0%, 3%);
+	--color-fd-secondary: hsl(0, 0%, 10%);
+	--color-fd-secondary-foreground: hsl(0, 0%, 95%);
+	--color-fd-accent: hsl(0, 0%, 12%);
+	--color-fd-accent-foreground: hsl(0, 0%, 98%);
+	--color-fd-ring: hsl(43, 40%, 35%);
 }
 
-/* Docs layout: disable fumadocs top nav, adjust for our shared nav */
-.docs-layout {
-	--fd-banner-height: 0px;
-	--fd-nav-height: 0px;
+/* ===== Docs layout: offset for custom nav ===== */
+#nd-docs-layout {
+	margin-top: var(--nav-height);
+	--fd-docs-height: calc(100dvh - var(--nav-height));
 }
 
-.docs-layout > nav:first-child {
+/* ===== Layout: edge-to-edge, no centering spacers ===== */
+#nd-docs-layout {
+	grid-template-columns:
+		0px
+		var(--fd-sidebar-col)
+		minmax(0, 1fr)
+		var(--fd-toc-width)
+		0px !important;
+}
+
+/* ===== Sidebar: full height, glass, polished ===== */
+#nd-docs-layout [data-sidebar] {
+	scrollbar-width: none;
+	padding: 0.75rem;
+}
+
+#nd-docs-layout [data-sidebar]::-webkit-scrollbar {
 	display: none;
 }
 
-/* Gold gradient utilities */
+/* Dark sidebar: glass + subtle shadow */
+.dark #nd-docs-layout [data-sidebar] {
+	background: hsl(0 0% 3.5% / 0.85);
+	backdrop-filter: blur(16px) saturate(1.1);
+	-webkit-backdrop-filter: blur(16px) saturate(1.1);
+	border-right: 1px solid hsl(0 0% 100% / 0.06);
+	box-shadow: 4px 0 24px hsl(0 0% 0% / 0.3);
+}
+
+/* Light sidebar */
+#nd-docs-layout [data-sidebar] {
+	border-right: 1px solid hsl(0 0% 0% / 0.06);
+}
+
+/* Sidebar links: smooth transitions, rounded */
+#nd-docs-layout [data-sidebar] a {
+	transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+	border-radius: 8px;
+	padding: 0.375rem 0.625rem;
+	font-size: 0.8125rem;
+}
+
+.dark #nd-docs-layout [data-sidebar] a:hover {
+	background: hsl(0 0% 100% / 0.05);
+	transform: translateX(2px);
+}
+
+/* Active sidebar item: gold glow */
+.dark #nd-docs-layout [data-sidebar] a[data-active="true"] {
+	background: hsl(43 50% 50% / 0.08);
+	color: var(--kavach-gold-primary);
+	box-shadow:
+		inset 3px 0 0 var(--kavach-gold-mid),
+		0 0 12px hsl(43 50% 50% / 0.06);
+}
+
+#nd-docs-layout [data-sidebar] a[data-active="true"] {
+	font-weight: 500;
+}
+
+/* Folder buttons: smooth expand */
+#nd-docs-layout [data-sidebar] [data-folder] > button {
+	transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+	border-radius: 8px;
+	padding: 0.375rem 0.625rem;
+	font-size: 0.8125rem;
+}
+
+.dark #nd-docs-layout [data-sidebar] [data-folder] > button:hover {
+	background: hsl(0 0% 100% / 0.04);
+	color: var(--kavach-gold-primary);
+}
+
+/* Folder expand animation */
+#nd-docs-layout [data-sidebar] [data-folder] [role="group"] {
+	animation: sidebar-expand 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes sidebar-expand {
+	from {
+		opacity: 0;
+		transform: translateY(-4px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+/* Sidebar icons: subtle gold tint on hover */
+.dark #nd-docs-layout [data-sidebar] a:hover svg,
+.dark #nd-docs-layout [data-sidebar] [data-folder] > button:hover svg {
+	color: var(--kavach-gold-mid);
+	opacity: 1;
+}
+
+.dark #nd-docs-layout [data-sidebar] a[data-active="true"] svg {
+	color: var(--kavach-gold-primary);
+	opacity: 1;
+}
+
+/* Hide sidebar collapse trigger on desktop */
+@media (min-width: 48rem) {
+	#nd-docs-layout [data-sidebar-toggle] {
+		display: none !important;
+	}
+}
+
+/* ===== TOC (right sidebar) ===== */
+@media (min-width: 80rem) {
+	#nd-toc {
+		--fd-toc-width: 250px;
+		padding-inline-end: 1rem;
+	}
+}
+
+.dark #nd-toc {
+	opacity: 0.9;
+}
+
+/* ===== Top nav: glass effect ===== */
+.dark #nd-docs-layout > header,
+.dark [data-nav] {
+	background: hsl(0 0% 3% / 0.7) !important;
+	backdrop-filter: blur(16px) saturate(1.2);
+	-webkit-backdrop-filter: blur(16px) saturate(1.2);
+	border-bottom: 1px solid hsl(0 0% 100% / 0.06);
+}
+
+/* ===== Code blocks: deeper black, gold accents ===== */
+.dark pre {
+	background: hsl(0 0% 4%) !important;
+	border: 1px solid hsl(0 0% 100% / 0.06);
+}
+
+.dark code {
+	background: hsl(0 0% 100% / 0.06);
+}
+
+.dark pre code {
+	background: transparent;
+}
+
+/* ===== Callout cards: glass in dark mode ===== */
+.dark [data-callout] {
+	background: hsl(0 0% 100% / 0.03);
+	backdrop-filter: blur(8px);
+	-webkit-backdrop-filter: blur(8px);
+	border: 1px solid hsl(0 0% 100% / 0.08);
+}
+
+/* ===== Tables: cleaner dark borders ===== */
+.dark table {
+	border-color: hsl(0 0% 100% / 0.08);
+}
+
+.dark th {
+	background: hsl(0 0% 100% / 0.03);
+	border-color: hsl(0 0% 100% / 0.08);
+}
+
+.dark td {
+	border-color: hsl(0 0% 100% / 0.06);
+}
+
+/* ===== Search dialog: glass ===== */
+.dark [data-search-dialog] {
+	background: hsl(0 0% 5% / 0.9);
+	backdrop-filter: blur(20px);
+	-webkit-backdrop-filter: blur(20px);
+	border: 1px solid hsl(0 0% 100% / 0.1);
+}
+
+/* ===== Smooth page transitions ===== */
+#nd-docs-layout main {
+	animation: page-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes page-in {
+	from {
+		opacity: 0;
+		filter: blur(4px);
+		transform: translateY(8px);
+	}
+	to {
+		opacity: 1;
+		filter: blur(0);
+		transform: translateY(0);
+	}
+}
+
+/* ===== Headings ===== */
+h1,
+h2,
+h3 {
+	font-family: var(--font-heading), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* ===== Font utilities ===== */
 @layer utilities {
+	.font-heading {
+		font-family: var(--font-heading), ui-sans-serif, system-ui, sans-serif;
+	}
+
+	.font-body {
+		font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+	}
+
 	.gradient-gold {
 		background: linear-gradient(135deg, #c9a84c, #8b6914);
 	}
@@ -70,17 +286,51 @@
 		);
 		background-size: 24px 24px;
 	}
+
+	.text-lift {
+		text-shadow:
+			0 1px 2px rgb(0 0 0 / 0.06),
+			0 2px 4px rgb(0 0 0 / 0.04);
+	}
+
+	.text-lift-gold {
+		text-shadow:
+			0 1px 3px rgb(154 123 34 / 0.15),
+			0 2px 6px rgb(154 123 34 / 0.08);
+	}
 }
 
-/* Animations */
+.dark .text-lift {
+	text-shadow:
+		0 1px 2px rgb(0 0 0 / 0.3),
+		0 2px 4px rgb(0 0 0 / 0.2);
+}
+
+.dark .text-lift-gold {
+	text-shadow:
+		0 1px 3px rgb(201 168 76 / 0.2),
+		0 2px 8px rgb(201 168 76 / 0.1),
+		0 0 20px rgb(201 168 76 / 0.05);
+}
+
+/* ===== Animations ===== */
 @keyframes fade-up {
 	from {
 		opacity: 0;
-		transform: translateY(16px);
+		transform: translateY(20px);
 	}
 	to {
 		opacity: 1;
 		transform: translateY(0);
+	}
+}
+
+@keyframes fade-in {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
 	}
 }
 
@@ -103,20 +353,34 @@
 	}
 }
 
+@keyframes float {
+	0%,
+	100% {
+		transform: translateY(0);
+	}
+	50% {
+		transform: translateY(-4px);
+	}
+}
+
 .animate-fade-up {
-	animation: fade-up 0.6s ease-out both;
+	animation: fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .animate-fade-up-delay-1 {
-	animation: fade-up 0.6s ease-out 0.1s both;
+	animation: fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
 }
 
 .animate-fade-up-delay-2 {
-	animation: fade-up 0.6s ease-out 0.2s both;
+	animation: fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
 }
 
 .animate-fade-up-delay-3 {
-	animation: fade-up 0.6s ease-out 0.3s both;
+	animation: fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
+}
+
+.animate-fade-in {
+	animation: fade-in 0.5s ease-out both;
 }
 
 .animate-shimmer {
@@ -128,21 +392,52 @@
 	animation: pulse-gold 3s ease-in-out infinite;
 }
 
-/* Scrollbar */
-* {
-	scrollbar-width: thin;
-	scrollbar-color: var(--kavach-gold-shadow) transparent;
+.animate-float {
+	animation: float 3s ease-in-out infinite;
 }
 
+/* ===== KavachOS glow effect ===== */
+.kavach-glow {
+	box-shadow:
+		0 0 15px rgb(201 168 76 / 0.1),
+		0 0 30px rgb(201 168 76 / 0.05),
+		0 4px 12px rgb(0 0 0 / 0.1);
+}
+
+.dark .kavach-glow {
+	box-shadow:
+		0 0 20px rgb(201 168 76 / 0.15),
+		0 0 40px rgb(201 168 76 / 0.08),
+		0 0 60px rgb(201 168 76 / 0.04),
+		0 4px 12px rgb(0 0 0 / 0.3);
+}
+
+/* ===== Scrollbar ===== */
+* {
+	scrollbar-width: thin;
+	scrollbar-color: hsl(0 0% 25%) transparent;
+}
+
+.dark * {
+	scrollbar-color: hsl(0 0% 15%) transparent;
+}
+
+/* ===== Reduced motion ===== */
 @media (prefers-reduced-motion: reduce) {
 	.animate-fade-up,
 	.animate-fade-up-delay-1,
 	.animate-fade-up-delay-2,
 	.animate-fade-up-delay-3,
+	.animate-fade-in,
 	.animate-shimmer,
-	.animate-pulse-gold {
+	.animate-pulse-gold,
+	.animate-float {
 		animation: none;
 		opacity: 1;
 		transform: none;
+	}
+
+	#nd-docs-layout main {
+		animation: none;
 	}
 }

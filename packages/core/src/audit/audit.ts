@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, lte } from "drizzle-orm";
+import { and, desc, eq, gte, lt, lte } from "drizzle-orm";
 import type { Database } from "../db/database.js";
 import { auditLogs } from "../db/schema.js";
 import type { AuditEntry, AuditExportOptions, AuditFilter } from "../types.js";
@@ -95,7 +95,29 @@ export function createAuditModule(config: AuditModuleConfig) {
 		return csvRows.join("\n");
 	}
 
-	return { query, export: exportLogs };
+	/**
+	 * Delete audit log entries older than the specified retention period.
+	 * Returns the count of deleted rows.
+	 */
+	async function cleanup(options: { retentionDays: number }): Promise<{ deleted: number }> {
+		const cutoff = new Date(Date.now() - options.retentionDays * 24 * 60 * 60 * 1000);
+
+		// Count rows to be deleted before removing them
+		const toDelete = await db
+			.select({ id: auditLogs.id })
+			.from(auditLogs)
+			.where(lt(auditLogs.timestamp, cutoff));
+
+		if (toDelete.length === 0) {
+			return { deleted: 0 };
+		}
+
+		await db.delete(auditLogs).where(lt(auditLogs.timestamp, cutoff));
+
+		return { deleted: toDelete.length };
+	}
+
+	return { query, export: exportLogs, cleanup };
 }
 
 function toAuditEntry(row: typeof auditLogs.$inferSelect): AuditEntry {

@@ -1,4 +1,13 @@
-export type Page = "overview" | "agents" | "permissions" | "audit" | "settings";
+export type Page =
+	| "overview"
+	| "agents"
+	| "users"
+	| "permissions"
+	| "delegations"
+	| "mcp-servers"
+	| "audit"
+	| "security"
+	| "settings";
 
 export type Theme = "light" | "dark";
 

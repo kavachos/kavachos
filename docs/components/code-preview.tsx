@@ -62,7 +62,7 @@ export function CodePreview() {
 					<Line n={18}>{"}"});</Line>
 					<Line n={19} />
 					<Line n={20}>
-						result.allowed; <Cm>// true — audit log entry created</Cm>
+						result.allowed; <Cm>// true, audit log entry created</Cm>
 					</Line>
 				</code>
 			</pre>

@@ -1,43 +1,51 @@
 import { RootProvider } from "fumadocs-ui/provider/next";
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Space_Grotesk, Manrope, JetBrains_Mono } from "next/font/google";
 import type { ReactNode } from "react";
 import { Nav } from "@/components/nav";
 import "./globals.css";
 
-const inter = Inter({
+const spaceGrotesk = Space_Grotesk({
 	subsets: ["latin"],
-	variable: "--font-inter",
+	variable: "--font-heading",
 	display: "swap",
+	weight: ["400", "500", "600", "700"],
+});
+
+const manrope = Manrope({
+	subsets: ["latin"],
+	variable: "--font-body",
+	display: "swap",
+	weight: ["300", "400", "500", "600", "700", "800"],
 });
 
 const jetbrainsMono = JetBrains_Mono({
 	subsets: ["latin"],
-	variable: "--font-jetbrains-mono",
+	variable: "--font-mono",
 	display: "swap",
 });
 
 export const metadata: Metadata = {
 	title: {
-		default: "KavachOS — The Auth OS",
-		template: "%s — KavachOS",
+		default: "KavachOS | The Auth OS",
+		template: "%s | KavachOS",
 	},
 	description:
-		"Auth for humans and AI agents. Identity, permissions, delegation, and audit for the agentic era.",
+		"Identity for humans and AI agents. Scoped permissions, delegation chains, and audit trails for every agent.",
 	metadataBase: new URL("https://kavachos.com"),
 	openGraph: {
-		title: "KavachOS — The Auth OS",
+		title: "KavachOS | The Auth OS",
 		description:
-			"Auth for humans and AI agents. Identity, permissions, delegation, and audit for the agentic era.",
+			"Identity for humans and AI agents. Scoped permissions, delegation chains, and audit trails for every agent.",
 		url: "https://kavachos.com",
 		siteName: "KavachOS",
 		type: "website",
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: "KavachOS — The Auth OS",
+		title: "KavachOS | The Auth OS",
 		description:
-			"Auth for humans and AI agents. Identity, permissions, delegation, and audit for the agentic era.",
+			"Identity for humans and AI agents. Scoped permissions, delegation chains, and audit trails for every agent.",
 	},
 };
 
@@ -45,13 +53,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 	return (
 		<html
 			lang="en"
-			className={`${inter.variable} ${jetbrainsMono.variable}`}
+			className={`${spaceGrotesk.variable} ${manrope.variable} ${jetbrainsMono.variable}`}
 			suppressHydrationWarning
 		>
-			<body className="flex min-h-screen flex-col font-sans antialiased">
+			<body className="flex min-h-screen flex-col font-body antialiased">
 				<RootProvider>
 					<Nav />
-					<main className="flex-1 pt-[var(--nav-height)]">{children}</main>
+					{children}
 				</RootProvider>
 			</body>
 		</html>

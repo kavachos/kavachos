@@ -329,5 +329,164 @@ describe("createKavach", () => {
 			expect(result.allowed).toBe(false);
 			expect(result.reason).toContain("human approval");
 		});
+
+		it("allows requests from an IP in the allowlist", async () => {
+			const agent = await kavach.agent.create({
+				ownerId: "user-1",
+				name: "ip-allowed-agent",
+				type: "autonomous",
+				permissions: [
+					{
+						resource: "mcp:internal",
+						actions: ["read"],
+						constraints: { ipAllowlist: ["10.0.0.0/8", "192.168.1.50"] },
+					},
+				],
+			});
+
+			const result = await kavach.authorize(agent.id, {
+				action: "read",
+				resource: "mcp:internal",
+				ip: "10.20.30.40",
+			});
+
+			expect(result.allowed).toBe(true);
+		});
+
+		it("allows exact IP match in the allowlist", async () => {
+			const agent = await kavach.agent.create({
+				ownerId: "user-1",
+				name: "ip-exact-agent",
+				type: "autonomous",
+				permissions: [
+					{
+						resource: "mcp:internal",
+						actions: ["read"],
+						constraints: { ipAllowlist: ["192.168.1.50"] },
+					},
+				],
+			});
+
+			const result = await kavach.authorize(agent.id, {
+				action: "read",
+				resource: "mcp:internal",
+				ip: "192.168.1.50",
+			});
+
+			expect(result.allowed).toBe(true);
+		});
+
+		it("denies requests from an IP not in the allowlist", async () => {
+			const agent = await kavach.agent.create({
+				ownerId: "user-1",
+				name: "ip-restricted-agent",
+				type: "autonomous",
+				permissions: [
+					{
+						resource: "mcp:internal",
+						actions: ["read"],
+						constraints: { ipAllowlist: ["10.0.0.0/8"] },
+					},
+				],
+			});
+
+			const result = await kavach.authorize(agent.id, {
+				action: "read",
+				resource: "mcp:internal",
+				ip: "172.16.0.1",
+			});
+
+			expect(result.allowed).toBe(false);
+			expect(result.reason).toContain("IP_NOT_ALLOWED");
+		});
+
+		it("denies when ipAllowlist is set but no IP is provided", async () => {
+			const agent = await kavach.agent.create({
+				ownerId: "user-1",
+				name: "ip-noip-agent",
+				type: "autonomous",
+				permissions: [
+					{
+						resource: "mcp:internal",
+						actions: ["read"],
+						constraints: { ipAllowlist: ["10.0.0.0/8"] },
+					},
+				],
+			});
+
+			const result = await kavach.authorize(agent.id, {
+				action: "read",
+				resource: "mcp:internal",
+			});
+
+			expect(result.allowed).toBe(false);
+			expect(result.reason).toContain("IP_NOT_ALLOWED");
+		});
+	});
+
+	describe("audit cleanup", () => {
+		it("deletes entries older than retention period and keeps recent ones", async () => {
+			const agent = await kavach.agent.create({
+				ownerId: "user-1",
+				name: "cleanup-agent",
+				type: "autonomous",
+				permissions: [{ resource: "test:*", actions: ["read"] }],
+			});
+
+			// Insert two old audit entries directly — dated 10 days ago
+			const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
+			kavach.db
+				.insert(schema.auditLogs)
+				.values([
+					{
+						id: "old-entry-1",
+						agentId: agent.id,
+						userId: "user-1",
+						action: "read",
+						resource: "test:data",
+						parameters: {},
+						result: "allowed" as const,
+						reason: null,
+						durationMs: 1,
+						timestamp: tenDaysAgo,
+					},
+					{
+						id: "old-entry-2",
+						agentId: agent.id,
+						userId: "user-1",
+						action: "read",
+						resource: "test:data",
+						parameters: {},
+						result: "allowed" as const,
+						reason: null,
+						durationMs: 1,
+						timestamp: tenDaysAgo,
+					},
+				])
+				.run();
+
+			// Perform a recent authorization — this entry should survive cleanup
+			await kavach.authorize(agent.id, { action: "read", resource: "test:data" });
+
+			const before = await kavach.audit.query({ agentId: agent.id });
+			expect(before).toHaveLength(3);
+
+			// Cleanup with a large retention window — nothing deleted
+			const noneDeleted = await kavach.audit.cleanup({ retentionDays: 9999 });
+			expect(noneDeleted.deleted).toBe(0);
+
+			const afterKeep = await kavach.audit.query({ agentId: agent.id });
+			expect(afterKeep).toHaveLength(3);
+
+			// Cleanup with 5-day retention — the two 10-day-old entries should be deleted
+			const someDeleted = await kavach.audit.cleanup({ retentionDays: 5 });
+			expect(someDeleted.deleted).toBe(2);
+
+			const afterDelete = await kavach.audit.query({ agentId: agent.id });
+			expect(afterDelete).toHaveLength(1);
+			// The surviving entry should be the recent one
+			expect(afterDelete[0]?.id).not.toBe("old-entry-1");
+			expect(afterDelete[0]?.id).not.toBe("old-entry-2");
+		});
 	});
 });

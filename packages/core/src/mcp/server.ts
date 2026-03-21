@@ -1,10 +1,15 @@
 import { handleAuthorize } from "./authorize.js";
+import { approveConsent } from "./consent.js";
 import { getAuthorizationServerMetadata, getProtectedResourceMetadata } from "./metadata.js";
 import { registerClient } from "./registration.js";
+import { requireScopes } from "./require-scopes.js";
+import { buildStepUpResponse } from "./step-up.js";
 import { handleTokenExchange } from "./token.js";
 import type {
+	ApproveConsentParams,
 	McpAuthContext,
 	McpAuthModule,
+	McpClient,
 	McpClientRegistrationRequest,
 	McpConfig,
 	Result,
@@ -109,6 +114,43 @@ export function createMcpModule(params: {
 		resolveUserId: params.resolveUserId,
 	};
 
+	// ── Pre-register static clients ─────────────────────────────────
+	// Store each pre-registered client via storeClient during module
+	// initialisation.  Returns a Promise that callers may await if needed.
+	const preRegistrationPromise: Promise<void> = (async () => {
+		const preClients = resolvedConfig.preRegisteredClients ?? [];
+		const now = new Date();
+		for (const preClient of preClients) {
+			const isPublic = preClient.clientSecret === undefined || preClient.clientSecret === null;
+			const client: McpClient = {
+				clientId: preClient.clientId,
+				clientSecret: preClient.clientSecret ?? null,
+				clientName: preClient.clientName ?? null,
+				clientUri: null,
+				logoUri: null,
+				redirectUris: preClient.redirectUris,
+				grantTypes: ["authorization_code", "refresh_token"],
+				responseTypes: ["code"],
+				tokenEndpointAuthMethod: isPublic ? "none" : "client_secret_basic",
+				scope: preClient.scope ?? null,
+				contacts: null,
+				tosUri: null,
+				policyUri: null,
+				softwareId: null,
+				softwareVersion: null,
+				clientType: isPublic ? "public" : "confidential",
+				disabled: false,
+				userId: null,
+				createdAt: now,
+				updatedAt: now,
+			};
+			await params.storeClient(client);
+		}
+	})();
+
+	// Expose the promise so tests/callers can await full initialisation.
+	void preRegistrationPromise;
+
 	// ── Return the public module API ────────────────────────────────
 	return {
 		getMetadata: () => getAuthorizationServerMetadata(ctx),
@@ -118,12 +160,22 @@ export function createMcpModule(params: {
 
 		authorize: (request: Request) => handleAuthorize(ctx, request),
 
+		approveConsent: (p: ApproveConsentParams) => approveConsent(ctx, p),
+
 		token: (request: Request) => handleTokenExchange(ctx, request),
 
 		validateToken: (token: string, requiredScopes?: string[]) =>
 			validateAccessToken(ctx, token, { requiredScopes }),
 
 		middleware: (request: Request) => withMcpAuth(ctx, request),
+
+		buildStepUpResponse: (options: {
+			currentScopes: string[];
+			requiredScopes: string[];
+			resource?: string;
+		}) => buildStepUpResponse(ctx, options),
+
+		requireScopes: (request: Request, scopes: string[]) => requireScopes(ctx, request, scopes),
 	};
 }
 

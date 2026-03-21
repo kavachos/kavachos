@@ -1,0 +1,5 @@
+{
+	"title": "Core concepts",
+	"icon": "Shield",
+	"pages": ["agents", "permissions", "delegation", "audit"]
+}

@@ -1,0 +1,96 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Test
+        run: pnpm test
+
+      - name: Lint and typecheck
+        run: pnpm lint && pnpm typecheck
+
+      - name: Publish kavachos (core)
+        run: pnpm publish --access public --no-git-checks
+        working-directory: packages/core
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @kavachos/hono
+        run: pnpm publish --access public --no-git-checks
+        working-directory: packages/adapters/hono
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @kavachos/express
+        run: pnpm publish --access public --no-git-checks
+        working-directory: packages/adapters/express
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @kavachos/nextjs
+        run: pnpm publish --access public --no-git-checks
+        working-directory: packages/adapters/nextjs
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @kavachos/fastify
+        run: pnpm publish --access public --no-git-checks
+        working-directory: packages/adapters/fastify
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @kavachos/nuxt
+        run: pnpm publish --access public --no-git-checks
+        working-directory: packages/adapters/nuxt
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @kavachos/sveltekit
+        run: pnpm publish --access public --no-git-checks
+        working-directory: packages/adapters/sveltekit
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @kavachos/astro
+        run: pnpm publish --access public --no-git-checks
+        working-directory: packages/adapters/astro
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @kavachos/dashboard
+        run: pnpm publish --access public --no-git-checks
+        working-directory: packages/dashboard
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @kavachos/cli
+        run: pnpm publish --access public --no-git-checks
+        working-directory: packages/cli
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

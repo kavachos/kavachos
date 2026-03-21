@@ -141,7 +141,7 @@ export async function startDashboardServer(options: DashboardServerOptions): Pro
 		// Security: ensure file is within distDir
 		const resolvedPath = resolve(filePath);
 		const resolvedDist = resolve(distDir);
-		if (!resolvedPath.startsWith(resolvedDist + "/") && resolvedPath !== resolvedDist) {
+		if (!resolvedPath.startsWith(`${resolvedDist}/`) && resolvedPath !== resolvedDist) {
 			send404(res);
 			return;
 		}

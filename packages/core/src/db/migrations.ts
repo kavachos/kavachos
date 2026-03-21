@@ -227,7 +227,7 @@ export async function createTables(
 		if (session?.client?.exec) {
 			// better-sqlite3 Database.exec() runs multiple statements separated
 			// by semicolons in a single call.
-			session.client.exec(statements.join(";\n") + ";");
+			session.client.exec(`${statements.join(";\n")};`);
 			return;
 		}
 		// Fallback: run each statement individually via drizzle `run`.

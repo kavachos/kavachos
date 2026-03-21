@@ -1,7 +1,29 @@
 import { DocsBody, DocsDescription, DocsPage, DocsTitle } from "fumadocs-ui/page";
+import defaultMdxComponents from "fumadocs-ui/mdx";
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+import { Step, Steps } from "fumadocs-ui/components/steps";
+import { File, Folder, Files } from "fumadocs-ui/components/files";
+import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
+import { TypeTable } from "fumadocs-ui/components/type-table";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { source } from "@/lib/source";
+
+const mdxComponents = {
+	...defaultMdxComponents,
+	Callout,
+	Tab,
+	Tabs,
+	Step,
+	Steps,
+	File,
+	Folder,
+	Files,
+	Accordion,
+	Accordions,
+	TypeTable,
+};
 
 interface Props {
 	params: Promise<{ slug?: string[] }>;
@@ -15,11 +37,11 @@ export default async function Page({ params }: Props) {
 	const MDX = page.data.body;
 
 	return (
-		<DocsPage toc={page.data.toc} full={page.data.full}>
+		<DocsPage toc={page.data.toc} full={page.data.full} tableOfContent={{ style: "clerk" }}>
 			<DocsTitle>{page.data.title}</DocsTitle>
 			<DocsDescription>{page.data.description}</DocsDescription>
 			<DocsBody>
-				<MDX />
+				<MDX components={mdxComponents} />
 			</DocsBody>
 		</DocsPage>
 	);
@@ -35,7 +57,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 	if (!page) notFound();
 
 	return {
-		title: `${page.data.title} — KavachOS`,
+		title: `${page.data.title} | KavachOS`,
 		description: page.data.description,
 	};
 }

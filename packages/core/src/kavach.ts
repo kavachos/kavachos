@@ -1,7 +1,10 @@
+import { randomUUID } from "node:crypto";
+import { eq } from "drizzle-orm";
 import { createAgentModule } from "./agent/agent.js";
 import { createAuditModule } from "./audit/audit.js";
 import { createDatabase } from "./db/database.js";
 import { createTables } from "./db/migrations.js";
+import { mcpServers } from "./db/schema.js";
 import { createDelegationModule } from "./delegation/delegation.js";
 import { createPermissionEngine } from "./permission/engine.js";
 import type {
@@ -12,6 +15,8 @@ import type {
 	DelegateInput,
 	DelegationChain,
 	KavachConfig,
+	McpServer,
+	McpServerInput,
 } from "./types.js";
 
 /**
@@ -75,7 +80,7 @@ export async function createKavach(config: KavachConfig) {
 
 	const delegationModule = createDelegationModule({ db });
 
-	// Authorize: look up agent, check permissions
+	// Authorize: look up agent, check own permissions then delegated permissions
 	async function authorize(agentId: string, request: AuthorizeRequest): Promise<AuthorizeResult> {
 		const agent = await agentModule.get(agentId);
 		if (!agent) {
@@ -92,7 +97,22 @@ export async function createKavach(config: KavachConfig) {
 				auditId: "",
 			};
 		}
-		return permissionEngine.authorize(agent, request);
+
+		// First check the agent's own permissions
+		const ownResult = await permissionEngine.authorize(agent, request);
+		if (ownResult.allowed) return ownResult;
+
+		// If own permissions deny, check effective permissions from delegation chains
+		const delegatedPerms = await delegationModule.getEffectivePermissions(agentId);
+		if (delegatedPerms.length === 0) return ownResult;
+
+		// Build a synthetic agent view with delegated permissions merged in
+		const agentWithDelegated = { ...agent, permissions: delegatedPerms };
+		const delegatedResult = await permissionEngine.authorize(agentWithDelegated, request);
+		if (delegatedResult.allowed) return delegatedResult;
+
+		// Both denied — return the original denial so the message references the agent by name
+		return ownResult;
 	}
 
 	// Authorize by token: validate token then check permissions
@@ -121,6 +141,74 @@ export async function createKavach(config: KavachConfig) {
 		return delegationModule.delegate(input, parentAgent.permissions);
 	}
 
+	// ── MCP server registry ─────────────────────────────────────────
+	// Uses the kavach_mcp_servers table (defined in db/schema.ts).
+	const mcpRegistry = {
+		/**
+		 * Register a new MCP tool server.
+		 *
+		 * Persists the server entry to the `kavach_mcp_servers` table.
+		 * The returned record includes the generated `id` and `createdAt`.
+		 */
+		async register(input: McpServerInput): Promise<McpServer> {
+			const now = new Date();
+			const id = randomUUID();
+
+			await db.insert(mcpServers).values({
+				id,
+				name: input.name,
+				endpoint: input.endpoint,
+				tools: input.tools,
+				authRequired: input.authRequired ?? true,
+				rateLimitRpm: input.rateLimit?.rpm ?? null,
+				status: "active",
+				createdAt: now,
+				updatedAt: now,
+			});
+
+			return {
+				id,
+				name: input.name,
+				endpoint: input.endpoint,
+				tools: input.tools,
+				authRequired: input.authRequired ?? true,
+				createdAt: now,
+			};
+		},
+
+		/**
+		 * List all registered MCP servers (active and inactive).
+		 */
+		async list(): Promise<McpServer[]> {
+			const rows = await db.select().from(mcpServers);
+			return rows.map((row) => ({
+				id: row.id,
+				name: row.name,
+				endpoint: row.endpoint,
+				tools: row.tools,
+				authRequired: row.authRequired,
+				createdAt: row.createdAt,
+			}));
+		},
+
+		/**
+		 * Get a single MCP server by ID. Returns null when not found.
+		 */
+		async get(id: string): Promise<McpServer | null> {
+			const rows = await db.select().from(mcpServers).where(eq(mcpServers.id, id));
+			const row = rows[0];
+			if (!row) return null;
+			return {
+				id: row.id,
+				name: row.name,
+				endpoint: row.endpoint,
+				tools: row.tools,
+				authRequired: row.authRequired,
+				createdAt: row.createdAt,
+			};
+		},
+	};
+
 	return {
 		agent: {
 			create: agentModule.create,
@@ -142,7 +230,15 @@ export async function createKavach(config: KavachConfig) {
 		audit: {
 			query: (filter: AuditFilter) => auditModule.query(filter),
 			export: (options: AuditExportOptions) => auditModule.export(options),
+			cleanup: (options: { retentionDays: number }) => auditModule.cleanup(options),
 		},
+		/**
+		 * MCP server registration.
+		 *
+		 * Register and look up MCP tool servers. Uses the `kavach_mcp_servers`
+		 * database table — no separate in-memory store needed.
+		 */
+		mcp: mcpRegistry,
 		/** Direct database access for advanced usage */
 		db,
 	};
