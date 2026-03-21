@@ -7,9 +7,13 @@ import type {
 	CreateAgentResponse,
 	CreatePermissionTemplateInput,
 	DashboardStats,
+	DelegationChain,
 	KavachSettings,
+	McpServerInfo,
 	PaginatedAuditLogs,
 	PermissionTemplate,
+	RegisterMcpServerInput,
+	User,
 } from "./types.js";
 
 // ─── Client Factory ───────────────────────────────────────────────────────────
@@ -24,6 +28,12 @@ export interface KavachApiClient {
 	getAgentPermissions: (agentId: string) => Promise<ApiResult<AgentPermission[]>>;
 
 	getAuditLogs: (filters?: AuditLogFilters) => Promise<ApiResult<PaginatedAuditLogs>>;
+	exportAuditLogs: (
+		format: "json" | "csv",
+		filters?: AuditLogFilters,
+	) => Promise<ApiResult<string>>;
+
+	getUsers: () => Promise<ApiResult<User[]>>;
 
 	getPermissionTemplates: () => Promise<ApiResult<PermissionTemplate[]>>;
 	createPermissionTemplate: (
@@ -34,6 +44,12 @@ export interface KavachApiClient {
 		input: Partial<CreatePermissionTemplateInput>,
 	) => Promise<ApiResult<PermissionTemplate>>;
 	deletePermissionTemplate: (id: string) => Promise<ApiResult<{ success: boolean }>>;
+
+	getDelegations: () => Promise<ApiResult<DelegationChain[]>>;
+	revokeDelegation: (id: string) => Promise<ApiResult<{ success: boolean }>>;
+
+	getMcpServers: () => Promise<ApiResult<McpServerInfo[]>>;
+	registerMcpServer: (input: RegisterMcpServerInput) => Promise<ApiResult<McpServerInfo>>;
 
 	getSettings: () => Promise<ApiResult<KavachSettings>>;
 	updateSettings: (
@@ -134,6 +150,22 @@ export function createApiClient(apiUrl: string): KavachApiClient {
 			return fetch<PaginatedAuditLogs>(`/api/audit${qs ? `?${qs}` : ""}`);
 		},
 
+		exportAuditLogs: (format: "json" | "csv", filters?: AuditLogFilters) => {
+			const params = new URLSearchParams();
+			params.set("format", format);
+			if (filters) {
+				if (filters.agentId) params.set("agentId", filters.agentId);
+				if (filters.action) params.set("action", filters.action);
+				if (filters.result) params.set("result", filters.result);
+				if (filters.from) params.set("from", filters.from);
+				if (filters.to) params.set("to", filters.to);
+			}
+			return fetch<string>(`/api/audit/export?${params.toString()}`);
+		},
+
+		// Users
+		getUsers: () => fetch<User[]>("/api/users"),
+
 		// Permission Templates
 		getPermissionTemplates: () => fetch<PermissionTemplate[]>("/api/permissions/templates"),
 
@@ -152,6 +184,23 @@ export function createApiClient(apiUrl: string): KavachApiClient {
 		deletePermissionTemplate: (id) =>
 			fetch<{ success: boolean }>(`/api/permissions/templates/${id}`, {
 				method: "DELETE",
+			}),
+
+		// Delegations
+		getDelegations: () => fetch<DelegationChain[]>("/api/delegations"),
+
+		revokeDelegation: (id) =>
+			fetch<{ success: boolean }>(`/api/delegations/${id}`, {
+				method: "DELETE",
+			}),
+
+		// MCP Servers
+		getMcpServers: () => fetch<McpServerInfo[]>("/api/mcp/servers"),
+
+		registerMcpServer: (input) =>
+			fetch<McpServerInfo>("/api/mcp/servers", {
+				method: "POST",
+				body: JSON.stringify(input),
 			}),
 
 		// Settings

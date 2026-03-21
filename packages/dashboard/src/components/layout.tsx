@@ -2,10 +2,14 @@ import {
 	Activity,
 	Bot,
 	ChevronRight,
+	GitBranch,
 	LayoutDashboard,
 	ScrollText,
+	Server,
 	Settings,
+	ShieldAlert,
 	ShieldCheck,
+	Users,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import type { Page } from "../types.js";
@@ -46,16 +50,40 @@ const NAV_ITEMS: NavItem[] = [
 		description: "Manage agent identities",
 	},
 	{
+		id: "users",
+		label: "Users",
+		icon: Users,
+		description: "Users who own agents",
+	},
+	{
 		id: "permissions",
 		label: "Permissions",
 		icon: ShieldCheck,
 		description: "Permission templates",
 	},
 	{
+		id: "delegations",
+		label: "Delegations",
+		icon: GitBranch,
+		description: "Agent delegation chains",
+	},
+	{
+		id: "mcp-servers",
+		label: "MCP Servers",
+		icon: Server,
+		description: "Registered MCP servers",
+	},
+	{
 		id: "audit",
 		label: "Audit Log",
 		icon: ScrollText,
 		description: "Immutable audit trail",
+	},
+	{
+		id: "security",
+		label: "Security",
+		icon: ShieldAlert,
+		description: "Security overview",
 	},
 	{
 		id: "settings",

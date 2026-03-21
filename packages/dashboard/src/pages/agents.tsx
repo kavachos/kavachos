@@ -1,8 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bot, Check, Copy, MoreHorizontal, Plus, RotateCw, ShieldOff } from "lucide-react";
+import {
+	ArrowRight,
+	Bot,
+	Check,
+	Clock,
+	Copy,
+	MoreHorizontal,
+	Plus,
+	RotateCw,
+	ShieldOff,
+} from "lucide-react";
 import { useState } from "react";
 import type { KavachApiClient } from "../api/client.js";
-import type { Agent, AgentType, CreateAgentInput } from "../api/types.js";
+import type { Agent, AgentType, AuditResult, CreateAgentInput } from "../api/types.js";
 import { Badge, StatusDot } from "../components/badge.js";
 import { Button } from "../components/button.js";
 import { FormGroup, Input, Label, Select } from "../components/input.js";
@@ -306,6 +316,242 @@ function AgentActions({ agent, onRevoke, onRotate, revoking, rotating }: AgentAc
 	);
 }
 
+// ─── Agent Detail Modal ───────────────────────────────────────────────────────
+
+function resultVariant(result: AuditResult): "green" | "red" | "yellow" {
+	switch (result) {
+		case "allowed":
+			return "green";
+		case "denied":
+			return "red";
+		case "rate_limited":
+			return "yellow";
+	}
+}
+
+function formatTimestamp(iso: string): string {
+	return new Date(iso).toLocaleString("en-US", {
+		month: "short",
+		day: "numeric",
+		hour: "2-digit",
+		minute: "2-digit",
+		second: "2-digit",
+	});
+}
+
+interface AgentDetailModalProps {
+	open: boolean;
+	onClose: () => void;
+	agent: Agent;
+	client: KavachApiClient;
+}
+
+function AgentDetailModal({ open, onClose, agent, client }: AgentDetailModalProps) {
+	const { data: permissionsResult, isLoading: permLoading } = useQuery({
+		queryKey: ["agent-permissions", agent.id],
+		queryFn: () => client.getAgentPermissions(agent.id),
+		enabled: open,
+	});
+
+	const { data: auditResult, isLoading: auditLoading } = useQuery({
+		queryKey: ["agent-audit", agent.id],
+		queryFn: () => client.getAuditLogs({ agentId: agent.id, limit: 20 }),
+		enabled: open,
+	});
+
+	const { data: delegationsResult } = useQuery({
+		queryKey: ["delegations"],
+		queryFn: () => client.getDelegations(),
+		enabled: open,
+	});
+
+	const permissions = permissionsResult?.success ? permissionsResult.data : [];
+	const auditEntries = auditResult?.success ? auditResult.data.entries : [];
+	const allDelegations = delegationsResult?.success ? delegationsResult.data : [];
+	const agentDelegations = allDelegations.filter(
+		(d) => d.fromAgentId === agent.id || d.toAgentId === agent.id,
+	);
+
+	return (
+		<Modal
+			open={open}
+			onClose={onClose}
+			title={agent.name}
+			footer={
+				<Button variant="primary" onClick={onClose}>
+					Close
+				</Button>
+			}
+		>
+			<div className="space-y-6">
+				{/* Agent info */}
+				<div className="grid grid-cols-2 gap-x-6 gap-y-3">
+					<div>
+						<p className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider mb-1">
+							ID
+						</p>
+						<code className="text-xs font-mono text-zinc-300 break-all">{agent.id}</code>
+					</div>
+					<div>
+						<p className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider mb-1">
+							Type
+						</p>
+						<span className="text-xs font-mono text-zinc-300">{agent.type}</span>
+					</div>
+					<div>
+						<p className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider mb-1">
+							Status
+						</p>
+						<Badge variant={statusVariant(agent.status)}>
+							<StatusDot variant={statusVariant(agent.status)} />
+							{agent.status}
+						</Badge>
+					</div>
+					<div>
+						<p className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider mb-1">
+							Last active
+						</p>
+						<span className="text-xs text-zinc-300">{formatRelative(agent.lastActiveAt)}</span>
+					</div>
+					<div>
+						<p className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider mb-1">
+							Created
+						</p>
+						<span className="text-xs text-zinc-300">{formatDate(agent.createdAt)}</span>
+					</div>
+					<div>
+						<p className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider mb-1">
+							Expires
+						</p>
+						<span className="text-xs text-zinc-300">{formatDate(agent.expiresAt)}</span>
+					</div>
+				</div>
+
+				{/* Permissions */}
+				<div>
+					<p className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">
+						Permissions
+					</p>
+					{permLoading ? (
+						<div className="flex items-center justify-center py-4">
+							<div className="w-4 h-4 border-2 border-zinc-700 border-t-indigo-500 rounded-full animate-spin" />
+						</div>
+					) : permissions.length === 0 ? (
+						<p className="text-xs text-zinc-600 py-2">No permissions assigned.</p>
+					) : (
+						<div className="rounded-lg border border-zinc-800 overflow-hidden">
+							<table className="w-full text-xs">
+								<thead className="bg-zinc-900 border-b border-zinc-800">
+									<tr>
+										<th className="px-3 py-2 text-left text-[11px] font-medium text-zinc-500 uppercase tracking-wider">
+											Resource
+										</th>
+										<th className="px-3 py-2 text-left text-[11px] font-medium text-zinc-500 uppercase tracking-wider">
+											Actions
+										</th>
+									</tr>
+								</thead>
+								<tbody className="divide-y divide-zinc-800/60">
+									{permissions.map((p) => (
+										<tr key={p.id} className="bg-zinc-950">
+											<td className="px-3 py-2">
+												<code className="text-zinc-300 font-mono">{p.resource}</code>
+											</td>
+											<td className="px-3 py-2">
+												<div className="flex flex-wrap gap-1">
+													{p.actions.map((a) => (
+														<span
+															key={a}
+															className="px-1.5 py-0.5 bg-zinc-800 border border-zinc-700 rounded text-[10px] text-zinc-400 font-mono"
+														>
+															{a}
+														</span>
+													))}
+												</div>
+											</td>
+										</tr>
+									))}
+								</tbody>
+							</table>
+						</div>
+					)}
+				</div>
+
+				{/* Delegation chains */}
+				{agentDelegations.length > 0 && (
+					<div>
+						<p className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">
+							Delegation chains
+						</p>
+						<div className="space-y-2">
+							{agentDelegations.map((d) => (
+								<div
+									key={d.id}
+									className="flex items-center gap-2 px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-xs"
+								>
+									<span className="text-zinc-300 font-medium truncate max-w-[100px]">
+										{d.fromAgentName}
+									</span>
+									<ArrowRight className="w-3 h-3 text-zinc-600 flex-shrink-0" />
+									<span className="text-zinc-300 font-medium truncate max-w-[100px]">
+										{d.toAgentName}
+									</span>
+									<Badge
+										variant={
+											d.status === "active" ? "green" : d.status === "expired" ? "yellow" : "red"
+										}
+									>
+										{d.status}
+									</Badge>
+								</div>
+							))}
+						</div>
+					</div>
+				)}
+
+				{/* Recent audit activity */}
+				<div>
+					<p className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">
+						Recent activity
+					</p>
+					{auditLoading ? (
+						<div className="flex items-center justify-center py-4">
+							<div className="w-4 h-4 border-2 border-zinc-700 border-t-indigo-500 rounded-full animate-spin" />
+						</div>
+					) : auditEntries.length === 0 ? (
+						<p className="text-xs text-zinc-600 py-2">No audit events yet.</p>
+					) : (
+						<div className="rounded-lg border border-zinc-800 overflow-hidden">
+							<div className="divide-y divide-zinc-800/60">
+								{auditEntries.map((entry) => (
+									<div
+										key={entry.id}
+										className="flex items-center gap-3 px-3 py-2.5 bg-zinc-950 text-xs"
+									>
+										<Clock className="w-3 h-3 text-zinc-600 flex-shrink-0" />
+										<span className="text-zinc-500 tabular-nums flex-shrink-0 w-28">
+											{formatTimestamp(entry.timestamp)}
+										</span>
+										<code className="text-zinc-400 font-mono w-20 flex-shrink-0 truncate">
+											{entry.action}
+										</code>
+										<code className="text-zinc-500 font-mono flex-1 truncate">
+											{entry.resource}
+										</code>
+										<Badge variant={resultVariant(entry.result)}>
+											{entry.result.replace("_", " ")}
+										</Badge>
+									</div>
+								))}
+							</div>
+						</div>
+					)}
+				</div>
+			</div>
+		</Modal>
+	);
+}
+
 // ─── Agents Page ──────────────────────────────────────────────────────────────
 
 interface AgentsPageProps {
@@ -315,6 +561,7 @@ interface AgentsPageProps {
 export function AgentsPage({ client }: AgentsPageProps) {
 	const queryClient = useQueryClient();
 	const [createOpen, setCreateOpen] = useState(false);
+	const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
 	const [tokenModal, setTokenModal] = useState<{
 		open: boolean;
 		token: string;
@@ -424,7 +671,7 @@ export function AgentsPage({ client }: AgentsPageProps) {
 					</TableHead>
 					<TableBody>
 						{agents.map((agent) => (
-							<Tr key={agent.id}>
+							<Tr key={agent.id} onClick={() => setSelectedAgent(agent)}>
 								<Td>
 									<div>
 										<p className="text-sm font-medium text-white">{agent.name}</p>
@@ -481,6 +728,15 @@ export function AgentsPage({ client }: AgentsPageProps) {
 				token={tokenModal.token}
 				agentName={tokenModal.agentName}
 			/>
+
+			{selectedAgent && (
+				<AgentDetailModal
+					open={selectedAgent !== null}
+					onClose={() => setSelectedAgent(null)}
+					agent={selectedAgent}
+					client={client}
+				/>
+			)}
 		</div>
 	);
 }

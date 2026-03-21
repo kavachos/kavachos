@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { Clock, Filter, RefreshCw, ScrollText } from "lucide-react";
-import { useState } from "react";
+import { Clock, Download, Filter, RefreshCw, ScrollText } from "lucide-react";
+import { useRef, useState } from "react";
 import type { KavachApiClient } from "../api/client.js";
 import type { AuditLogFilters, AuditResult } from "../api/types.js";
 import { Badge } from "../components/badge.js";
@@ -159,6 +159,73 @@ function FilterBar({ filters, agentOptions, onChange }: FilterBarProps) {
 	);
 }
 
+// ─── Export Button ────────────────────────────────────────────────────────────
+
+interface ExportButtonProps {
+	client: KavachApiClient;
+	filters: AuditLogFilters;
+}
+
+function ExportButton({ client, filters }: ExportButtonProps) {
+	const [open, setOpen] = useState(false);
+	const [exporting, setExporting] = useState(false);
+	const ref = useRef<HTMLDivElement>(null);
+
+	async function handleExport(format: "json" | "csv") {
+		setOpen(false);
+		setExporting(true);
+		try {
+			const result = await client.exportAuditLogs(format, filters);
+			if (!result.success) return;
+			const blob = new Blob([result.data], {
+				type: format === "csv" ? "text/csv" : "application/json",
+			});
+			const url = URL.createObjectURL(blob);
+			const anchor = document.createElement("a");
+			anchor.href = url;
+			anchor.download = `audit-export.${format}`;
+			anchor.click();
+			URL.revokeObjectURL(url);
+		} finally {
+			setExporting(false);
+		}
+	}
+
+	return (
+		<div className="relative" ref={ref}>
+			<Button
+				variant="secondary"
+				size="sm"
+				loading={exporting}
+				onClick={() => setOpen((v) => !v)}
+				aria-haspopup="true"
+				aria-expanded={open}
+			>
+				<Download className="w-3.5 h-3.5" />
+				Export
+			</Button>
+			{open && (
+				<div className="absolute right-0 mt-1 w-36 bg-zinc-900 border border-zinc-700 rounded-lg shadow-lg z-10 overflow-hidden">
+					<button
+						type="button"
+						className="w-full text-left px-3 py-2 text-xs text-zinc-300 hover:bg-zinc-800 transition-colors"
+						onClick={() => void handleExport("json")}
+					>
+						Export as JSON
+					</button>
+					<button
+						type="button"
+						className="w-full text-left px-3 py-2 text-xs text-zinc-300 hover:bg-zinc-800 transition-colors"
+						onClick={() => void handleExport("csv")}
+					>
+						Export as CSV
+					</button>
+				</div>
+			)}
+		</div>
+	);
+}
+
 // ─── Audit Log Page ───────────────────────────────────────────────────────────
 
 const PAGE_SIZE = 50;
@@ -206,10 +273,18 @@ export function AuditPage({ client }: AuditPageProps) {
 				title="Audit Log"
 				description="Immutable record of all agent actions. Compliance-ready."
 				actions={
-					<Button variant="secondary" size="sm" onClick={() => void refetch()} loading={isFetching}>
-						<RefreshCw className="w-3.5 h-3.5" />
-						Refresh
-					</Button>
+					<>
+						<ExportButton client={client} filters={filters} />
+						<Button
+							variant="secondary"
+							size="sm"
+							onClick={() => void refetch()}
+							loading={isFetching}
+						>
+							<RefreshCw className="w-3.5 h-3.5" />
+							Refresh
+						</Button>
+					</>
 				}
 			/>
 

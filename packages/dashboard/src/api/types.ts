@@ -122,6 +122,55 @@ export interface DashboardStats {
 	activeDelegations: number;
 }
 
+// ─── User Types ───────────────────────────────────────────────────────────────
+
+export interface User {
+	id: string;
+	email: string;
+	name: string | null;
+	agentCount: number;
+	createdAt: string;
+}
+
+// ─── Delegation Types ─────────────────────────────────────────────────────────
+
+export type DelegationStatus = "active" | "expired" | "revoked";
+
+export interface DelegationChain {
+	id: string;
+	fromAgentId: string;
+	fromAgentName: string;
+	toAgentId: string;
+	toAgentName: string;
+	permissions: Array<{ resource: string; actions: string[] }>;
+	depth: number;
+	maxDepth: number;
+	status: DelegationStatus;
+	expiresAt: string;
+	createdAt: string;
+}
+
+// ─── MCP Server Types ─────────────────────────────────────────────────────────
+
+export interface McpServerInfo {
+	id: string;
+	name: string;
+	endpoint: string;
+	tools: string[];
+	authRequired: boolean;
+	rateLimit: { rpm: number } | null;
+	status: "online" | "offline" | "unknown";
+	createdAt: string;
+}
+
+export interface RegisterMcpServerInput {
+	name: string;
+	endpoint: string;
+	tools: string[];
+	authRequired: boolean;
+	rateLimit?: { rpm: number };
+}
+
 // ─── API Response Wrapper ─────────────────────────────────────────────────────
 
 export type ApiResult<T> =
