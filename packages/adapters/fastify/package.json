@@ -27,6 +27,11 @@
   ],
   "author": "KavachOS <hello@kavachos.com>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kavachos/kavachos.git",
+    "directory": "packages/adapters/fastify"
+  },
   "peerDependencies": {
     "kavachos": "workspace:*",
     "fastify": ">=4.0.0",

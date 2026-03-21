@@ -27,6 +27,11 @@
   ],
   "author": "KavachOS <hello@kavachos.com>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kavachos/kavachos.git",
+    "directory": "packages/adapters/nextjs"
+  },
   "peerDependencies": {
     "kavachos": "workspace:*",
     "next": ">=14.0.0",

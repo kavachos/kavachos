@@ -28,5 +28,10 @@
     "cli"
   ],
   "author": "KavachOS <hello@kavachos.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kavachos/kavachos.git",
+    "directory": "packages/cli"
+  }
 }
