@@ -6,7 +6,7 @@ export function Footer() {
 			<div className="mx-auto max-w-6xl px-6 lg:px-12">
 				<div className="flex flex-col gap-6 py-8 sm:flex-row sm:items-center sm:justify-between">
 					<div className="flex items-center gap-6">
-						<span className="font-mono text-xs font-bold tracking-tight text-fd-muted-foreground">
+						<span className="font-heading text-xs font-bold tracking-tight text-fd-muted-foreground">
 							kavach
 							<span className="font-light">OS</span>
 						</span>

@@ -1,0 +1,147 @@
+---
+title: Admin dashboard
+description: An embeddable React dashboard for managing agents, permissions, and audit logs.
+icon: LayoutDashboard
+---
+
+
+## Overview
+
+The KavachOS dashboard is a visual interface for everything the SDK manages programmatically: creating and revoking agents, reviewing audit logs, inspecting delegation chains, and monitoring permission usage.
+
+It ships in two forms:
+
+1. A React component (`@kavachos/dashboard`) you embed in an existing app
+2. A standalone CLI server you run without any frontend
+
+## Installation
+
+<Tabs items={['Embedded React', 'Standalone CLI']}>
+  <Tab value="Embedded React">
+    Install the package:
+
+    ```bash
+    npm install @kavachos/dashboard
+    ```
+
+    Render `KavachDashboard` inside a protected route in your app. Pass the URL of your backend proxy and an optional theme:
+
+    ```tsx
+    import { KavachDashboard } from '@kavachos/dashboard';
+
+    export default function AdminPage() {
+      return (
+        <KavachDashboard
+          apiUrl="/api/kavach"
+          theme="system"
+        />
+      );
+    }
+    ```
+
+    ### Component props
+
+    <TypeTable
+      type={{
+        apiUrl: {
+          type: 'string',
+          description: 'URL of your backend proxy. The dashboard sends all API requests here. Never point this directly at a public KavachOS instance.',
+        },
+        theme: {
+          type: "'light' | 'dark' | 'system'",
+          description: "Color scheme. 'system' follows the OS preference. Defaults to 'system'.",
+        },
+      }}
+    />
+
+    ### Backend proxy
+
+    The dashboard talks to your backend, which forwards requests to the KavachOS API. This keeps database credentials server-side.
+
+    Here is a Next.js catch-all route that handles all dashboard requests:
+
+    ```typescript
+    // app/api/kavach/[...path]/route.ts
+    import { createKavach } from 'kavachos';
+    import { kavachNextjs } from '@kavachos/nextjs';
+
+    const kavach = createKavach({
+      database: { provider: 'postgres', url: process.env.DATABASE_URL! },
+    });
+
+    const handler = kavachNextjs(kavach);
+
+    export const GET = handler;
+    export const POST = handler;
+    export const DELETE = handler;
+    ```
+
+    ### Auth guard
+
+    The dashboard does not enforce authentication. Wrap the page with your own auth check before rendering it:
+
+    ```tsx
+    // app/admin/page.tsx
+    import { redirect } from 'next/navigation';
+    import { getSession } from '@/lib/auth';
+    import { KavachDashboard } from '@kavachos/dashboard';
+
+    export default async function AdminPage() {
+      const session = await getSession();
+      if (!session?.user.isAdmin) redirect('/');
+
+      return <KavachDashboard apiUrl="/api/kavach" theme="system" />;
+    }
+    ```
+
+    <Callout type="warn">
+      Do not render `KavachDashboard` on a public route. It gives full read/write access to all agents, permissions, and audit data for your instance.
+    </Callout>
+  </Tab>
+
+  <Tab value="Standalone CLI">
+    Run the dashboard without any existing frontend. It starts its own HTTP server:
+
+    ```bash
+    npx kavachos dashboard --database sqlite://kavach.db --port 3001
+    ```
+
+    With Postgres:
+
+    ```bash
+    npx kavachos dashboard \
+      --database postgres://user:pass@localhost:5432/kavach \
+      --port 3001 \
+      --secret your-signing-secret
+    ```
+
+    Open `http://localhost:3001` to access the dashboard.
+
+    <Callout type="warn">
+      The standalone server creates a temporary admin session on startup. Do not expose it to the internet without adding access control in front of it (for example an nginx `auth_basic` block or a Cloudflare Access policy).
+    </Callout>
+
+    ### CLI flags
+
+    | Flag | Required | Description |
+    |---|---|---|
+    | `--database` | Yes | Database connection URL. Supports `sqlite://`, `postgres://`, and `mysql://`. |
+    | `--port` | No | Port to listen on. Defaults to `3001`. |
+    | `--secret` | No | Signing secret for session tokens. Generated randomly if omitted (sessions reset on restart). |
+    | `--host` | No | Host to bind to. Defaults to `127.0.0.1`. |
+  </Tab>
+</Tabs>
+
+## Dashboard pages
+
+The dashboard has five pages. The Overview page is the landing screen.
+
+**Overview** shows active agent count, recent authorization decisions, and any pending delegation requests.
+
+**Agents** lists all agents across all users. Filter by owner, type, and status. From here you can create new agents, rotate tokens, and revoke agents.
+
+**Permissions** lets you view and edit the permission set for any agent. Each row shows the resource pattern, allowed actions, and active constraints. A wildcard preview shows which resources a pattern matches against your registered MCP servers.
+
+**Audit log** is a paginated table of authorization decisions. Filter by agent, user, resource, action, and result. Click any row to expand the full entry including parameters and duration. Export the current filter as CSV or JSON.
+
+**Settings** lists registered MCP servers with their endpoints, tools, and auth requirements. Register new servers and view token validation activity from here.

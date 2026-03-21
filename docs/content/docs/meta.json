@@ -1,14 +1,5 @@
 {
-  "title": "KavachOS",
-  "pages": [
-    "index",
-    "quickstart",
-    "agents",
-    "permissions",
-    "delegation",
-    "audit",
-    "mcp",
-    "adapters",
-    "dashboard"
-  ]
+	"title": "Documentation",
+	"root": true,
+	"pages": ["index", "quickstart", "core", "platform"]
 }
