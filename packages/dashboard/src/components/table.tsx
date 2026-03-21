@@ -13,7 +13,7 @@ interface TableBodyProps {
 }
 
 interface ThProps {
-	children: ReactNode;
+	children?: ReactNode;
 	className?: string;
 }
 
