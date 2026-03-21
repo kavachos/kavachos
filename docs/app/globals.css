@@ -152,28 +152,11 @@
 	opacity: 1;
 }
 
-/* Sidebar collapse toggle: repositioned, styled */
-#nd-docs-layout [data-sidebar] button[data-sidebar-toggle] {
-	position: absolute;
-	top: 0.75rem;
-	right: -0.75rem;
-	z-index: 10;
-	width: 1.5rem;
-	height: 1.5rem;
-	border-radius: 50%;
-	border: 1px solid var(--color-fd-border);
-	background: var(--color-fd-background);
-	box-shadow: 0 2px 8px hsl(0 0% 0% / 0.1);
-	transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-#nd-docs-layout [data-sidebar] button[data-sidebar-toggle]:hover {
-	transform: scale(1.1);
-	box-shadow: 0 2px 12px hsl(0 0% 0% / 0.15);
-}
-
-.dark #nd-docs-layout [data-sidebar] button[data-sidebar-toggle] {
-	box-shadow: 0 2px 8px hsl(0 0% 0% / 0.4);
+/* Hide sidebar collapse trigger on desktop */
+@media (min-width: 48rem) {
+	#nd-docs-layout [data-sidebar-toggle] {
+		display: none !important;
+	}
 }
 
 /* ===== TOC (right sidebar) ===== */

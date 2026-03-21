@@ -215,10 +215,10 @@ function NavLink({
 	return (
 		<Link
 			href={href}
-			className={`rounded-lg px-3 py-1.5 text-[13px] transition-colors ${
+			className={`relative rounded-lg px-3 py-1.5 text-[13px] transition-all ${
 				active
-					? "font-medium text-fd-foreground"
-					: "text-fd-muted-foreground/70 hover:text-fd-foreground"
+					? "font-medium text-fd-foreground after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:h-[2px] after:w-4 after:rounded-full after:bg-[var(--kavach-gold-mid)]"
+					: "text-fd-muted-foreground/60 hover:text-fd-foreground hover:bg-fd-accent/40"
 			}`}
 			{...(external
 				? { target: "_blank", rel: "noopener noreferrer" }
