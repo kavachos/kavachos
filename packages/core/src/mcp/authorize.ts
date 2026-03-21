@@ -144,6 +144,33 @@ export async function handleAuthorize(
 		};
 	}
 
+	// ── Consent page redirect ───────────────────────────────────────
+	// When a consent page is configured, redirect the user to it instead
+	// of issuing an authorization code immediately.  The consent page
+	// collects explicit user approval and then calls approveConsent().
+	if (ctx.config.consentPage) {
+		const consentUrl = new URL(ctx.config.consentPage);
+		consentUrl.searchParams.set("client_id", clientId);
+		consentUrl.searchParams.set("redirect_uri", redirectUri);
+		consentUrl.searchParams.set("scope", effectiveScopes.join(" "));
+		if (state) {
+			consentUrl.searchParams.set("state", state);
+		}
+		consentUrl.searchParams.set("code_challenge", codeChallenge);
+		consentUrl.searchParams.set("code_challenge_method", codeChallengeMethod);
+		if (resource) {
+			consentUrl.searchParams.set("resource", resource);
+		}
+		return {
+			success: true,
+			data: {
+				redirectUri: consentUrl.toString(),
+				code: "",
+				state: state ?? null,
+			},
+		};
+	}
+
 	// ── Generate authorization code ─────────────────────────────────
 	const code = generateAuthorizationCode();
 	const now = new Date();

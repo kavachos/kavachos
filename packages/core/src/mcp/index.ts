@@ -11,6 +11,8 @@
 
 // Authorization endpoint
 export { handleAuthorize } from "./authorize.js";
+// Consent approval
+export { approveConsent } from "./consent.js";
 // Metadata endpoints
 export {
 	getAuthorizationServerMetadata,
@@ -18,12 +20,17 @@ export {
 } from "./metadata.js";
 // Dynamic Client Registration
 export { registerClient } from "./registration.js";
+// Scope challenge helper
+export { requireScopes } from "./require-scopes.js";
 // Module factory
 export { createMcpModule, createMcpResponseHelpers } from "./server.js";
+// Step-up authorization
+export { buildStepUpResponse } from "./step-up.js";
 // Token endpoint
 export { handleTokenExchange } from "./token.js";
 // Types
 export type {
+	ApproveConsentParams,
 	KavachError,
 	McpAccessToken,
 	McpAuthContext,

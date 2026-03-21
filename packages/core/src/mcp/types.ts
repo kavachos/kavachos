@@ -37,6 +37,21 @@ export interface McpConfig {
 	loginPage?: string;
 	/** Consent page URL - where users approve scopes */
 	consentPage?: string;
+	/**
+	 * Clients that are pre-registered at startup.
+	 *
+	 * These are stored via `storeClient` when the module is created,
+	 * so they behave identically to dynamically-registered clients.
+	 * Useful for first-party apps, CLIs, or test fixtures that should
+	 * always exist without a prior registration call.
+	 */
+	preRegisteredClients?: Array<{
+		clientId: string;
+		clientSecret?: string;
+		redirectUris: string[];
+		clientName?: string;
+		scope?: string;
+	}>;
 	/** Custom token claims generator */
 	getAdditionalClaims?: (userId: string, scopes: string[]) => Promise<Record<string, unknown>>;
 }
@@ -251,6 +266,19 @@ export interface McpAuthContext {
 
 // ─── MCP Module (public API shape) ──────────────────────────────────────────
 
+export interface ApproveConsentParams {
+	/** Authenticated user who approved the consent */
+	userId: string;
+	clientId: string;
+	/** Space-separated scope string or array */
+	scope: string | string[];
+	state?: string;
+	redirectUri: string;
+	codeChallenge: string;
+	codeChallengeMethod: "S256";
+	resource?: string;
+}
+
 export interface McpAuthModule {
 	/** Get OAuth 2.0 Authorization Server Metadata */
 	getMetadata: () => McpServerMetadata;
@@ -262,12 +290,33 @@ export interface McpAuthModule {
 	) => Promise<Result<McpClientRegistrationResponse>>;
 	/** Handle authorization request */
 	authorize: (request: Request) => Promise<Result<McpAuthorizeResult>>;
+	/**
+	 * Issue an authorization code after a user has explicitly approved consent.
+	 *
+	 * When `config.consentPage` is set, `authorize` redirects to that page
+	 * instead of issuing a code directly.  The consent page must call this
+	 * method after the user clicks "Allow".
+	 */
+	approveConsent: (params: ApproveConsentParams) => Promise<Result<{ redirectUri: string }>>;
 	/** Handle token exchange */
 	token: (request: Request) => Promise<Result<McpTokenResponse>>;
 	/** Validate an access token */
 	validateToken: (token: string, requiredScopes?: string[]) => Promise<Result<McpSession>>;
 	/** Middleware that validates Bearer tokens and returns session */
 	middleware: (request: Request) => Promise<Result<McpSession>>;
+	/** Build a step-up challenge response (403) indicating required scopes */
+	buildStepUpResponse: (options: {
+		currentScopes: string[];
+		requiredScopes: string[];
+		resource?: string;
+	}) => Response;
+	/** Validate token and check scopes. Returns session if valid, or a Response to send back */
+	requireScopes: (
+		request: Request,
+		requiredScopes: string[],
+	) => Promise<
+		{ authorized: true; session: McpSession } | { authorized: false; response: Response }
+	>;
 }
 
 // ─── Zod Schemas ────────────────────────────────────────────────────────────

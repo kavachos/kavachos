@@ -165,6 +165,81 @@ describe("delegation chains", () => {
 		expect(leafPerms).toHaveLength(0);
 	});
 
+	it("authorizes an agent via delegated permissions when own permissions are insufficient", async () => {
+		const parent = await kavach.agent.create({
+			ownerId: "user-1",
+			name: "auth-parent",
+			type: "autonomous",
+			permissions: [{ resource: "mcp:github:*", actions: ["read", "write"] }],
+		});
+
+		// Child has no own permissions
+		const child = await kavach.agent.create({
+			ownerId: "user-1",
+			name: "auth-child",
+			type: "delegated",
+			permissions: [],
+		});
+
+		await kavach.delegate({
+			fromAgent: parent.id,
+			toAgent: child.id,
+			permissions: [{ resource: "mcp:github:repos", actions: ["read"] }],
+			expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+		});
+
+		// Child should be allowed via delegated permission
+		const allowed = await kavach.authorize(child.id, {
+			action: "read",
+			resource: "mcp:github:repos",
+		});
+		expect(allowed.allowed).toBe(true);
+
+		// Child should not be allowed for an action not in the delegation
+		const denied = await kavach.authorize(child.id, {
+			action: "write",
+			resource: "mcp:github:repos",
+		});
+		expect(denied.allowed).toBe(false);
+	});
+
+	it("denies authorization after delegation is revoked", async () => {
+		const parent = await kavach.agent.create({
+			ownerId: "user-1",
+			name: "revoke-auth-parent",
+			type: "autonomous",
+			permissions: [{ resource: "mcp:slack:*", actions: ["read"] }],
+		});
+
+		const child = await kavach.agent.create({
+			ownerId: "user-1",
+			name: "revoke-auth-child",
+			type: "delegated",
+			permissions: [],
+		});
+
+		const chain = await kavach.delegate({
+			fromAgent: parent.id,
+			toAgent: child.id,
+			permissions: [{ resource: "mcp:slack:messages", actions: ["read"] }],
+			expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+		});
+
+		const beforeRevoke = await kavach.authorize(child.id, {
+			action: "read",
+			resource: "mcp:slack:messages",
+		});
+		expect(beforeRevoke.allowed).toBe(true);
+
+		await kavach.delegation.revoke(chain.id);
+
+		const afterRevoke = await kavach.authorize(child.id, {
+			action: "read",
+			resource: "mcp:slack:messages",
+		});
+		expect(afterRevoke.allowed).toBe(false);
+	});
+
 	it("lists delegation chains for an agent", async () => {
 		const parent = await kavach.agent.create({
 			ownerId: "user-1",

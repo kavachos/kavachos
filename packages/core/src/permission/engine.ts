@@ -45,6 +45,50 @@ function matchAction(allowedActions: string[], requestedAction: string): boolean
 }
 
 /**
+ * Parse an IPv4 address into a 32-bit integer.
+ */
+function parseIPv4(ip: string): number | null {
+	const parts = ip.split(".");
+	if (parts.length !== 4) return null;
+	let result = 0;
+	for (const part of parts) {
+		const num = parseInt(part, 10);
+		if (Number.isNaN(num) || num < 0 || num > 255) return null;
+		result = (result << 8) | num;
+	}
+	return result >>> 0;
+}
+
+/**
+ * Check whether an IP matches a CIDR range or exact IP entry.
+ * Supports both "10.0.0.1" and "10.0.0.0/8" notation (IPv4 only).
+ */
+function matchesIPEntry(entry: string, ip: string): boolean {
+	const slashIndex = entry.indexOf("/");
+	if (slashIndex === -1) {
+		return entry === ip;
+	}
+
+	const cidrIp = entry.slice(0, slashIndex);
+	const prefixLen = parseInt(entry.slice(slashIndex + 1), 10);
+	if (Number.isNaN(prefixLen) || prefixLen < 0 || prefixLen > 32) return false;
+
+	const entryNum = parseIPv4(cidrIp);
+	const ipNum = parseIPv4(ip);
+	if (entryNum === null || ipNum === null) return false;
+
+	const mask = prefixLen === 0 ? 0 : (~0 << (32 - prefixLen)) >>> 0;
+	return (entryNum & mask) === (ipNum & mask);
+}
+
+/**
+ * Check whether an IP is in the allowlist (exact IPs or CIDR ranges).
+ */
+function isIPAllowed(allowlist: string[], ip: string): boolean {
+	return allowlist.some((entry) => matchesIPEntry(entry, ip));
+}
+
+/**
  * Validate argument patterns against the request arguments.
  */
 function validateArgPatterns(
@@ -230,6 +274,22 @@ async function evaluateConstraints(
 			return {
 				allowed: false,
 				reason: `Action is only allowed between ${constraints.timeWindow.start} and ${constraints.timeWindow.end}`,
+			};
+		}
+	}
+
+	// IP allowlist check
+	if (constraints.ipAllowlist && constraints.ipAllowlist.length > 0) {
+		if (!request.ip) {
+			return {
+				allowed: false,
+				reason: "IP_NOT_ALLOWED: No IP address provided; resource requires an IP allowlist match",
+			};
+		}
+		if (!isIPAllowed(constraints.ipAllowlist, request.ip)) {
+			return {
+				allowed: false,
+				reason: `IP_NOT_ALLOWED: IP "${request.ip}" is not in the allowlist for this resource`,
 			};
 		}
 	}

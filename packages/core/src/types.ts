@@ -132,6 +132,8 @@ export interface AuthorizeRequest {
 	action: string;
 	resource: string;
 	arguments?: Record<string, unknown>;
+	/** Client IP address for ipAllowlist constraint enforcement */
+	ip?: string;
 }
 
 export interface DelegateInput {
