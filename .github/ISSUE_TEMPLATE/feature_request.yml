@@ -1,0 +1,41 @@
+name: Feature request
+description: Suggest a feature or improvement
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do that KavachOS doesn't support yet?
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: How you think this should work. Code examples are welcome.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches you've thought about or workarounds you're using now
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Agent identity
+        - Permission engine
+        - Delegation chains
+        - Audit trail
+        - MCP OAuth 2.1
+        - Framework adapters
+        - Dashboard
+        - CLI
+        - Documentation
+        - Other
