@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Test & coverage
+coverage/
+.nyc_output/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Turbo
+.turbo/
+
+# Misc
+*.log
+tmp/
+.tmp/
+.cache/
+
+# Docs local (research, reference repos, not shipped)
+docs-local/
+
+# Claude instructions (project-specific, not shipped)
+CLAUDE.md

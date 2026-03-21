@@ -1,0 +1,148 @@
+import { getRandomValues, randomUUID } from "node:crypto";
+
+/**
+ * Generate a cryptographically secure random token string.
+ *
+ * Uses `crypto.getRandomValues()` (Web Crypto API compatible) to produce
+ * a URL-safe base64 string of the requested byte length.
+ */
+export function generateSecureToken(byteLength: number): string {
+	const bytes = new Uint8Array(byteLength);
+	getRandomValues(bytes);
+	return uint8ArrayToBase64Url(bytes);
+}
+
+/**
+ * Generate a new authorization code.
+ * Returns a UUID v4 string (compact, unique, unpredictable enough when
+ * combined with PKCE code_verifier for security).
+ */
+export function generateAuthorizationCode(): string {
+	return randomUUID();
+}
+
+/**
+ * Compute the S256 code challenge from a code verifier.
+ *
+ * S256: BASE64URL(SHA256(ASCII(code_verifier)))
+ *
+ * Uses Web Crypto (SubtleCrypto) for cross-runtime compatibility.
+ */
+export async function computeS256Challenge(codeVerifier: string): Promise<string> {
+	const encoder = new TextEncoder();
+	const data = encoder.encode(codeVerifier);
+	const digest = await globalThis.crypto.subtle.digest("SHA-256", data);
+	return uint8ArrayToBase64Url(new Uint8Array(digest));
+}
+
+/**
+ * Verify a PKCE S256 code_verifier against a stored code_challenge.
+ */
+export async function verifyS256(codeVerifier: string, codeChallenge: string): Promise<boolean> {
+	const computed = await computeS256Challenge(codeVerifier);
+	return timingSafeEqual(computed, codeChallenge);
+}
+
+/**
+ * Constant-time string comparison to prevent timing attacks.
+ */
+function timingSafeEqual(a: string, b: string): boolean {
+	if (a.length !== b.length) {
+		return false;
+	}
+	const encoder = new TextEncoder();
+	const bufA = encoder.encode(a);
+	const bufB = encoder.encode(b);
+
+	let diff = 0;
+	for (let i = 0; i < bufA.length; i++) {
+		// biome-ignore lint/style/noNonNullAssertion: length checked above
+		diff |= bufA[i]! ^ bufB[i]!;
+	}
+	return diff === 0;
+}
+
+/**
+ * Encode a Uint8Array as a base64url string (no padding).
+ */
+function uint8ArrayToBase64Url(bytes: Uint8Array): string {
+	let binary = "";
+	for (let i = 0; i < bytes.length; i++) {
+		binary += String.fromCharCode(bytes[i] as number);
+	}
+	return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+/**
+ * Parse a URL search params or form body into a plain object.
+ *
+ * Handles both `application/x-www-form-urlencoded` and `application/json`
+ * content types, as required by OAuth 2.1 token endpoint.
+ */
+export async function parseRequestBody(request: Request): Promise<Record<string, string>> {
+	const contentType = request.headers.get("content-type") ?? "";
+
+	if (contentType.includes("application/x-www-form-urlencoded")) {
+		const text = await request.text();
+		const params = new URLSearchParams(text);
+		const result: Record<string, string> = {};
+		for (const [key, value] of params.entries()) {
+			result[key] = value;
+		}
+		return result;
+	}
+
+	if (contentType.includes("application/json")) {
+		const json = await request.json();
+		if (typeof json === "object" && json !== null) {
+			const result: Record<string, string> = {};
+			for (const [key, value] of Object.entries(json as Record<string, unknown>)) {
+				if (typeof value === "string") {
+					result[key] = value;
+				}
+			}
+			return result;
+		}
+	}
+
+	return {};
+}
+
+/**
+ * Extract client credentials from the Authorization header (Basic auth).
+ *
+ * Returns [client_id, client_secret] or null if not present.
+ */
+export function extractBasicAuth(request: Request): [string, string] | null {
+	const authorization = request.headers.get("authorization");
+	if (!authorization?.startsWith("Basic ")) {
+		return null;
+	}
+	try {
+		const encoded = authorization.slice(6);
+		const decoded = atob(encoded);
+		const colonIndex = decoded.indexOf(":");
+		if (colonIndex === -1) {
+			return null;
+		}
+		const id = decoded.slice(0, colonIndex);
+		const secret = decoded.slice(colonIndex + 1);
+		if (!id || !secret) {
+			return null;
+		}
+		return [id, secret];
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * Extract a Bearer token from the Authorization header.
+ */
+export function extractBearerToken(request: Request): string | null {
+	const authorization = request.headers.get("authorization");
+	if (!authorization?.startsWith("Bearer ")) {
+		return null;
+	}
+	return authorization.slice(7);
+}

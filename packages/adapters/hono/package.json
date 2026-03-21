@@ -1,0 +1,40 @@
+{
+  "name": "@kavachos/hono",
+  "version": "0.0.1",
+  "description": "Hono adapter for KavachOS - exposes agent auth as HTTP REST endpoints",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "kavachos",
+    "hono",
+    "auth",
+    "agent",
+    "mcp"
+  ],
+  "author": "KavachOS <hello@kavachos.com>",
+  "license": "MIT",
+  "peerDependencies": {
+    "@kavachos/core": "workspace:*",
+    "hono": ">=4.0.0"
+  },
+  "devDependencies": {
+    "@kavachos/core": "workspace:*",
+    "hono": "^4.7.0",
+    "tsup": "^8.4.0",
+    "typescript": "^5.8.0"
+  }
+}

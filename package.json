@@ -1,0 +1,35 @@
+{
+  "name": "@kavachos/root",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.6.5",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "clean": "turbo clean && rm -rf node_modules",
+    "lint": "biome check .",
+    "lint:fix": "biome check . --fix",
+    "format": "biome format . --write",
+    "format:check": "biome format .",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "test:watch": "turbo test:watch",
+    "coverage": "turbo coverage",
+    "lint:deps": "knip --strict",
+    "prepare": "simple-git-hooks"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.0.0",
+    "knip": "^5.0.0",
+    "simple-git-hooks": "^2.11.0",
+    "turbo": "^2.5.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.0.0"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "pnpm lint && pnpm --filter @kavachos/core typecheck"
+  }
+}
