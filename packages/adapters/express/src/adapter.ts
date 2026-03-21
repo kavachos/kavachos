@@ -141,9 +141,15 @@ function sendMcpNoStore<T>(res: Response, data: T, status = 200): void {
 	res.status(status).json(data);
 }
 
+/** Extract a route param as string (Express 5 params can be string | string[] | undefined) */
+function param(req: Request, name: string): string {
+	const val = req.params[name];
+	return Array.isArray(val) ? (val[0] ?? "") : (val ?? "");
+}
+
 // ─── Helpers for building a Web-compatible Request from Express ──────────────
 
-function buildWebRequest(req: Request): Request {
+function buildWebRequest(req: Request): globalThis.Request {
 	const protocol = req.protocol ?? "http";
 	const host = req.headers.host ?? "localhost";
 	const url = `${protocol}://${host}${req.originalUrl ?? req.url}`;
@@ -259,7 +265,7 @@ export function kavachExpress(kavach: Kavach, options?: { mcp?: McpAuthModule })
 
 	// GET /agents/:id - get agent
 	router.get("/agents/:id", (req: Request, res: Response) => {
-		const { id } = req.params;
+		const id = param(req, "id");
 		kavach.agent
 			.get(id)
 			.then((agent) => {
@@ -277,7 +283,7 @@ export function kavachExpress(kavach: Kavach, options?: { mcp?: McpAuthModule })
 
 	// PATCH /agents/:id - update agent
 	router.patch("/agents/:id", (req: Request, res: Response) => {
-		const { id } = req.params;
+		const id = param(req, "id");
 		const parsed = UpdateAgentSchema.safeParse(req.body);
 		if (!parsed.success) {
 			sendValidationError(res, parsed.error.issues);
@@ -302,7 +308,7 @@ export function kavachExpress(kavach: Kavach, options?: { mcp?: McpAuthModule })
 
 	// DELETE /agents/:id - revoke agent
 	router.delete("/agents/:id", (req: Request, res: Response) => {
-		const { id } = req.params;
+		const id = param(req, "id");
 		kavach.agent
 			.revoke(id)
 			.then(() => sendNoContent(res))
@@ -318,7 +324,7 @@ export function kavachExpress(kavach: Kavach, options?: { mcp?: McpAuthModule })
 
 	// POST /agents/:id/rotate - rotate token
 	router.post("/agents/:id/rotate", (req: Request, res: Response) => {
-		const { id } = req.params;
+		const id = param(req, "id");
 		kavach.agent
 			.rotate(id)
 			.then((agent) => sendOk(res, agent))
@@ -419,7 +425,7 @@ export function kavachExpress(kavach: Kavach, options?: { mcp?: McpAuthModule })
 
 	// DELETE /delegations/:id - revoke delegation
 	router.delete("/delegations/:id", (req: Request, res: Response) => {
-		const { id } = req.params;
+		const id = param(req, "id");
 		kavach.delegation
 			.revoke(id)
 			.then(() => sendNoContent(res))
@@ -435,7 +441,7 @@ export function kavachExpress(kavach: Kavach, options?: { mcp?: McpAuthModule })
 
 	// GET /delegations/:agentId - list chains for agent
 	router.get("/delegations/:agentId", (req: Request, res: Response) => {
-		const { agentId } = req.params;
+		const agentId = param(req, "agentId");
 		kavach.delegation
 			.listChains(agentId)
 			.then((chains) => sendOk(res, chains))

@@ -6,11 +6,12 @@ import {
 	Check,
 } from "lucide-react";
 import Link from "next/link";
+import { Button } from "@/components/button";
 import { Footer } from "@/components/footer";
 import { FeatureGrid } from "@/components/feature-grid";
 import { FlowDiagram } from "@/components/flow-diagram";
 import { NavSpacer } from "@/components/nav";
-import { ParticleGrid } from "@/components/particle-grid";
+import { InteractiveGrid } from "@/components/interactive-grid";
 import { HonoIcon, ExpressIcon, NextjsIcon, FastifyIcon, NuxtIcon, SvelteIcon, AstroIcon } from "@/components/icons";
 
 export default function HomePage() {
@@ -20,22 +21,23 @@ export default function HomePage() {
 			<div className="flex flex-col lg:flex-row">
 				{/* ===== LEFT PANE: Sticky hero ===== */}
 				<div className="relative w-full border-b border-fd-border lg:sticky lg:top-[var(--nav-height)] lg:h-[calc(100vh-var(--nav-height))] lg:w-[40%] lg:border-b-0 lg:border-r lg:overflow-hidden">
-					{/* Animated particle grid background */}
-					<ParticleGrid />
-					{/* Big watermark text */}
-					<div className="pointer-events-none absolute inset-0 flex select-none items-center justify-center overflow-hidden" aria-hidden="true">
-						<span className="font-heading text-[12vw] font-black uppercase leading-none tracking-tighter text-fd-foreground/[0.02] dark:text-white/[0.03] lg:text-[8rem]">
-							kavach
-							<br />
-							<span className="text-[var(--kavach-gold-mid)]/[0.03] dark:text-[var(--kavach-gold-mid)]/[0.04]">
-								OS
-							</span>
-						</span>
-					</div>
 					{/* Gold ambient glow */}
 					<div className="pointer-events-none absolute bottom-0 left-1/2 h-[400px] w-[600px] -translate-x-1/2 translate-y-1/2 rounded-full bg-[var(--kavach-gold-mid)]/[0.06] blur-3xl" />
+					{/* Big watermark text - top positioned, full width */}
+					<div className="pointer-events-none absolute inset-x-0 top-6 select-none overflow-hidden text-center lg:top-10" aria-hidden="true">
+						<span className="animate-fade-in font-heading text-[22vw] font-black leading-none tracking-[-0.04em] lg:text-[10rem]" style={{ color: "rgba(201, 168, 76, 0.06)" }}>
+							kavachOS
+						</span>
+					</div>
 
-					<div className="relative flex h-full flex-col justify-center px-6 py-16 sm:px-10 lg:px-12">
+					{/* Hero content */}
+					<div className="relative flex h-full flex-col justify-center px-6 py-16 sm:px-10 lg:px-12" style={{ pointerEvents: "none" }}>
+						{/* Interactive grid overlay (catches hover through content gaps) */}
+						<div className="absolute inset-0 overflow-hidden" style={{ pointerEvents: "auto", zIndex: 0 }}>
+							<InteractiveGrid />
+						</div>
+
+						<div className="relative" style={{ zIndex: 1, pointerEvents: "auto" }}>
 						<Link
 							href="/docs"
 							className="group mb-6 inline-flex w-fit items-center gap-1.5 rounded-full border border-[var(--kavach-gold-mid)]/25 bg-[var(--kavach-gold-mid)]/8 px-3.5 py-1 text-[11px] font-medium text-[var(--kavach-gold-deep)] transition-colors hover:bg-[var(--kavach-gold-mid)]/15 dark:text-[var(--kavach-gold-bright)]"
@@ -59,21 +61,13 @@ export default function HomePage() {
 						</p>
 
 						<div className="mt-8 flex flex-wrap items-center gap-3">
-							<Link
-								href="/docs/quickstart"
-								className="group gradient-gold inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[var(--kavach-gold-shadow)]/25 transition-all hover:shadow-xl hover:shadow-[var(--kavach-gold-shadow)]/35"
-							>
+							<Button href="/docs/quickstart" variant="gold">
 								Get started
-								<ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-							</Link>
-							<Link
-								href="https://github.com/kavachos/kavachos"
-								className="inline-flex items-center gap-2 rounded-lg border border-fd-border px-5 py-2.5 text-sm font-medium transition-colors hover:bg-fd-accent"
-								target="_blank"
-								rel="noopener noreferrer"
-							>
+								<ArrowRight className="h-3.5 w-3.5" />
+							</Button>
+							<Button href="https://github.com/kavachos/kavachos" variant="outline" external>
 								View source
-							</Link>
+							</Button>
 						</div>
 
 						<div className="mt-5">
@@ -97,6 +91,7 @@ export default function HomePage() {
 								<FrameworkPill icon={AstroIcon} name="Astro" />
 							</div>
 						</div>
+					</div>
 					</div>
 				</div>
 
@@ -174,21 +169,13 @@ export default function HomePage() {
 							TypeScript, MIT licensed, works with any auth provider.
 						</p>
 						<div className="mt-8 flex flex-wrap justify-center gap-3">
-							<Link
-								href="/docs/quickstart"
-								className="group gradient-gold inline-flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[var(--kavach-gold-shadow)]/20"
-							>
+							<Button href="/docs/quickstart" variant="gold" size="lg">
 								Read the docs
-								<ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-							</Link>
-							<Link
-								href="https://github.com/kavachos/kavachos"
-								className="inline-flex items-center gap-2 rounded-lg border border-fd-border px-6 py-3 text-sm font-medium transition-colors hover:bg-fd-accent"
-								target="_blank"
-								rel="noopener noreferrer"
-							>
+								<ArrowRight className="h-4 w-4" />
+							</Button>
+							<Button href="https://github.com/kavachos/kavachos" variant="outline" size="lg" external>
 								Star on GitHub
-							</Link>
+							</Button>
 						</div>
 					</div>
 

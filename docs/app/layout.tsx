@@ -33,6 +33,17 @@ export const metadata: Metadata = {
 	description:
 		"Identity for humans and AI agents. Scoped permissions, delegation chains, and audit trails for every agent.",
 	metadataBase: new URL("https://kavachos.com"),
+	icons: {
+		icon: [
+			{ url: "/favicon.ico", sizes: "any" },
+			{ url: "/favicon-16x16.png", type: "image/png", sizes: "16x16" },
+			{ url: "/favicon-32x32.png", type: "image/png", sizes: "32x32" },
+			{ url: "/icon-192.png", type: "image/png", sizes: "192x192" },
+			{ url: "/icon-512.png", type: "image/png", sizes: "512x512" },
+		],
+		apple: [{ url: "/apple-touch-icon-180.png", sizes: "180x180" }],
+	},
+	manifest: "/site.webmanifest",
 	openGraph: {
 		title: "KavachOS | The Auth OS",
 		description:
@@ -40,13 +51,37 @@ export const metadata: Metadata = {
 		url: "https://kavachos.com",
 		siteName: "KavachOS",
 		type: "website",
+		images: [{ url: "/og-logo.png" }],
 	},
 	twitter: {
 		card: "summary_large_image",
 		title: "KavachOS | The Auth OS",
 		description:
 			"Identity for humans and AI agents. Scoped permissions, delegation chains, and audit trails for every agent.",
+		images: ["/og-logo.png"],
 	},
+};
+
+const jsonLd = {
+	"@context": "https://schema.org",
+	"@type": "SoftwareApplication",
+	name: "KavachOS",
+	description:
+		"Open-source TypeScript auth SDK for AI agents. Identity, permissions, delegation, and audit.",
+	url: "https://kavachos.com",
+	applicationCategory: "DeveloperApplication",
+	operatingSystem: "Any",
+	offers: {
+		"@type": "Offer",
+		price: "0",
+		priceCurrency: "USD",
+	},
+	author: {
+		"@type": "Organization",
+		name: "KavachOS",
+		url: "https://kavachos.com",
+	},
+	license: "https://opensource.org/licenses/MIT",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -57,6 +92,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 			suppressHydrationWarning
 		>
 			<body className="flex min-h-screen flex-col font-body antialiased">
+				<script
+					type="application/ld+json"
+					dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+				/>
 				<RootProvider>
 					<Nav />
 					{children}

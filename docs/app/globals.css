@@ -396,6 +396,37 @@ h3 {
 	animation: float 3s ease-in-out infinite;
 }
 
+/* ===== Gold button ===== */
+.kavach-btn-gold {
+	background: linear-gradient(145deg, #c5943a 0%, #ddb455 25%, #e8c46a 40%, #d4a84a 60%, #b8862e 100%);
+}
+
+.kavach-btn-gold:hover {
+	background: linear-gradient(145deg, #d4a348 0%, #e8c46a 25%, #f0d07a 40%, #ddb455 60%, #c5943a 100%);
+}
+
+.kavach-btn-gold:active {
+	background: linear-gradient(145deg, #b8862e 0%, #c5943a 25%, #d4a84a 40%, #c5943a 60%, #a67828 100%);
+}
+
+.kavach-btn-gold::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(105deg, transparent 20%, rgba(255, 255, 255, 0) 35%, rgba(255, 255, 255, 0.3) 50%, rgba(255, 255, 255, 0) 65%, transparent 80%);
+	transform: translateX(-100%);
+	pointer-events: none;
+}
+
+.kavach-btn-gold:hover::after {
+	animation: gold-shimmer 0.8s ease-in-out;
+}
+
+@keyframes gold-shimmer {
+	0% { transform: translateX(-100%); }
+	100% { transform: translateX(100%); }
+}
+
 /* ===== KavachOS glow effect ===== */
 .kavach-glow {
 	box-shadow:
