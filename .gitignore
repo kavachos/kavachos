@@ -6,6 +6,8 @@ node_modules/
 dist/
 build/
 *.tsbuildinfo
+.next/
+.source/
 
 # Test & coverage
 coverage/

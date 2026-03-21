@@ -150,9 +150,9 @@ describe("createKavach", () => {
 
 			const agent = await kavach.agent.get(created.id);
 			expect(agent).not.toBeNull();
-			expect(agent!.name).toBe("getter-agent");
-			expect(agent!.permissions).toHaveLength(1);
-			expect(agent!.token).toBe(""); // token should not be returned on get
+			expect(agent?.name).toBe("getter-agent");
+			expect(agent?.permissions).toHaveLength(1);
+			expect(agent?.token).toBe(""); // token should not be returned on get
 		});
 
 		it("lists agents for a user", async () => {
@@ -174,7 +174,7 @@ describe("createKavach", () => {
 
 			const services = await kavach.agent.list({ userId: "user-1", type: "service" });
 			expect(services).toHaveLength(1);
-			expect(services[0]!.name).toBe("a2");
+			expect(services[0]?.name).toBe("a2");
 		});
 
 		it("revokes an agent", async () => {
@@ -188,7 +188,7 @@ describe("createKavach", () => {
 			await kavach.agent.revoke(agent.id);
 
 			const revoked = await kavach.agent.get(agent.id);
-			expect(revoked!.status).toBe("revoked");
+			expect(revoked?.status).toBe("revoked");
 		});
 
 		it("rotates agent token", async () => {
@@ -215,8 +215,8 @@ describe("createKavach", () => {
 
 			const validated = await kavach.agent.validateToken(agent.token);
 			expect(validated).not.toBeNull();
-			expect(validated!.id).toBe(agent.id);
-			expect(validated!.permissions).toHaveLength(1);
+			expect(validated?.id).toBe(agent.id);
+			expect(validated?.permissions).toHaveLength(1);
 		});
 
 		it("rejects invalid token", async () => {

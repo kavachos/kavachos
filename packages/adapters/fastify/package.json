@@ -1,0 +1,41 @@
+{
+  "name": "@kavachos/fastify",
+  "version": "0.0.1",
+  "description": "Fastify adapter for KavachOS - exposes agent auth as HTTP REST endpoints",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "kavachos",
+    "fastify",
+    "auth",
+    "agent",
+    "mcp"
+  ],
+  "author": "KavachOS <hello@kavachos.com>",
+  "license": "MIT",
+  "peerDependencies": {
+    "@kavachos/core": "workspace:*",
+    "fastify": ">=4.0.0"
+  },
+  "devDependencies": {
+    "@kavachos/core": "workspace:*",
+    "@types/node": "^22.0.0",
+    "fastify": "^5.0.0",
+    "tsup": "^8.4.0",
+    "typescript": "^5.8.0"
+  }
+}

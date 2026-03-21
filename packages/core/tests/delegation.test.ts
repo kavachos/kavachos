@@ -135,8 +135,8 @@ describe("delegation chains", () => {
 
 		const effective = await kavach.delegation.getEffectivePermissions(child.id);
 		expect(effective).toHaveLength(1);
-		expect(effective[0]!.resource).toBe("mcp:github");
-		expect(effective[0]!.actions).toEqual(["read"]);
+		expect(effective[0]?.resource).toBe("mcp:github");
+		expect(effective[0]?.actions).toEqual(["read"]);
 	});
 
 	it("cascades revocation down the chain", async () => {

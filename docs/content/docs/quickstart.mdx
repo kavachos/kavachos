@@ -1,0 +1,180 @@
+---
+title: Quickstart
+description: Get KavachOS running in five minutes.
+---
+
+## Install
+
+```bash
+npm install @kavachos/core
+# or
+pnpm add @kavachos/core
+```
+
+## Create a KavachOS instance
+
+Pass a database config to `createKavach`. Use SQLite for local development and Postgres in production.
+
+```typescript
+import { createKavach } from '@kavachos/core';
+
+const kavach = createKavach({
+  database: { provider: 'sqlite', url: 'kavach.db' },
+  agents: {
+    enabled: true,
+    maxPerUser: 10,
+    auditAll: true,    // record every authorize() call
+    tokenExpiry: '24h',
+  },
+});
+```
+
+For an in-memory database (useful in tests), pass `url: ':memory:'`.
+
+## Create an agent
+
+An agent always has an owner — the ID of the human user from your existing auth system.
+
+```typescript
+const agent = await kavach.agent.create({
+  ownerId: 'user-123',          // from your auth provider
+  name: 'github-reader',
+  type: 'autonomous',
+  permissions: [
+    {
+      resource: 'mcp:github:*',
+      actions: ['read'],
+    },
+    {
+      resource: 'mcp:deploy:production',
+      actions: ['execute'],
+      constraints: {
+        requireApproval: true,   // human-in-the-loop gate
+        maxCallsPerHour: 5,
+      },
+    },
+  ],
+});
+
+// agent.token is a bearer token: "kv_..."
+// Store it securely — it is shown only once.
+console.log(agent.token);
+```
+
+Agent types:
+- `autonomous` — runs without human involvement by default
+- `delegated` — receives permissions from another agent via a delegation chain
+- `service` — long-lived service account identity
+
+## Authorize an action
+
+Call `kavach.authorize` before any sensitive operation. Pass the agent ID and what it is trying to do.
+
+```typescript
+const result = await kavach.authorize(agent.id, {
+  action: 'read',
+  resource: 'mcp:github:repos',
+});
+
+if (!result.allowed) {
+  throw new Error(`Denied: ${result.reason}`);
+}
+
+// result.auditId links this call to its audit log entry
+```
+
+If you only have the raw bearer token (for example, from an incoming HTTP request), use `authorizeByToken`:
+
+```typescript
+const result = await kavach.authorizeByToken(bearerToken, {
+  action: 'read',
+  resource: 'mcp:github:repos',
+});
+```
+
+## Check the audit trail
+
+```typescript
+const logs = await kavach.audit.query({ agentId: agent.id });
+
+// Filter to denied calls only
+const denied = await kavach.audit.query({
+  agentId: agent.id,
+  result: 'denied',
+});
+
+// Export as CSV for compliance tooling
+const csv = await kavach.audit.export({ format: 'csv' });
+```
+
+## Full working example
+
+The following is a self-contained script that covers all core features: agent creation, authorization, token-based auth, token rotation, delegation chains, and audit export.
+
+```typescript
+import { createKavach } from '@kavachos/core';
+
+const kavach = createKavach({
+  database: { provider: 'sqlite', url: ':memory:' },
+  agents: { enabled: true, maxPerUser: 10, auditAll: true, tokenExpiry: '24h' },
+});
+
+// Create an agent
+const agent = await kavach.agent.create({
+  ownerId: 'user-123',
+  name: 'github-reader',
+  type: 'autonomous',
+  permissions: [
+    { resource: 'mcp:github:*', actions: ['read'] },
+    { resource: 'mcp:github:issues', actions: ['read', 'comment'] },
+  ],
+});
+
+// Authorize by ID — allowed
+const r1 = await kavach.authorize(agent.id, {
+  action: 'read',
+  resource: 'mcp:github:repos',  // matched by mcp:github:*
+});
+console.log(r1.allowed);  // true
+
+// Authorize by ID — denied (no write permission)
+const r2 = await kavach.authorize(agent.id, {
+  action: 'write',
+  resource: 'mcp:github:repos',
+});
+console.log(r2.allowed);  // false
+
+// Authorize using the bearer token
+const r3 = await kavach.authorizeByToken(agent.token, {
+  action: 'read',
+  resource: 'mcp:github:issues',
+});
+console.log(r3.allowed);  // true
+
+// Rotate the token — the old one is immediately invalid
+const rotated = await kavach.agent.rotate(agent.id);
+console.log(rotated.token);  // new kv_... token
+
+// Delegate to a sub-agent
+const sub = await kavach.agent.create({
+  ownerId: 'user-123',
+  name: 'sub-reader',
+  type: 'delegated',
+  permissions: [],  // starts empty
+});
+
+await kavach.delegate({
+  fromAgent: agent.id,
+  toAgent: sub.id,
+  permissions: [{ resource: 'mcp:github:issues', actions: ['read'] }],
+  expiresAt: new Date(Date.now() + 3_600_000),
+  maxDepth: 2,
+});
+
+// Effective permissions include delegated ones
+const perms = await kavach.delegation.getEffectivePermissions(sub.id);
+console.log(perms);  // [{ resource: 'mcp:github:issues', actions: ['read'] }]
+
+// Export audit log
+const csv = await kavach.audit.export({ format: 'csv' });
+```

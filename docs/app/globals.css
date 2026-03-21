@@ -1,0 +1,114 @@
+@import "tailwindcss";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
+
+@source "../components/**/*.{ts,tsx}";
+@source "../node_modules/fumadocs-ui/dist/**/*.js";
+
+@custom-variant dark (&:is(.dark *));
+
+/* KavachOS brand tokens */
+:root {
+	--kavach-gold-bright: #f0d87a;
+	--kavach-gold-primary: #d4b65a;
+	--kavach-gold-mid: #c9a84c;
+	--kavach-gold-deep: #9a7b22;
+	--kavach-gold-shadow: #8b6914;
+	--kavach-gold-darkest: #6b4e0a;
+
+	--font-sans: var(--font-inter);
+	--font-mono: var(--font-jetbrains-mono);
+}
+
+/* Override fumadocs accent with gold */
+:root {
+	--fd-primary: oklch(0.7 0.12 85);
+	--fd-primary-foreground: oklch(0.15 0.02 85);
+}
+
+.dark {
+	--fd-primary: oklch(0.78 0.14 85);
+	--fd-primary-foreground: oklch(0.12 0.02 85);
+}
+
+/* Gold gradient utility */
+@layer utilities {
+	.gradient-gold {
+		background: linear-gradient(135deg, #c9a84c, #8b6914);
+	}
+
+	.gradient-gold-text {
+		background: linear-gradient(135deg, #f0d87a, #9a7b22);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		background-clip: text;
+	}
+
+	.gradient-gold-light {
+		background: linear-gradient(135deg, #f0d87a, #bfa042);
+	}
+
+	.bg-grid {
+		background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' width='32' height='32' fill='none' stroke='rgb(201 168 76 / 0.06)'%3e%3cpath d='m0 .5h32m-32 32v-32'/%3e%3c/svg%3e");
+	}
+}
+
+/* Smooth animations */
+@keyframes fade-up {
+	from {
+		opacity: 0;
+		transform: translateY(16px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes shimmer {
+	0% {
+		background-position: -200% 0;
+	}
+	100% {
+		background-position: 200% 0;
+	}
+}
+
+.animate-fade-up {
+	animation: fade-up 0.6s ease-out both;
+}
+
+.animate-fade-up-delay-1 {
+	animation: fade-up 0.6s ease-out 0.1s both;
+}
+
+.animate-fade-up-delay-2 {
+	animation: fade-up 0.6s ease-out 0.2s both;
+}
+
+.animate-fade-up-delay-3 {
+	animation: fade-up 0.6s ease-out 0.3s both;
+}
+
+.animate-shimmer {
+	animation: shimmer 3s linear infinite;
+	background-size: 200% 100%;
+}
+
+/* Scrollbar */
+* {
+	scrollbar-width: thin;
+	scrollbar-color: var(--kavach-gold-shadow) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.animate-fade-up,
+	.animate-fade-up-delay-1,
+	.animate-fade-up-delay-2,
+	.animate-fade-up-delay-3,
+	.animate-shimmer {
+		animation: none;
+		opacity: 1;
+		transform: none;
+	}
+}

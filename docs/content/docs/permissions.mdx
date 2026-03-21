@@ -1,0 +1,187 @@
+---
+title: Permission engine
+description: Resource pattern matching, actions, constraints, and permission templates.
+---
+
+## How permissions work
+
+A permission grants an agent the right to perform one or more actions on a resource. KavachOS evaluates permissions at call time by checking whether any of the agent's permissions match the requested resource and include the requested action.
+
+Each permission has three parts:
+
+```typescript
+interface Permission {
+  resource: string;
+  actions: string[];
+  constraints?: PermissionConstraints;
+}
+```
+
+## Resource pattern matching
+
+Resources follow a colon-separated hierarchy. A permission's `resource` field is matched against the resource in the authorization request using exact matches and wildcards.
+
+```
+mcp:github:repos        — exact match
+mcp:github:*            — matches any resource under mcp:github
+mcp:*                   — matches anything under mcp
+*                       — matches everything
+```
+
+Wildcards match exactly one segment. `mcp:github:*` matches `mcp:github:repos` and `mcp:github:issues`, but not `mcp:github:repos:comments` (that is two levels deeper).
+
+```typescript
+// This permission...
+{ resource: 'mcp:github:*', actions: ['read'] }
+
+// ...matches these resources:
+// mcp:github:repos         ✓
+// mcp:github:issues        ✓
+// mcp:github:pull_requests ✓
+
+// ...but NOT these:
+// mcp:github               ✗ (no wildcard segment)
+// mcp:slack:channels       ✗ (different namespace)
+```
+
+## Actions
+
+Actions describe what the agent can do to a resource. KavachOS does not enforce a fixed set of actions — you define the ones that make sense for your tools.
+
+Common actions used in MCP contexts:
+
+| Action | Typical use |
+|---|---|
+| `read` | Fetching data, listing resources |
+| `write` | Creating or modifying resources |
+| `execute` | Running tools, shell commands, deployments |
+| `delete` | Permanent removal of resources |
+
+An agent must have all of: a matching resource pattern, the requested action in that permission's `actions` array, and all constraints satisfied.
+
+```typescript
+// Grant read and comment on GitHub issues
+{
+  resource: 'mcp:github:issues',
+  actions: ['read', 'comment'],
+}
+```
+
+## Constraints
+
+Constraints add conditions to a permission. A permission with constraints is only granted when all conditions are met.
+
+```typescript
+interface PermissionConstraints {
+  maxCallsPerHour?: number;
+  allowedArgPatterns?: string[];
+  requireApproval?: boolean;
+  timeWindow?: { start: string; end: string };
+  ipAllowlist?: string[];
+}
+```
+
+### Rate limiting
+
+```typescript
+{
+  resource: 'mcp:deploy:staging',
+  actions: ['execute'],
+  constraints: {
+    maxCallsPerHour: 20,
+  },
+}
+```
+
+The rate counter resets at the start of each hour. Calls that exceed the limit return `result: 'rate_limited'` in the audit log and `allowed: false` with reason `RATE_LIMIT_EXCEEDED`.
+
+### Argument pattern matching
+
+Restrict what arguments an agent can pass to a tool:
+
+```typescript
+{
+  resource: 'tool:file_write',
+  actions: ['execute'],
+  constraints: {
+    allowedArgPatterns: ['/home/agent/**', '/tmp/**'],
+  },
+}
+```
+
+Patterns are glob-style. If the `arguments` field in an authorization request does not match any allowed pattern, the call is denied.
+
+### Human-in-the-loop
+
+```typescript
+{
+  resource: 'mcp:deploy:production',
+  actions: ['execute'],
+  constraints: {
+    requireApproval: true,
+  },
+}
+```
+
+When `requireApproval` is `true`, the permission is not granted automatically. The call is logged with `result: 'denied'` and reason `APPROVAL_REQUIRED`. Your application must implement the approval UI and re-authorize after approval is granted.
+
+### Time windows
+
+Restrict actions to a specific time range (24-hour format, UTC):
+
+```typescript
+{
+  resource: 'mcp:github:*',
+  actions: ['read', 'write'],
+  constraints: {
+    timeWindow: { start: '08:00', end: '18:00' },
+  },
+}
+```
+
+### IP allowlist
+
+```typescript
+{
+  resource: 'mcp:internal:*',
+  actions: ['read', 'write', 'execute'],
+  constraints: {
+    ipAllowlist: ['10.0.0.0/8', '172.16.0.0/12'],
+  },
+}
+```
+
+## Permission templates
+
+KavachOS ships with named templates for common patterns:
+
+```typescript
+import { permissionTemplates } from '@kavachos/core';
+
+// Read-only access to all MCP tools
+const agent = await kavach.agent.create({
+  ownerId: 'user-123',
+  name: 'readonly-agent',
+  type: 'autonomous',
+  permissions: permissionTemplates.readonly,
+});
+```
+
+Available templates:
+
+| Template | Description |
+|---|---|
+| `readonly` | `read` on `*` |
+| `admin` | `read`, `write`, `execute`, `delete` on `*` |
+| `mcpBasic` | `read` and `execute` on `mcp:*` |
+| `mcpGithub` | `read` and `comment` on `mcp:github:*` |
+| `mcpDeploy` | `execute` on `mcp:deploy:staging`, approval required on `mcp:deploy:production` |
+
+Templates are plain arrays of `Permission` objects — you can spread and extend them:
+
+```typescript
+permissions: [
+  ...permissionTemplates.mcpBasic,
+  { resource: 'tool:custom_tool', actions: ['execute'] },
+]
+```

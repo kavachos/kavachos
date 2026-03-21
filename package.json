@@ -19,10 +19,14 @@
     "test:watch": "turbo test:watch",
     "coverage": "turbo coverage",
     "lint:deps": "knip --strict",
-    "prepare": "simple-git-hooks"
+    "prepare": "simple-git-hooks",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "turbo build && changeset publish"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.0.0",
+    "@changesets/cli": "^2.30.0",
     "knip": "^5.0.0",
     "simple-git-hooks": "^2.11.0",
     "turbo": "^2.5.0",

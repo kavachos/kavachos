@@ -551,11 +551,11 @@ export function kavachHono(kavach: Kavach, options?: { mcp?: McpAuthModule }): H
 	// ── MCP OAuth 2.1 Endpoints ─────────────────────────────────────
 
 	// OPTIONS preflight for MCP routes
-	app.options("/mcp/*", (c) => {
+	app.options("/mcp/*", (_c) => {
 		return new Response(null, { status: 204, headers: MCP_CORS_HEADERS });
 	});
 
-	app.options("/.well-known/*", (c) => {
+	app.options("/.well-known/*", (_c) => {
 		return new Response(null, { status: 204, headers: MCP_CORS_HEADERS });
 	});
 

@@ -1,0 +1,32 @@
+{
+  "name": "@kavachos/cli",
+  "version": "0.0.1",
+  "description": "KavachOS CLI - setup wizard, dashboard launcher, and development tools",
+  "type": "module",
+  "bin": {
+    "kavachos": "./dist/bin.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@kavachos/core": "workspace:*"
+  },
+  "devDependencies": {
+    "tsup": "^8.4.0",
+    "typescript": "^5.8.0"
+  },
+  "keywords": [
+    "kavachos",
+    "auth",
+    "agent",
+    "cli"
+  ],
+  "author": "KavachOS <hello@kavachos.com>",
+  "license": "MIT"
+}

@@ -1,0 +1,165 @@
+---
+title: Framework adapters
+description: Drop-in middleware for Hono, Express, Next.js, and other Node.js frameworks.
+---
+
+## How adapters work
+
+The `@kavachos/core` package has zero framework dependencies. It works with the Web platform `Request`/`Response` API. Adapter packages wrap the core and expose framework-idiomatic middleware for authentication, authorization, and MCP auth.
+
+Install only the adapter you need:
+
+```bash
+npm install @kavachos/hono
+npm install @kavachos/express
+npm install @kavachos/nextjs
+```
+
+## Hono adapter
+
+```typescript
+import { Hono } from 'hono';
+import { createKavach } from '@kavachos/core';
+import { createHonoAdapter } from '@kavachos/hono';
+
+const kavach = createKavach({
+  database: { provider: 'sqlite', url: 'kavach.db' },
+  baseUrl: 'https://auth.yourapp.com',
+});
+
+const { withMcpAuth, kavachRouter } = createHonoAdapter(kavach);
+
+const app = new Hono();
+
+// Mount the OAuth server routes (authorize, token, register, etc.)
+app.route('/oauth', kavachRouter());
+
+// Protect MCP routes with token validation
+app.use('/mcp/*', withMcpAuth());
+
+app.get('/mcp/tools/list', (c) => {
+  const agent = c.get('agent');
+  return c.json({
+    tools: [{ name: 'list_repos', description: 'List GitHub repositories' }],
+  });
+});
+
+export default app;
+```
+
+## Express adapter
+
+```typescript
+import express from 'express';
+import { createKavach } from '@kavachos/core';
+import { createExpressAdapter } from '@kavachos/express';
+
+const kavach = createKavach({
+  database: { provider: 'postgres', url: process.env.DATABASE_URL! },
+  baseUrl: process.env.AUTH_BASE_URL!,
+});
+
+const { withMcpAuth, kavachRouter } = createExpressAdapter(kavach);
+
+const app = express();
+app.use(express.json());
+
+// Mount OAuth endpoints
+app.use('/oauth', kavachRouter());
+
+// Protect your MCP routes
+app.use('/mcp', withMcpAuth());
+
+app.get('/mcp/tools/list', (req, res) => {
+  const { agent } = req as typeof req & { agent: AgentIdentity };
+  res.json({ tools: [] });
+});
+
+app.listen(3000);
+```
+
+## Next.js adapter
+
+The Next.js adapter works with the App Router and Route Handlers.
+
+```typescript
+// app/oauth/[...path]/route.ts
+import { createKavach } from '@kavachos/core';
+import { createNextjsAdapter } from '@kavachos/nextjs';
+
+const kavach = createKavach({
+  database: { provider: 'postgres', url: process.env.DATABASE_URL! },
+  baseUrl: process.env.AUTH_BASE_URL!,
+});
+
+const { handleOAuth } = createNextjsAdapter(kavach);
+
+export const GET = handleOAuth;
+export const POST = handleOAuth;
+```
+
+```typescript
+// app/mcp/tools/route.ts
+import { createKavach } from '@kavachos/core';
+import { createNextjsAdapter } from '@kavachos/nextjs';
+import { NextRequest } from 'next/server';
+
+const kavach = createKavach({ database: { provider: 'postgres', url: process.env.DATABASE_URL! } });
+const { withMcpAuth } = createNextjsAdapter(kavach);
+
+export const GET = withMcpAuth(async (req: NextRequest, { agent }) => {
+  return Response.json({ tools: [] });
+});
+```
+
+For middleware-level protection across all MCP routes, use `middleware.ts`:
+
+```typescript
+// middleware.ts
+import { createKavach } from '@kavachos/core';
+import { createNextjsAdapter } from '@kavachos/nextjs';
+import type { NextRequest } from 'next/server';
+
+const kavach = createKavach({ database: { provider: 'postgres', url: process.env.DATABASE_URL! } });
+const { mcpAuthMiddleware } = createNextjsAdapter(kavach);
+
+export function middleware(req: NextRequest) {
+  if (req.nextUrl.pathname.startsWith('/mcp')) {
+    return mcpAuthMiddleware(req);
+  }
+}
+```
+
+## Using with any framework
+
+If your framework is not listed, use the core `McpModule` directly. It works with any framework that handles standard `Request` objects:
+
+```typescript
+const kavach = createKavach({ ... });
+const mcpMiddleware = kavach.mcp.middleware();
+
+// In your request handler:
+async function handler(request: Request): Promise<Response> {
+  const authResponse = await mcpMiddleware(request);
+  if (authResponse) return authResponse;  // 401 or 403 response
+
+  // Request passed auth — proceed
+  return new Response(JSON.stringify({ tools: [] }), {
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+```
+
+The middleware returns `undefined` when the request is authorized, so your handler can continue. It returns a `Response` (401 or 403) when authorization fails.
+
+## Available adapters
+
+| Package | Framework | Status |
+|---|---|---|
+| `@kavachos/hono` | Hono | Available |
+| `@kavachos/express` | Express | Available |
+| `@kavachos/nextjs` | Next.js App Router | Available |
+| `@kavachos/fastify` | Fastify | Available |
+| `@kavachos/nuxt` | Nuxt | Available |
+| `@kavachos/sveltekit` | SvelteKit | Available |
+| `@kavachos/astro` | Astro | Available |

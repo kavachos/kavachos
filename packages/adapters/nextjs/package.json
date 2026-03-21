@@ -1,0 +1,40 @@
+{
+  "name": "@kavachos/nextjs",
+  "version": "0.0.1",
+  "description": "Next.js App Router adapter for KavachOS - exposes agent auth as HTTP REST endpoints",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "kavachos",
+    "nextjs",
+    "auth",
+    "agent",
+    "mcp"
+  ],
+  "author": "KavachOS <hello@kavachos.com>",
+  "license": "MIT",
+  "peerDependencies": {
+    "@kavachos/core": "workspace:*",
+    "next": ">=14.0.0"
+  },
+  "devDependencies": {
+    "@kavachos/core": "workspace:*",
+    "next": "^15.0.0",
+    "tsup": "^8.4.0",
+    "typescript": "^5.8.0"
+  }
+}

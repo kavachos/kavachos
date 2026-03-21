@@ -1,0 +1,162 @@
+---
+title: MCP OAuth 2.1
+description: Setting up the KavachOS authorization server for the Model Context Protocol.
+---
+
+## What is MCP auth
+
+The Model Context Protocol (MCP) specification defines how AI clients connect to tool servers. The 2025-03 revision added an auth layer: MCP servers can now require OAuth 2.1 tokens before accepting tool calls.
+
+KavachOS implements the full MCP auth stack:
+
+- OAuth 2.1 with PKCE (S256 code challenge method)
+- Protected Resource Metadata — RFC 9728
+- Authorization Server Metadata — RFC 8414
+- Resource Indicators — RFC 8707
+- Dynamic Client Registration — RFC 7591
+
+## Setting up the OAuth server
+
+```typescript
+import { createKavach } from '@kavachos/core';
+
+const kavach = createKavach({
+  database: { provider: 'sqlite', url: 'kavach.db' },
+  baseUrl: 'https://auth.yourapp.com',
+  mcp: {
+    issuer: 'https://auth.yourapp.com',
+    audience: 'https://mcp.yourapp.com',
+    accessTokenTtl: 3600,    // seconds
+    refreshTokenTtl: 86400,
+  },
+});
+```
+
+Then mount the MCP auth router on your HTTP server. The exact mounting approach depends on your framework — see [Framework adapters](/docs/adapters).
+
+## Well-known endpoints
+
+Once mounted, KavachOS serves the standard discovery endpoints:
+
+| Endpoint | RFC | Description |
+|---|---|---|
+| `GET /.well-known/oauth-authorization-server` | RFC 8414 | Authorization server metadata |
+| `GET /.well-known/oauth-protected-resource` | RFC 9728 | Protected resource metadata |
+| `POST /oauth/register` | RFC 7591 | Dynamic client registration |
+| `GET /oauth/authorize` | OAuth 2.1 | Authorization endpoint |
+| `POST /oauth/token` | OAuth 2.1 | Token endpoint |
+| `POST /oauth/revoke` | RFC 7009 | Token revocation |
+| `GET /oauth/userinfo` | OIDC | Agent/user identity |
+
+## Protected Resource Metadata (RFC 9728)
+
+When an MCP client first contacts a protected resource, it fetches the protected resource metadata to discover the authorization server:
+
+```json
+{
+  "resource": "https://mcp.yourapp.com",
+  "authorization_servers": ["https://auth.yourapp.com"],
+  "bearer_methods_supported": ["header"],
+  "scopes_supported": ["mcp:read", "mcp:execute"]
+}
+```
+
+KavachOS generates this document automatically based on your `mcp` config.
+
+## Authorization Server Metadata (RFC 8414)
+
+```json
+{
+  "issuer": "https://auth.yourapp.com",
+  "authorization_endpoint": "https://auth.yourapp.com/oauth/authorize",
+  "token_endpoint": "https://auth.yourapp.com/oauth/token",
+  "registration_endpoint": "https://auth.yourapp.com/oauth/register",
+  "code_challenge_methods_supported": ["S256"],
+  "grant_types_supported": ["authorization_code", "refresh_token"],
+  "response_types_supported": ["code"]
+}
+```
+
+## PKCE flow (S256)
+
+The authorization code flow with PKCE prevents authorization code interception. KavachOS only accepts `S256` — plain PKCE is not supported.
+
+1. Client generates a random `code_verifier` (43–128 chars)
+2. Client computes `code_challenge = base64url(sha256(code_verifier))`
+3. Client redirects user to `/oauth/authorize?code_challenge=...&code_challenge_method=S256&...`
+4. User authenticates and approves
+5. Server issues an authorization code
+6. Client exchanges the code for tokens at `/oauth/token`, including `code_verifier`
+7. Server verifies: `base64url(sha256(code_verifier)) === stored code_challenge`
+
+```typescript
+// Client-side PKCE helper (example)
+const codeVerifier = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
+const encoder = new TextEncoder();
+const data = encoder.encode(codeVerifier);
+const digest = await crypto.subtle.digest('SHA-256', data);
+const codeChallenge = btoa(String.fromCharCode(...new Uint8Array(digest)))
+  .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+const authUrl = new URL('https://auth.yourapp.com/oauth/authorize');
+authUrl.searchParams.set('response_type', 'code');
+authUrl.searchParams.set('client_id', clientId);
+authUrl.searchParams.set('redirect_uri', redirectUri);
+authUrl.searchParams.set('code_challenge', codeChallenge);
+authUrl.searchParams.set('code_challenge_method', 'S256');
+authUrl.searchParams.set('scope', 'mcp:read mcp:execute');
+```
+
+## Token validation
+
+Validate an MCP access token before processing a tool call:
+
+```typescript
+const result = await kavach.mcp.validate(token);
+
+if (!result.valid) {
+  return new Response('Unauthorized', { status: 401 });
+}
+
+// result.agentId — the agent making the call
+// result.userId  — the human owner
+// result.scopes  — granted scopes
+// result.expiresAt — token expiry
+```
+
+## `withMcpAuth` middleware
+
+The `withMcpAuth` middleware handles token extraction, validation, and request enrichment in one step. See [Framework adapters](/docs/adapters) for framework-specific mounting.
+
+```typescript
+// With Hono
+import { createHonoAdapter } from '@kavachos/hono';
+
+const { withMcpAuth } = createHonoAdapter(kavach);
+
+app.use('/mcp/*', withMcpAuth());
+
+app.get('/mcp/tools/list', (c) => {
+  const agent = c.get('agent');   // AgentIdentity, set by middleware
+  const user = c.get('user');     // { id, ... }
+  return c.json({ tools: [] });
+});
+```
+
+The middleware returns 401 if no token is present or the token is invalid, and 403 if the token is valid but the agent does not have the required scope.
+
+## Registering MCP servers
+
+```typescript
+const server = await kavach.mcp.register({
+  name: 'github-mcp',
+  endpoint: 'https://mcp.yourapp.com/github',
+  tools: ['list_repos', 'get_issue', 'create_comment'],
+  authRequired: true,
+  rateLimit: { rpm: 60 },
+});
+
+console.log(server.id);  // mcp_...
+```
+
+Registered servers appear in the protected resource metadata and can be referenced in permission resources (`mcp:github-mcp:list_repos`).

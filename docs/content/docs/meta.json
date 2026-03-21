@@ -1,0 +1,14 @@
+{
+  "title": "KavachOS",
+  "pages": [
+    "index",
+    "quickstart",
+    "agents",
+    "permissions",
+    "delegation",
+    "audit",
+    "mcp",
+    "adapters",
+    "dashboard"
+  ]
+}

@@ -1,0 +1,105 @@
+---
+title: Admin dashboard
+description: An embeddable React dashboard for managing agents, permissions, and audit logs.
+---
+
+## Overview
+
+The KavachOS admin dashboard gives you a visual interface for everything the SDK manages programmatically: creating and revoking agents, reviewing audit logs, inspecting delegation chains, and monitoring permission usage.
+
+It ships as two things:
+
+1. A React component (`@kavachos/dashboard`) you can embed in an existing app
+2. A standalone server you can run without any existing frontend
+
+## Embedding in a React app
+
+Install the package:
+
+```bash
+npm install @kavachos/dashboard
+```
+
+Render the dashboard component, passing a `kavach` instance or an API base URL:
+
+```tsx
+import { KavachDashboard } from '@kavachos/dashboard';
+
+export default function AdminPage() {
+  return (
+    <KavachDashboard
+      apiUrl="/api/kavach"     // your backend proxy
+      theme="light"            // "light" | "dark" | "system"
+    />
+  );
+}
+```
+
+The dashboard makes requests to your backend, which proxies them to the KavachOS API. This keeps your database credentials server-side.
+
+### Backend proxy (Next.js example)
+
+```typescript
+// app/api/kavach/[...path]/route.ts
+import { createKavach } from '@kavachos/core';
+import { createNextjsAdapter } from '@kavachos/nextjs';
+
+const kavach = createKavach({
+  database: { provider: 'postgres', url: process.env.DATABASE_URL! },
+});
+
+const { dashboardHandler } = createNextjsAdapter(kavach);
+
+export const GET = dashboardHandler;
+export const POST = dashboardHandler;
+export const DELETE = dashboardHandler;
+```
+
+## Standalone mode
+
+If you do not have an existing frontend, run the dashboard as a standalone server:
+
+```bash
+npx kavachos dashboard --database sqlite://kavach.db --port 3001
+```
+
+Or with Postgres:
+
+```bash
+npx kavachos dashboard \
+  --database postgres://user:pass@localhost:5432/kavach \
+  --port 3001 \
+  --secret your-signing-secret
+```
+
+Open `http://localhost:3001` to access the dashboard. The standalone server creates a temporary admin session — do not expose it to the internet without adding your own access control in front.
+
+## Dashboard pages
+
+**Agents** — lists all agents across all users. Filter by owner, type, and status. Create new agents, rotate tokens, and revoke agents from this page.
+
+**Permissions** — view and edit the permission set for any agent. Each permission row shows the resource pattern, allowed actions, and any active constraints. The wildcard preview shows which resources a pattern currently matches against your registered MCP servers.
+
+**Delegation chains** — a tree view of all active delegation chains. Click any node to see the full chain from root to leaf, including expiry and depth. Revoke individual chains from this view.
+
+**Audit log** — a paginated table of authorization decisions. Filter by agent, user, resource, action, and result. Click any row to expand the full entry including parameters and duration. Export the current filter as CSV or JSON.
+
+**MCP servers** — lists registered MCP servers with their endpoints, tools, and auth requirements. Register new servers and view token validation activity.
+
+## Access control for the dashboard
+
+The dashboard itself does not enforce authentication — that is your application's responsibility. Wrap the dashboard route with your existing auth check:
+
+```tsx
+// Next.js example with an auth guard
+import { redirect } from 'next/navigation';
+import { getSession } from '@/lib/auth';
+import { KavachDashboard } from '@kavachos/dashboard';
+
+export default async function AdminPage() {
+  const session = await getSession();
+  if (!session?.user.isAdmin) redirect('/');
+
+  return <KavachDashboard apiUrl="/api/kavach" />;
+}
+```
