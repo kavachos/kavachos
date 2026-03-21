@@ -8,6 +8,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "framer-motion": "^12.38.0",
     "fumadocs-core": "^16.0.0",
     "fumadocs-mdx": "^14.0.0",
     "fumadocs-ui": "^16.0.0",

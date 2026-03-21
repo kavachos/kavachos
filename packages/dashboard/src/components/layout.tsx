@@ -1,4 +1,12 @@
-import { Activity, Bot, ChevronRight, ScrollText, Settings, ShieldCheck } from "lucide-react";
+import {
+	Activity,
+	Bot,
+	ChevronRight,
+	LayoutDashboard,
+	ScrollText,
+	Settings,
+	ShieldCheck,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import type { Page } from "../types.js";
 
@@ -25,6 +33,12 @@ interface LayoutProps {
 // ─── Nav Config ───────────────────────────────────────────────────────────────
 
 const NAV_ITEMS: NavItem[] = [
+	{
+		id: "overview",
+		label: "Overview",
+		icon: LayoutDashboard,
+		description: "System overview",
+	},
 	{
 		id: "agents",
 		label: "Agents",

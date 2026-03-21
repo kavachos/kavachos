@@ -1,9 +1,9 @@
 import { FileText, GitBranch, Key, Server, Shield, Zap, ArrowRight, Terminal } from "lucide-react";
 import Link from "next/link";
-import { CodePreview } from "@/components/code-preview";
 import { ComparisonTable } from "@/components/comparison-table";
 import { FeatureCard } from "@/components/feature-card";
 import { Footer } from "@/components/footer";
+import { HeroPanel } from "@/components/hero-panel";
 
 export default function HomePage() {
 	return (
@@ -55,16 +55,16 @@ export default function HomePage() {
 							<div className="animate-fade-up-delay-3 mt-5">
 								<code className="inline-flex items-center gap-2 rounded-md border border-fd-border bg-fd-card px-3 py-1.5 font-mono text-xs text-fd-muted-foreground">
 									<Terminal className="h-3 w-3 text-[var(--kavach-gold-deep)] dark:text-[var(--kavach-gold-primary)]" />
-									pnpm add @kavachos/core
+									pnpm add kavachos
 								</code>
 							</div>
 						</div>
 					</div>
 
-					{/* Right — code preview */}
-					<div className="flex w-full items-center justify-center px-6 py-12 lg:w-[55%] lg:px-12">
-						<div className="w-full max-w-2xl">
-							<CodePreview />
+					{/* Right — tabbed panel */}
+					<div className="flex w-full items-center justify-center px-6 py-8 lg:w-[55%] lg:px-8">
+						<div className="w-full max-w-2xl rounded-lg border border-fd-border bg-fd-card/50 backdrop-blur-sm">
+							<HeroPanel />
 						</div>
 					</div>
 				</div>

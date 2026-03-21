@@ -6,6 +6,7 @@ import type {
 	CreateAgentInput,
 	CreateAgentResponse,
 	CreatePermissionTemplateInput,
+	DashboardStats,
 	KavachSettings,
 	PaginatedAuditLogs,
 	PermissionTemplate,
@@ -14,6 +15,8 @@ import type {
 // ─── Client Factory ───────────────────────────────────────────────────────────
 
 export interface KavachApiClient {
+	getStats: () => Promise<ApiResult<DashboardStats>>;
+
 	getAgents: () => Promise<ApiResult<Agent[]>>;
 	createAgent: (input: CreateAgentInput) => Promise<ApiResult<CreateAgentResponse>>;
 	revokeAgent: (agentId: string) => Promise<ApiResult<{ success: boolean }>>;
@@ -90,6 +93,9 @@ export function createApiClient(apiUrl: string): KavachApiClient {
 	const fetch = <T>(path: string, options?: RequestInit) => apiFetch<T>(apiUrl, path, options);
 
 	return {
+		// Dashboard Stats
+		getStats: () => fetch<DashboardStats>("/api/dashboard/stats"),
+
 		// Agents
 		getAgents: () => fetch<Agent[]>("/api/agents"),
 

@@ -5,7 +5,7 @@ description: KavachOS is an auth OS for AI agents — identity, permissions, del
 
 ## What is KavachOS
 
-KavachOS gives every AI agent a cryptographic identity, enforces least-privilege access control, and maintains an immutable record of everything it does. It ships as a TypeScript SDK (`@kavachos/core`) with zero framework dependencies in the core, plus drop-in adapters for Hono, Express, Next.js, and others.
+KavachOS gives every AI agent a cryptographic identity, enforces least-privilege access control, and maintains an immutable record of everything it does. It ships as a TypeScript SDK (`kavachos`) with zero framework dependencies in the core, plus drop-in adapters for Hono, Express, Next.js, and others.
 
 The central primitive is an `AgentIdentity`, not a user session. Agents are first-class entities with their own tokens, permission sets, and audit trails. Human users own agents, but the auth model is built around agents from the ground up — not bolted on top of an existing human-auth library.
 

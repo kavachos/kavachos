@@ -1,0 +1,44 @@
+{
+  "name": "@kavachos/nuxt",
+  "version": "0.0.1",
+  "description": "Nuxt adapter for KavachOS - exposes agent auth as HTTP REST endpoints via H3",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "kavachos",
+    "nuxt",
+    "h3",
+    "auth",
+    "agent",
+    "mcp"
+  ],
+  "author": "KavachOS <hello@kavachos.com>",
+  "license": "MIT",
+  "peerDependencies": {
+    "kavachos": "workspace:*",
+    "nuxt": ">=3.0.0",
+    "zod": ">=3.0.0"
+  },
+  "devDependencies": {
+    "kavachos": "workspace:*",
+    "h3": "^1.13.0",
+    "nuxt": "^3.16.0",
+    "tsup": "^8.4.0",
+    "typescript": "^5.8.0",
+    "zod": "^3.24.0"
+  }
+}

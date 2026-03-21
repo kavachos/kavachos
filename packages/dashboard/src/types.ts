@@ -1,4 +1,4 @@
-export type Page = "agents" | "permissions" | "audit" | "settings";
+export type Page = "overview" | "agents" | "permissions" | "audit" | "settings";
 
 export type Theme = "light" | "dark";
 

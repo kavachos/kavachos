@@ -8,7 +8,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@kavachos/core": "workspace:*",
+    "kavachos": "workspace:*",
     "drizzle-orm": "^0.41.0",
     "better-sqlite3": "^11.0.0"
   },

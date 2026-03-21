@@ -10,10 +10,10 @@
 //   curl http://localhost:3000/api/audit
 
 import { serve } from "@hono/node-server";
-import { createKavach, users } from "@kavachos/core";
 import { kavachHono } from "@kavachos/hono";
 import { sql } from "drizzle-orm";
 import { Hono } from "hono";
+import { createKavach, users } from "kavachos";
 
 const PORT = 3000;
 

@@ -28,12 +28,12 @@
   "author": "KavachOS <hello@kavachos.com>",
   "license": "MIT",
   "peerDependencies": {
-    "@kavachos/core": "workspace:*",
+    "kavachos": "workspace:*",
     "next": ">=14.0.0",
     "zod": ">=3.0.0"
   },
   "devDependencies": {
-    "@kavachos/core": "workspace:*",
+    "kavachos": "workspace:*",
     "next": "^15.0.0",
     "tsup": "^8.4.0",
     "typescript": "^5.8.0",

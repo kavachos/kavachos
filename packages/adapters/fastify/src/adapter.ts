@@ -1,3 +1,4 @@
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type {
 	AgentFilter,
 	AuditFilter,
@@ -6,9 +7,8 @@ import type {
 	Kavach,
 	Permission,
 	UpdateAgentInput,
-} from "@kavachos/core";
-import type { McpAuthModule } from "@kavachos/core/mcp";
-import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+} from "kavachos";
+import type { McpAuthModule } from "kavachos/mcp";
 import { z } from "zod";
 
 // ─── Zod Validation Schemas ──────────────────────────────────────────────────
@@ -213,7 +213,7 @@ export interface KavachFastifyOptions {
  * @example
  * ```typescript
  * import Fastify from 'fastify';
- * import { createKavach } from '@kavachos/core';
+ * import { createKavach } from 'kavachos';
  * import { kavachFastify } from '@kavachos/fastify';
  *
  * const app = Fastify();
@@ -225,7 +225,7 @@ export interface KavachFastifyOptions {
  *
  * With MCP OAuth 2.1:
  * ```typescript
- * import { createMcpModule } from '@kavachos/core/mcp';
+ * import { createMcpModule } from 'kavachos/mcp';
  * const mcp = createMcpModule({ ... });
  * await app.register(kavachFastify(kavach, { mcp }), { prefix: '/api/kavach' });
  * ```

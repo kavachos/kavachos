@@ -5,7 +5,7 @@ description: Drop-in middleware for Hono, Express, Next.js, and other Node.js fr
 
 ## How adapters work
 
-The `@kavachos/core` package has zero framework dependencies. It works with the Web platform `Request`/`Response` API. Adapter packages wrap the core and expose framework-idiomatic middleware for authentication, authorization, and MCP auth.
+The `kavachos` package has zero framework dependencies. It works with the Web platform `Request`/`Response` API. Adapter packages wrap the core and expose framework-idiomatic middleware for authentication, authorization, and MCP auth.
 
 Install only the adapter you need:
 
@@ -19,7 +19,7 @@ npm install @kavachos/nextjs
 
 ```typescript
 import { Hono } from 'hono';
-import { createKavach } from '@kavachos/core';
+import { createKavach } from 'kavachos';
 import { createHonoAdapter } from '@kavachos/hono';
 
 const kavach = createKavach({
@@ -51,7 +51,7 @@ export default app;
 
 ```typescript
 import express from 'express';
-import { createKavach } from '@kavachos/core';
+import { createKavach } from 'kavachos';
 import { createExpressAdapter } from '@kavachos/express';
 
 const kavach = createKavach({
@@ -84,7 +84,7 @@ The Next.js adapter works with the App Router and Route Handlers.
 
 ```typescript
 // app/oauth/[...path]/route.ts
-import { createKavach } from '@kavachos/core';
+import { createKavach } from 'kavachos';
 import { createNextjsAdapter } from '@kavachos/nextjs';
 
 const kavach = createKavach({
@@ -100,7 +100,7 @@ export const POST = handleOAuth;
 
 ```typescript
 // app/mcp/tools/route.ts
-import { createKavach } from '@kavachos/core';
+import { createKavach } from 'kavachos';
 import { createNextjsAdapter } from '@kavachos/nextjs';
 import { NextRequest } from 'next/server';
 
@@ -116,7 +116,7 @@ For middleware-level protection across all MCP routes, use `middleware.ts`:
 
 ```typescript
 // middleware.ts
-import { createKavach } from '@kavachos/core';
+import { createKavach } from 'kavachos';
 import { createNextjsAdapter } from '@kavachos/nextjs';
 import type { NextRequest } from 'next/server';
 

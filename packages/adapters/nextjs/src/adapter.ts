@@ -6,8 +6,8 @@ import type {
 	Kavach,
 	Permission,
 	UpdateAgentInput,
-} from "@kavachos/core";
-import type { McpAuthModule } from "@kavachos/core/mcp";
+} from "kavachos";
+import type { McpAuthModule } from "kavachos/mcp";
 import { z } from "zod";
 
 // ─── Zod Validation Schemas ──────────────────────────────────────────────────
@@ -719,7 +719,7 @@ export interface KavachNextjsHandlers {
  *
  * @example
  * ```typescript
- * import { createKavach } from '@kavachos/core';
+ * import { createKavach } from 'kavachos';
  * import { kavachNextjs } from '@kavachos/nextjs';
  *
  * const kavach = createKavach({ database: { provider: 'sqlite', url: 'kavach.db' } });
@@ -734,7 +734,7 @@ export interface KavachNextjsHandlers {
  *
  * With MCP OAuth 2.1:
  * ```typescript
- * import { createMcpModule } from '@kavachos/core/mcp';
+ * import { createMcpModule } from 'kavachos/mcp';
  * const mcp = createMcpModule({ ... });
  * const handlers = kavachNextjs(kavach, { mcp });
  * ```

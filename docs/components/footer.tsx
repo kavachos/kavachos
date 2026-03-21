@@ -30,7 +30,7 @@ export function Footer() {
 							GitHub
 						</Link>
 						<Link
-							href="https://www.npmjs.com/package/@kavachos/core"
+							href="https://www.npmjs.com/package/kavachos"
 							className="text-xs text-fd-muted-foreground transition-colors hover:text-fd-foreground"
 							target="_blank"
 							rel="noopener noreferrer"

@@ -4,6 +4,7 @@ import { createApiClient } from "./api/client.js";
 import { Layout } from "./components/layout.js";
 import { AgentsPage } from "./pages/agents.js";
 import { AuditPage } from "./pages/audit.js";
+import { OverviewPage } from "./pages/overview.js";
 import { PermissionsPage } from "./pages/permissions.js";
 import { SettingsPage } from "./pages/settings.js";
 import type { DashboardProps, Page } from "./types.js";
@@ -27,11 +28,13 @@ interface InnerDashboardProps {
 }
 
 function InnerDashboard({ apiUrl }: InnerDashboardProps) {
-	const [currentPage, setCurrentPage] = useState<Page>("agents");
+	const [currentPage, setCurrentPage] = useState<Page>("overview");
 	const client = useMemo(() => createApiClient(apiUrl), [apiUrl]);
 
 	function renderPage() {
 		switch (currentPage) {
+			case "overview":
+				return <OverviewPage client={client} onNavigate={setCurrentPage} />;
 			case "agents":
 				return <AgentsPage client={client} />;
 			case "audit":

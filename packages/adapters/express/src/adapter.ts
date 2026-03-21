@@ -1,3 +1,5 @@
+import type { Request, Response } from "express";
+import { Router } from "express";
 import type {
 	AgentFilter,
 	AuditFilter,
@@ -6,10 +8,8 @@ import type {
 	Kavach,
 	Permission,
 	UpdateAgentInput,
-} from "@kavachos/core";
-import type { McpAuthModule } from "@kavachos/core/mcp";
-import type { Request, Response } from "express";
-import { Router } from "express";
+} from "kavachos";
+import type { McpAuthModule } from "kavachos/mcp";
 import { z } from "zod";
 
 // ─── Zod Validation Schemas ──────────────────────────────────────────────────
@@ -191,7 +191,7 @@ function buildWebRequest(req: Request): Request {
  * @example
  * ```typescript
  * import express from 'express';
- * import { createKavach } from '@kavachos/core';
+ * import { createKavach } from 'kavachos';
  * import { kavachExpress } from '@kavachos/express';
  *
  * const app = express();
@@ -206,7 +206,7 @@ function buildWebRequest(req: Request): Request {
  *
  * With MCP OAuth 2.1:
  * ```typescript
- * import { createMcpModule } from '@kavachos/core/mcp';
+ * import { createMcpModule } from 'kavachos/mcp';
  * const mcp = createMcpModule({ ... });
  * app.use('/auth', kavachExpress(kavach, { mcp }));
  * ```

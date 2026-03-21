@@ -11,7 +11,7 @@ export function CodePreview() {
 			<pre className="overflow-x-auto p-4 text-sm leading-relaxed">
 				<code className="font-mono">
 					<Line n={1}>
-						<Kw>import</Kw> {"{ createKavach }"} <Kw>from</Kw> <Str>&apos;@kavachos/core&apos;</Str>
+						<Kw>import</Kw> {"{ createKavach }"} <Kw>from</Kw> <Str>&apos;kavachos&apos;</Str>
 						;
 					</Line>
 					<Line n={2} />

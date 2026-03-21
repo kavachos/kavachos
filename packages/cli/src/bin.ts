@@ -1,4 +1,5 @@
 import { argv, exit, stdout } from "node:process";
+import { startDashboardServer } from "./dashboard-server.js";
 
 const VERSION = "0.0.1";
 
@@ -38,9 +39,9 @@ async function handleInit(): Promise<void> {
 	stdout.write("\nKavachOS Project Setup\n");
 	stdout.write("=====================\n\n");
 	stdout.write("1. Install the core package:\n");
-	stdout.write("   npm install @kavachos/core\n\n");
+	stdout.write("   npm install kavachos\n\n");
 	stdout.write("2. Add to your project:\n\n");
-	stdout.write('   import { createKavach } from "@kavachos/core";\n\n');
+	stdout.write('   import { createKavach } from "kavachos";\n\n');
 	stdout.write("   const kavach = createKavach({\n");
 	stdout.write('     database: { provider: "sqlite", url: "kavach.db" },\n');
 	stdout.write("     agents: { enabled: true },\n");
@@ -63,16 +64,32 @@ async function handleMigrate(): Promise<void> {
 }
 
 async function handleDashboard(): Promise<void> {
-	const portArg = argv.find((a) => a.startsWith("--port"));
-	const port = portArg ? (portArg.split("=")[1] ?? argv[argv.indexOf(portArg) + 1]) : "3100";
+	const args = argv.slice(2);
 
-	stdout.write("\nKavachOS Dashboard\n");
-	stdout.write("==================\n\n");
-	stdout.write(`Standalone dashboard server coming in v0.1.0.\n`);
-	stdout.write(`It will run at: http://localhost:${port}\n\n`);
-	stdout.write("For now, embed the dashboard in your React app:\n\n");
-	stdout.write('  import { KavachDashboard } from "@kavachos/dashboard";\n\n');
-	stdout.write('  <KavachDashboard apiUrl="/api/kavach" />\n\n');
+	// --port or --port=3100
+	const portFlag = args.find((a) => a === "--port" || a.startsWith("--port="));
+	const portStr = portFlag
+		? portFlag.includes("=")
+			? portFlag.split("=")[1]
+			: args[args.indexOf(portFlag) + 1]
+		: undefined;
+	const port = portStr !== undefined && portStr !== "" ? Number(portStr) : 3100;
+
+	if (!Number.isInteger(port) || port < 1 || port > 65535) {
+		stdout.write(`Invalid port: ${portStr ?? ""}\n`);
+		exit(1);
+		return;
+	}
+
+	// --api or --api=http://localhost:3000
+	const apiFlag = args.find((a) => a === "--api" || a.startsWith("--api="));
+	const apiUrl = apiFlag
+		? apiFlag.includes("=")
+			? (apiFlag.split("=")[1] ?? "http://localhost:3000")
+			: (args[args.indexOf(apiFlag) + 1] ?? "http://localhost:3000")
+		: "http://localhost:3000";
+
+	await startDashboardServer({ port, apiUrl });
 }
 
 async function main(): Promise<void> {

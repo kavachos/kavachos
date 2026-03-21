@@ -41,7 +41,7 @@ The dashboard makes requests to your backend, which proxies them to the KavachOS
 
 ```typescript
 // app/api/kavach/[...path]/route.ts
-import { createKavach } from '@kavachos/core';
+import { createKavach } from 'kavachos';
 import { createNextjsAdapter } from '@kavachos/nextjs';
 
 const kavach = createKavach({

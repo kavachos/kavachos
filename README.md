@@ -5,7 +5,7 @@
 Identity, permissions, delegation, and audit for the agentic era.
 Give every AI agent a cryptographic identity, enforce least-privilege access, and maintain an immutable record of every action it takes.
 
-[![npm](https://img.shields.io/npm/v/@kavachos/core)](https://www.npmjs.com/package/@kavachos/core)
+[![npm](https://img.shields.io/npm/v/kavachos)](https://www.npmjs.com/package/kavachos)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![tests](https://img.shields.io/github/actions/workflow/status/kavachos/kavachos/ci.yml?label=tests)](https://github.com/kavachos/kavachos/actions)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](https://www.typescriptlang.org/)
@@ -15,9 +15,9 @@ Give every AI agent a cryptographic identity, enforce least-privilege access, an
 ## Install
 
 ```bash
-npm install @kavachos/core
+npm install kavachos
 # or
-pnpm add @kavachos/core
+pnpm add kavachos
 ```
 
 ---
@@ -25,7 +25,7 @@ pnpm add @kavachos/core
 ## Quickstart
 
 ```typescript
-import { createKavach } from '@kavachos/core';
+import { createKavach } from 'kavachos';
 
 // 1. Initialize — SQLite for dev, Postgres for prod
 const kavach = createKavach({

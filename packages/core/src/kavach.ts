@@ -23,7 +23,7 @@ import type {
  *
  * @example SQLite (simplest)
  * ```typescript
- * import { createKavach } from '@kavachos/core';
+ * import { createKavach } from 'kavachos';
  *
  * const kavach = await createKavach({
  *   database: { provider: 'sqlite', url: 'kavach.db' },

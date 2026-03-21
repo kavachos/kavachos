@@ -6,9 +6,9 @@ description: Get KavachOS running in five minutes.
 ## Install
 
 ```bash
-npm install @kavachos/core
+npm install kavachos
 # or
-pnpm add @kavachos/core
+pnpm add kavachos
 ```
 
 ## Create a KavachOS instance
@@ -16,7 +16,7 @@ pnpm add @kavachos/core
 Pass a database config to `createKavach`. Use SQLite for local development and Postgres in production.
 
 ```typescript
-import { createKavach } from '@kavachos/core';
+import { createKavach } from 'kavachos';
 
 const kavach = createKavach({
   database: { provider: 'sqlite', url: 'kavach.db' },
@@ -112,7 +112,7 @@ const csv = await kavach.audit.export({ format: 'csv' });
 The following is a self-contained script that covers all core features: agent creation, authorization, token-based auth, token rotation, delegation chains, and audit export.
 
 ```typescript
-import { createKavach } from '@kavachos/core';
+import { createKavach } from 'kavachos';
 
 const kavach = createKavach({
   database: { provider: 'sqlite', url: ':memory:' },

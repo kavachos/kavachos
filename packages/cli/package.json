@@ -15,7 +15,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@kavachos/core": "workspace:*"
+    "kavachos": "workspace:*"
   },
   "devDependencies": {
     "tsup": "^8.4.0",

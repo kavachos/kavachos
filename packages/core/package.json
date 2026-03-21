@@ -1,5 +1,5 @@
 {
-  "name": "@kavachos/core",
+  "name": "kavachos",
   "version": "0.0.1",
   "description": "The auth OS for AI agents - identity, permissions, delegation, and audit for the agentic era",
   "type": "module",

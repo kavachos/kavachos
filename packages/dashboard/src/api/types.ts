@@ -111,6 +111,17 @@ export interface KavachSettings {
 	maxAgentsPerTenant: number;
 }
 
+// ─── Dashboard Stats Types ────────────────────────────────────────────────────
+
+export interface DashboardStats {
+	totalAgents: number;
+	activeAgents: number;
+	totalAuditEvents: number;
+	recentAuditEvents: number;
+	authAllowedRate: number;
+	activeDelegations: number;
+}
+
 // ─── API Response Wrapper ─────────────────────────────────────────────────────
 
 export type ApiResult<T> =
