@@ -35,5 +35,10 @@
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm lint && pnpm --filter kavachos typecheck"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "better-sqlite3"
+    ]
   }
 }
