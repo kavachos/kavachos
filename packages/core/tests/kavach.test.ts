@@ -1,10 +1,10 @@
-import { sql } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import * as schema from "../src/db/schema.js";
+import type { Kavach } from "../src/kavach.js";
 import { createKavach } from "../src/kavach.js";
 
-function createTestKavach() {
-	const kavach = createKavach({
+async function createTestKavach() {
+	const kavach = await createKavach({
 		database: { provider: "sqlite", url: ":memory:" },
 		agents: {
 			enabled: true,
@@ -15,86 +15,7 @@ function createTestKavach() {
 		},
 	});
 
-	// Create tables
-	kavach.db.run(sql`
-		CREATE TABLE IF NOT EXISTS kavach_users (
-			id TEXT PRIMARY KEY,
-			email TEXT NOT NULL UNIQUE,
-			name TEXT,
-			external_id TEXT,
-			external_provider TEXT,
-			metadata TEXT,
-			created_at INTEGER NOT NULL,
-			updated_at INTEGER NOT NULL
-		)
-	`);
-	kavach.db.run(sql`
-		CREATE TABLE IF NOT EXISTS kavach_agents (
-			id TEXT PRIMARY KEY,
-			owner_id TEXT NOT NULL REFERENCES kavach_users(id),
-			name TEXT NOT NULL,
-			type TEXT NOT NULL,
-			status TEXT NOT NULL DEFAULT 'active',
-			token_hash TEXT NOT NULL,
-			token_prefix TEXT NOT NULL,
-			expires_at INTEGER,
-			last_active_at INTEGER,
-			metadata TEXT,
-			created_at INTEGER NOT NULL,
-			updated_at INTEGER NOT NULL
-		)
-	`);
-	kavach.db.run(sql`
-		CREATE TABLE IF NOT EXISTS kavach_permissions (
-			id TEXT PRIMARY KEY,
-			agent_id TEXT NOT NULL REFERENCES kavach_agents(id) ON DELETE CASCADE,
-			resource TEXT NOT NULL,
-			actions TEXT NOT NULL,
-			constraints TEXT,
-			created_at INTEGER NOT NULL
-		)
-	`);
-	kavach.db.run(sql`
-		CREATE TABLE IF NOT EXISTS kavach_audit_logs (
-			id TEXT PRIMARY KEY,
-			agent_id TEXT NOT NULL REFERENCES kavach_agents(id),
-			user_id TEXT NOT NULL REFERENCES kavach_users(id),
-			action TEXT NOT NULL,
-			resource TEXT NOT NULL,
-			parameters TEXT,
-			result TEXT NOT NULL,
-			reason TEXT,
-			duration_ms INTEGER NOT NULL,
-			tokens_cost INTEGER,
-			ip TEXT,
-			user_agent TEXT,
-			timestamp INTEGER NOT NULL
-		)
-	`);
-	kavach.db.run(sql`
-		CREATE TABLE IF NOT EXISTS kavach_rate_limits (
-			id TEXT PRIMARY KEY,
-			agent_id TEXT NOT NULL REFERENCES kavach_agents(id) ON DELETE CASCADE,
-			resource TEXT NOT NULL,
-			window_start INTEGER NOT NULL,
-			count INTEGER NOT NULL DEFAULT 0
-		)
-	`);
-	kavach.db.run(sql`
-		CREATE TABLE IF NOT EXISTS kavach_delegation_chains (
-			id TEXT PRIMARY KEY,
-			from_agent_id TEXT NOT NULL REFERENCES kavach_agents(id),
-			to_agent_id TEXT NOT NULL REFERENCES kavach_agents(id),
-			permissions TEXT NOT NULL,
-			depth INTEGER NOT NULL DEFAULT 1,
-			max_depth INTEGER NOT NULL DEFAULT 3,
-			status TEXT NOT NULL DEFAULT 'active',
-			expires_at INTEGER NOT NULL,
-			created_at INTEGER NOT NULL
-		)
-	`);
-
-	// Create a test user
+	// Seed a test user
 	kavach.db
 		.insert(schema.users)
 		.values({
@@ -110,10 +31,10 @@ function createTestKavach() {
 }
 
 describe("createKavach", () => {
-	let kavach: ReturnType<typeof createKavach>;
+	let kavach: Kavach;
 
-	beforeEach(() => {
-		kavach = createTestKavach();
+	beforeEach(async () => {
+		kavach = await createTestKavach();
 	});
 
 	describe("agent lifecycle", () => {

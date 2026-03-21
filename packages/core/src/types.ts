@@ -24,8 +24,14 @@ export interface KavachConfig {
 export interface DatabaseConfig {
 	/** Database provider */
 	provider: "sqlite" | "postgres" | "mysql";
-	/** Connection URL or Drizzle instance */
+	/** Connection URL (sqlite: file path, postgres/mysql: connection string) */
 	url: string;
+	/**
+	 * Skip automatic `CREATE TABLE IF NOT EXISTS` on init.
+	 * Useful when you manage migrations externally (e.g. Flyway, Liquibase,
+	 * drizzle-kit push). Defaults to `false`.
+	 */
+	skipMigrations?: boolean;
 }
 
 /**
@@ -156,6 +162,7 @@ export interface AuditEntry {
 	resource: string;
 	parameters: Record<string, unknown>;
 	result: "allowed" | "denied" | "rate_limited";
+	reason?: string;
 	durationMs: number;
 	tokensCost?: number;
 	timestamp: Date;

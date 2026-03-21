@@ -6,24 +6,23 @@ export default function Layout({ children }: { children: ReactNode }) {
 	return (
 		<DocsLayout
 			tree={source.pageTree}
+			className="docs-layout"
 			nav={{
-				title: (
-					<span className="font-mono font-bold tracking-tight">
-						<span className="gradient-gold-text">kavach</span>
-						<span className="text-fd-muted-foreground font-light">OS</span>
-					</span>
+				enabled: false,
+			}}
+			sidebar={{
+				banner: (
+					<div className="mb-2 border-b border-fd-border pb-3">
+						<p className="text-xs font-medium text-fd-muted-foreground">
+							Documentation
+						</p>
+					</div>
 				),
-				url: "/",
 			}}
 			links={[
 				{
 					text: "GitHub",
 					url: "https://github.com/kavachos/kavachos",
-					external: true,
-				},
-				{
-					text: "npm",
-					url: "https://www.npmjs.com/package/@kavachos/core",
 					external: true,
 				},
 			]}

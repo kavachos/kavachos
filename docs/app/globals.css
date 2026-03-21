@@ -7,15 +7,15 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* KavachOS brand tokens */
+/* Layout dimensions */
 :root {
+	--nav-height: 48px;
 	--kavach-gold-bright: #f0d87a;
 	--kavach-gold-primary: #d4b65a;
 	--kavach-gold-mid: #c9a84c;
 	--kavach-gold-deep: #9a7b22;
 	--kavach-gold-shadow: #8b6914;
 	--kavach-gold-darkest: #6b4e0a;
-
 	--font-sans: var(--font-inter);
 	--font-mono: var(--font-jetbrains-mono);
 }
@@ -31,7 +31,17 @@
 	--fd-primary-foreground: oklch(0.12 0.02 85);
 }
 
-/* Gold gradient utility */
+/* Docs layout: disable fumadocs top nav, adjust for our shared nav */
+.docs-layout {
+	--fd-banner-height: 0px;
+	--fd-nav-height: 0px;
+}
+
+.docs-layout > nav:first-child {
+	display: none;
+}
+
+/* Gold gradient utilities */
 @layer utilities {
 	.gradient-gold {
 		background: linear-gradient(135deg, #c9a84c, #8b6914);
@@ -51,9 +61,18 @@
 	.bg-grid {
 		background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' width='32' height='32' fill='none' stroke='rgb(201 168 76 / 0.06)'%3e%3cpath d='m0 .5h32m-32 32v-32'/%3e%3c/svg%3e");
 	}
+
+	.bg-dot-grid {
+		background-image: radial-gradient(
+			circle,
+			rgb(201 168 76 / 0.15) 1px,
+			transparent 1px
+		);
+		background-size: 24px 24px;
+	}
 }
 
-/* Smooth animations */
+/* Animations */
 @keyframes fade-up {
 	from {
 		opacity: 0;
@@ -71,6 +90,16 @@
 	}
 	100% {
 		background-position: 200% 0;
+	}
+}
+
+@keyframes pulse-gold {
+	0%,
+	100% {
+		opacity: 0.4;
+	}
+	50% {
+		opacity: 0.8;
 	}
 }
 
@@ -95,6 +124,10 @@
 	background-size: 200% 100%;
 }
 
+.animate-pulse-gold {
+	animation: pulse-gold 3s ease-in-out infinite;
+}
+
 /* Scrollbar */
 * {
 	scrollbar-width: thin;
@@ -106,7 +139,8 @@
 	.animate-fade-up-delay-1,
 	.animate-fade-up-delay-2,
 	.animate-fade-up-delay-3,
-	.animate-shimmer {
+	.animate-shimmer,
+	.animate-pulse-gold {
 		animation: none;
 		opacity: 1;
 		transform: none;

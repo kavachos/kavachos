@@ -29,12 +29,14 @@
   "license": "MIT",
   "peerDependencies": {
     "@kavachos/core": "workspace:*",
-    "hono": ">=4.0.0"
+    "hono": ">=4.0.0",
+    "zod": ">=3.0.0"
   },
   "devDependencies": {
     "@kavachos/core": "workspace:*",
     "hono": "^4.7.0",
     "tsup": "^8.4.0",
-    "typescript": "^5.8.0"
+    "typescript": "^5.8.0",
+    "zod": "^3.24.0"
   }
 }

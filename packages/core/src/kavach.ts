@@ -1,6 +1,7 @@
 import { createAgentModule } from "./agent/agent.js";
 import { createAuditModule } from "./audit/audit.js";
 import { createDatabase } from "./db/database.js";
+import { createTables } from "./db/migrations.js";
 import { createDelegationModule } from "./delegation/delegation.js";
 import { createPermissionEngine } from "./permission/engine.js";
 import type {
@@ -16,31 +17,45 @@ import type {
 /**
  * Create a KavachOS instance.
  *
- * @example
+ * The factory is **async** so it can open database connections for Postgres
+ * and MySQL (which require async driver initialisation) and optionally run
+ * `CREATE TABLE IF NOT EXISTS` for all schema tables.
+ *
+ * @example SQLite (simplest)
  * ```typescript
  * import { createKavach } from '@kavachos/core';
  *
- * const kavach = createKavach({
+ * const kavach = await createKavach({
  *   database: { provider: 'sqlite', url: 'kavach.db' },
- *   agents: { enabled: true, maxPerUser: 10 },
  * });
+ * ```
  *
- * const agent = await kavach.agent.create({
- *   ownerId: 'user-123',
- *   name: 'my-coding-agent',
- *   type: 'autonomous',
- *   permissions: [{ resource: 'mcp:github', actions: ['read'] }],
+ * @example Postgres
+ * ```typescript
+ * const kavach = await createKavach({
+ *   database: { provider: 'postgres', url: process.env.DATABASE_URL },
  * });
+ * ```
  *
- * const result = await kavach.authorize(agent.id, {
- *   action: 'read',
- *   resource: 'mcp:github:repos',
+ * @example MySQL – skip auto-migration (tables managed externally)
+ * ```typescript
+ * const kavach = await createKavach({
+ *   database: {
+ *     provider: 'mysql',
+ *     url: process.env.DATABASE_URL,
+ *     skipMigrations: true,
+ *   },
  * });
- * // { allowed: true, auditId: '...' }
  * ```
  */
-export function createKavach(config: KavachConfig) {
-	const db = createDatabase({ provider: "sqlite", url: config.database.url });
+export async function createKavach(config: KavachConfig) {
+	const db = await createDatabase(config.database);
+
+	// Automatically create tables unless the caller has opted out.
+	// Uses CREATE TABLE IF NOT EXISTS so it is safe to run every startup.
+	if (!config.database.skipMigrations) {
+		await createTables(db, config.database.provider);
+	}
 
 	const agentConfig = {
 		db,
@@ -133,4 +148,4 @@ export function createKavach(config: KavachConfig) {
 	};
 }
 
-export type Kavach = ReturnType<typeof createKavach>;
+export type Kavach = Awaited<ReturnType<typeof createKavach>>;

@@ -83,13 +83,41 @@ importers:
         version: 11.10.0
       drizzle-orm:
         specifier: ^0.41.0
-        version: 0.41.0(@libsql/client@0.17.2)(@types/better-sqlite3@7.6.13)(better-sqlite3@11.10.0)(mysql2@3.20.0(@types/node@22.19.15))(pg@8.20.0)
+        version: 0.41.0(@libsql/client@0.17.2)(@types/better-sqlite3@7.6.13)(@types/pg@8.20.0)(better-sqlite3@11.10.0)(mysql2@3.20.0(@types/node@22.19.15))(pg@8.20.0)
     devDependencies:
       tsx:
         specifier: ^4.19.2
         version: 4.21.0
       typescript:
         specifier: ^5.7.3
+        version: 5.9.3
+
+  examples/hono-server:
+    dependencies:
+      '@hono/node-server':
+        specifier: ^1.13.0
+        version: 1.19.11(hono@4.12.8)
+      '@kavachos/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@kavachos/hono':
+        specifier: workspace:*
+        version: link:../../packages/adapters/hono
+      better-sqlite3:
+        specifier: ^11.0.0
+        version: 11.10.0
+      drizzle-orm:
+        specifier: ^0.41.0
+        version: 0.41.0(@libsql/client@0.17.2)(@types/better-sqlite3@7.6.13)(@types/pg@8.20.0)(better-sqlite3@11.10.0)(mysql2@3.20.0(@types/node@22.19.15))(pg@8.20.0)
+      hono:
+        specifier: ^4.0.0
+        version: 4.12.8
+    devDependencies:
+      tsx:
+        specifier: ^4.19.2
+        version: 4.21.0
+      typescript:
+        specifier: ^5.8.0
         version: 5.9.3
 
   packages/adapters/express:
@@ -109,6 +137,9 @@ importers:
       typescript:
         specifier: ^5.8.0
         version: 5.9.3
+      zod:
+        specifier: ^3.24.0
+        version: 3.25.76
 
   packages/adapters/fastify:
     devDependencies:
@@ -127,6 +158,9 @@ importers:
       typescript:
         specifier: ^5.8.0
         version: 5.9.3
+      zod:
+        specifier: ^3.24.0
+        version: 3.25.76
 
   packages/adapters/hono:
     devDependencies:
@@ -142,6 +176,9 @@ importers:
       typescript:
         specifier: ^5.8.0
         version: 5.9.3
+      zod:
+        specifier: ^3.24.0
+        version: 3.25.76
 
   packages/adapters/nextjs:
     devDependencies:
@@ -157,6 +194,9 @@ importers:
       typescript:
         specifier: ^5.8.0
         version: 5.9.3
+      zod:
+        specifier: ^3.24.0
+        version: 3.25.76
 
   packages/cli:
     dependencies:
@@ -178,7 +218,7 @@ importers:
         version: 0.17.2
       drizzle-orm:
         specifier: ^0.41.0
-        version: 0.41.0(@libsql/client@0.17.2)(@types/better-sqlite3@7.6.13)(better-sqlite3@11.10.0)(mysql2@3.20.0(@types/node@22.19.15))(pg@8.20.0)
+        version: 0.41.0(@libsql/client@0.17.2)(@types/better-sqlite3@7.6.13)(@types/pg@8.20.0)(better-sqlite3@11.10.0)(mysql2@3.20.0(@types/node@22.19.15))(pg@8.20.0)
       jose:
         specifier: ^6.0.0
         version: 6.2.2
@@ -198,6 +238,9 @@ importers:
       '@types/node':
         specifier: ^22.0.0
         version: 22.19.15
+      '@types/pg':
+        specifier: ^8.20.0
+        version: 8.20.0
       better-sqlite3:
         specifier: ^11.0.0
         version: 11.10.0
@@ -816,6 +859,12 @@ packages:
     peerDependenciesMeta:
       tailwindcss:
         optional: true
+
+  '@hono/node-server@1.19.11':
+    resolution: {integrity: sha512-dr8/3zEaB+p0D2n/IUrlPF1HZm586qgJNXK1a9fhg/PzdtkK7Ksd5l312tJX2yBuALqDYBlG20QEbayqPyxn+g==}
+    engines: {node: '>=18.14.1'}
+    peerDependencies:
+      hono: ^4
 
   '@img/colour@1.1.0':
     resolution: {integrity: sha512-Td76q7j57o/tLVdgS746cYARfSyxk8iEfRxewL9h4OMzYhbW4TAcppl0mT4eyqXddh6L/jwoM75mo7ixa/pCeQ==}
@@ -2006,6 +2055,9 @@ packages:
 
   '@types/node@22.19.15':
     resolution: {integrity: sha512-F0R/h2+dsy5wJAUe3tAU6oqa2qbWY5TpNfL/RGmo1y38hiyO1w3x2jPtt76wmuaJI4DQnOBu21cNXQ2STIUUWg==}
+
+  '@types/pg@8.20.0':
+    resolution: {integrity: sha512-bEPFOaMAHTEP1EzpvHTbmwR8UsFyHSKsRisLIHVMXnpNefSbGA1bD6CVy+qKjGSqmZqNqBDV2azOBo8TgkcVow==}
 
   '@types/qs@6.15.0':
     resolution: {integrity: sha512-JawvT8iBVWpzTrz3EGw9BTQFg3BQNmwERdKE22vlTxawwtbyUSlMppvZYKLZzB5zgACXdXxbD3m1bXaMqP/9ow==}
@@ -5006,6 +5058,10 @@ snapshots:
     optionalDependencies:
       tailwindcss: 4.2.2
 
+  '@hono/node-server@1.19.11(hono@4.12.8)':
+    dependencies:
+      hono: 4.12.8
+
   '@img/colour@1.1.0':
     optional: true
 
@@ -6059,6 +6115,12 @@ snapshots:
     dependencies:
       undici-types: 6.21.0
 
+  '@types/pg@8.20.0':
+    dependencies:
+      '@types/node': 22.19.15
+      pg-protocol: 1.13.0
+      pg-types: 2.2.0
+
   '@types/qs@6.15.0': {}
 
   '@types/range-parser@1.2.7': {}
@@ -6396,10 +6458,11 @@ snapshots:
     dependencies:
       path-type: 4.0.0
 
-  drizzle-orm@0.41.0(@libsql/client@0.17.2)(@types/better-sqlite3@7.6.13)(better-sqlite3@11.10.0)(mysql2@3.20.0(@types/node@22.19.15))(pg@8.20.0):
+  drizzle-orm@0.41.0(@libsql/client@0.17.2)(@types/better-sqlite3@7.6.13)(@types/pg@8.20.0)(better-sqlite3@11.10.0)(mysql2@3.20.0(@types/node@22.19.15))(pg@8.20.0):
     optionalDependencies:
       '@libsql/client': 0.17.2
       '@types/better-sqlite3': 7.6.13
+      '@types/pg': 8.20.0
       better-sqlite3: 11.10.0
       mysql2: 3.20.0(@types/node@22.19.15)
       pg: 8.20.0

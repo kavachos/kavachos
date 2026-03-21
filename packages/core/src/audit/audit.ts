@@ -107,6 +107,7 @@ function toAuditEntry(row: typeof auditLogs.$inferSelect): AuditEntry {
 		resource: row.resource,
 		parameters: (row.parameters as Record<string, unknown>) ?? {},
 		result: row.result as AuditEntry["result"],
+		reason: row.reason ?? undefined,
 		durationMs: row.durationMs,
 		tokensCost: row.tokensCost ?? undefined,
 		timestamp: row.timestamp,

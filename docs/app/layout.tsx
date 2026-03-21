@@ -2,6 +2,7 @@ import { RootProvider } from "fumadocs-ui/provider/next";
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import type { ReactNode } from "react";
+import { Nav } from "@/components/nav";
 import "./globals.css";
 
 const inter = Inter({
@@ -48,7 +49,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 			suppressHydrationWarning
 		>
 			<body className="flex min-h-screen flex-col font-sans antialiased">
-				<RootProvider>{children}</RootProvider>
+				<RootProvider>
+					<Nav />
+					<main className="flex-1 pt-[var(--nav-height)]">{children}</main>
+				</RootProvider>
 			</body>
 		</html>
 	);
