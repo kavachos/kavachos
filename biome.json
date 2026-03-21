@@ -103,7 +103,8 @@
       "!**/build",
       "!**/.turbo",
       "!**/.cache",
-      "!**/docs-local/repo-ref"
+      "!**/docs-local/repo-ref",
+      "!docs"
     ]
   }
 }
