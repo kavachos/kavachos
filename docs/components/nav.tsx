@@ -49,18 +49,18 @@ export function Nav() {
 					<div className="flex items-center gap-1">
 						<Link
 							href="/"
-							className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-fd-accent/50"
+							className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-fd-accent/50"
 						>
-							<Logo size={22} />
-							<span className="font-heading text-[13px] font-bold tracking-tight">
+							<Logo size={28} />
+							<span className="font-heading text-base font-bold tracking-tight">
 								kavach
-								<span className="font-light text-fd-muted-foreground/60">
+								<span className="font-light text-fd-muted-foreground/50">
 									OS
 								</span>
 							</span>
 						</Link>
 
-						<div className="mx-2 hidden h-4 w-px bg-fd-border/50 md:block" />
+						<div className="mx-3 hidden h-5 w-px bg-fd-border/40 md:block" />
 
 						{/* Desktop nav links */}
 						<nav className="hidden items-center gap-0.5 md:flex">
@@ -99,19 +99,19 @@ export function Nav() {
 							href="https://github.com/kavachos/kavachos"
 							target="_blank"
 							rel="noopener noreferrer"
-							className="hidden rounded-lg p-2 text-fd-muted-foreground/50 transition-all hover:bg-fd-accent/50 hover:text-fd-foreground sm:block"
+							className="hidden rounded-lg p-2 text-fd-muted-foreground/70 transition-all hover:bg-fd-accent/50 hover:text-fd-foreground sm:block"
 							aria-label="GitHub"
 						>
-							<GitHubIcon className="h-4 w-4" />
+							<GitHubIcon className="h-[18px] w-[18px]" />
 						</Link>
 						<Link
 							href="https://www.npmjs.com/package/kavachos"
 							target="_blank"
 							rel="noopener noreferrer"
-							className="hidden rounded-lg p-2 text-fd-muted-foreground/50 transition-all hover:bg-fd-accent/50 hover:text-fd-foreground sm:block"
+							className="hidden rounded-lg p-2 text-fd-muted-foreground/70 transition-all hover:bg-fd-accent/50 hover:text-fd-foreground sm:block"
 							aria-label="npm"
 						>
-							<NpmIcon className="h-4 w-4" />
+							<NpmIcon className="h-[18px] w-[18px]" />
 						</Link>
 
 						{/* Theme toggle */}
@@ -121,24 +121,24 @@ export function Nav() {
 								onClick={() =>
 									setTheme(resolvedTheme === "dark" ? "light" : "dark")
 								}
-								className="rounded-lg p-2 text-fd-muted-foreground/50 transition-all hover:bg-fd-accent/50 hover:text-fd-foreground"
+								className="rounded-lg p-2 text-fd-muted-foreground/70 transition-all hover:bg-fd-accent/50 hover:text-fd-foreground"
 								aria-label="Toggle theme"
 							>
 								{resolvedTheme === "dark" ? (
-									<Sun className="h-3.5 w-3.5" />
+									<Sun className="h-[18px] w-[18px]" />
 								) : (
-									<Moon className="h-3.5 w-3.5" />
+									<Moon className="h-[18px] w-[18px]" />
 								)}
 							</button>
 						)}
 
-						{/* CTA */}
+						{/* CTA - outline style, not duplicate of hero gold */}
 						<Link
-							href="/docs/quickstart"
-							className="group gradient-gold hidden items-center gap-1.5 rounded-lg px-4 py-1.5 text-xs font-semibold text-white shadow-sm shadow-[var(--kavach-gold-shadow)]/20 transition-all hover:shadow-md hover:shadow-[var(--kavach-gold-shadow)]/30 sm:inline-flex"
+							href="/docs"
+							className="hidden items-center gap-1.5 rounded-full border border-fd-foreground/15 bg-fd-foreground/5 px-4 py-1.5 text-xs font-semibold text-fd-foreground transition-all hover:bg-fd-foreground/10 sm:inline-flex"
 						>
-							Get started
-							<ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+							Docs
+							<ArrowRight className="h-3 w-3" />
 						</Link>
 
 						{/* Mobile menu */}
@@ -215,7 +215,7 @@ function NavLink({
 	return (
 		<Link
 			href={href}
-			className={`relative rounded-lg px-3 py-1.5 text-[13px] transition-all ${
+			className={`relative rounded-lg px-3 py-1.5 text-sm transition-all ${
 				active
 					? "font-medium text-fd-foreground after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:h-[2px] after:w-4 after:rounded-full after:bg-[var(--kavach-gold-mid)]"
 					: "text-fd-muted-foreground/60 hover:text-fd-foreground hover:bg-fd-accent/40"

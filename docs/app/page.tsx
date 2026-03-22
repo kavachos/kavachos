@@ -23,21 +23,17 @@ export default function HomePage() {
 				<div className="relative w-full border-b border-fd-border lg:sticky lg:top-[var(--nav-height)] lg:h-[calc(100vh-var(--nav-height))] lg:w-[40%] lg:border-b-0 lg:border-r lg:overflow-hidden">
 					{/* Gold ambient glow */}
 					<div className="pointer-events-none absolute bottom-0 left-1/2 h-[400px] w-[600px] -translate-x-1/2 translate-y-1/2 rounded-full bg-[var(--kavach-gold-mid)]/[0.06] blur-3xl" />
-					{/* Big watermark text - top positioned, full width */}
-					<div className="pointer-events-none absolute inset-x-0 top-6 select-none overflow-hidden text-center lg:top-10" aria-hidden="true">
-						<span className="animate-fade-in font-heading text-[22vw] font-black leading-none tracking-[-0.04em] lg:text-[10rem]" style={{ color: "rgba(201, 168, 76, 0.06)" }}>
-							kavachOS
+					{/* Background watermark */}
+					<div className="pointer-events-none absolute inset-0 z-[1] flex select-none items-start justify-center overflow-hidden pt-16" aria-hidden="true">
+						<span className="animate-fade-in font-heading leading-none tracking-[-0.03em]" style={{ color: "rgba(201, 168, 76, 0.05)" }}>
+							<span className="text-[12vw] font-extrabold lg:text-[6rem]">kavach</span>
+							<span className="text-[14vw] font-black lg:text-[7rem]">OS</span>
 						</span>
 					</div>
 
 					{/* Hero content */}
-					<div className="relative flex h-full flex-col justify-center px-6 py-16 sm:px-10 lg:px-12" style={{ pointerEvents: "none" }}>
-						{/* Interactive grid overlay (catches hover through content gaps) */}
-						<div className="absolute inset-0 overflow-hidden" style={{ pointerEvents: "auto", zIndex: 0 }}>
-							<InteractiveGrid />
-						</div>
-
-						<div className="relative" style={{ zIndex: 1, pointerEvents: "auto" }}>
+					<div className="relative flex h-full flex-col justify-center px-6 py-16 sm:px-10 lg:px-12">
+						<div className="relative z-10">
 						<Link
 							href="/docs"
 							className="group mb-6 inline-flex w-fit items-center gap-1.5 rounded-full border border-[var(--kavach-gold-mid)]/25 bg-[var(--kavach-gold-mid)]/8 px-3.5 py-1 text-[11px] font-medium text-[var(--kavach-gold-deep)] transition-colors hover:bg-[var(--kavach-gold-mid)]/15 dark:text-[var(--kavach-gold-bright)]"
@@ -81,17 +77,32 @@ export default function HomePage() {
 							<p className="mb-2.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-fd-muted-foreground/30">
 								Works with
 							</p>
-							<div className="flex flex-wrap gap-1.5">
-								<FrameworkPill icon={HonoIcon} name="Hono" />
-								<FrameworkPill icon={ExpressIcon} name="Express" />
-								<FrameworkPill icon={NextjsIcon} name="Next.js" />
-								<FrameworkPill icon={FastifyIcon} name="Fastify" />
-								<FrameworkPill icon={NuxtIcon} name="Nuxt" />
-								<FrameworkPill icon={SvelteIcon} name="SvelteKit" />
-								<FrameworkPill icon={AstroIcon} name="Astro" />
+							{/* Marquee */}
+							<div className="relative overflow-hidden" style={{ maskImage: "linear-gradient(to right, transparent, black 10%, black 90%, transparent)" }}>
+								<div className="flex w-max animate-marquee gap-3">
+									<FrameworkPill icon={HonoIcon} name="Hono" />
+									<FrameworkPill icon={ExpressIcon} name="Express" />
+									<FrameworkPill icon={NextjsIcon} name="Next.js" />
+									<FrameworkPill icon={FastifyIcon} name="Fastify" />
+									<FrameworkPill icon={NuxtIcon} name="Nuxt" />
+									<FrameworkPill icon={SvelteIcon} name="SvelteKit" />
+									<FrameworkPill icon={AstroIcon} name="Astro" />
+									{/* Duplicate for seamless loop */}
+									<FrameworkPill icon={HonoIcon} name="Hono" />
+									<FrameworkPill icon={ExpressIcon} name="Express" />
+									<FrameworkPill icon={NextjsIcon} name="Next.js" />
+									<FrameworkPill icon={FastifyIcon} name="Fastify" />
+									<FrameworkPill icon={NuxtIcon} name="Nuxt" />
+									<FrameworkPill icon={SvelteIcon} name="SvelteKit" />
+									<FrameworkPill icon={AstroIcon} name="Astro" />
+								</div>
 							</div>
 						</div>
 					</div>
+					</div>
+					{/* Interactive grid - behind content */}
+					<div className="absolute inset-0 z-0 overflow-hidden">
+						<InteractiveGrid />
 					</div>
 				</div>
 
@@ -219,8 +230,8 @@ function CompRow({ feature, ba, diy }: { feature: string; ba?: boolean | string;
 
 function FrameworkPill({ icon: Icon, name }: { icon: typeof HonoIcon; name: string }) {
 	return (
-		<span className="inline-flex items-center gap-1.5 rounded-md border border-fd-border/60 bg-fd-card/80 px-2.5 py-1 text-[10px] font-medium text-fd-muted-foreground/60 transition-colors hover:border-fd-border hover:text-fd-muted-foreground">
-			<Icon className="h-3 w-3" />
+		<span className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-fd-border/50 bg-fd-card/60 px-3 py-1.5 text-xs font-medium text-fd-muted-foreground/60 backdrop-blur-sm">
+			<Icon className="h-4 w-4" />
 			{name}
 		</span>
 	);

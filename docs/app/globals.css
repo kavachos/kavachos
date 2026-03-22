@@ -9,7 +9,7 @@
 
 /* ===== Brand tokens ===== */
 :root {
-	--nav-height: 48px;
+	--nav-height: 56px;
 	--kavach-gold-bright: #f0d87a;
 	--kavach-gold-primary: #d4b65a;
 	--kavach-gold-mid: #c9a84c;
@@ -420,6 +420,15 @@ h3 {
 
 .kavach-btn-gold:hover::after {
 	animation: gold-shimmer 0.8s ease-in-out;
+}
+
+@keyframes marquee {
+	0% { transform: translateX(0); }
+	100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+	animation: marquee 20s linear infinite;
 }
 
 @keyframes gold-shimmer {
