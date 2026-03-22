@@ -27,16 +27,16 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps) {
 			/>
 
 			{/* Panel */}
-			<div className="relative bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+			<div className="relative bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
 				{/* Header */}
-				<div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
-					<h2 id="modal-title" className="text-base font-semibold text-white">
+				<div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-800">
+					<h2 id="modal-title" className="text-base font-semibold text-zinc-900 dark:text-white">
 						{title}
 					</h2>
 					<button
 						type="button"
 						onClick={onClose}
-						className="w-7 h-7 flex items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+						className="w-7 h-7 flex items-center justify-center rounded-lg text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
 						aria-label="Close modal"
 					>
 						<X className="w-4 h-4" />
@@ -48,7 +48,7 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps) {
 
 				{/* Footer */}
 				{footer && (
-					<div className="px-6 py-4 border-t border-zinc-800 flex items-center justify-end gap-2">
+					<div className="px-6 py-4 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-end gap-2">
 						{footer}
 					</div>
 				)}

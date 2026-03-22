@@ -4,15 +4,19 @@ import {
 	ChevronRight,
 	GitBranch,
 	LayoutDashboard,
+	Moon,
 	ScrollText,
 	Server,
 	Settings,
 	ShieldAlert,
 	ShieldCheck,
+	Sun,
 	Users,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { useEffect, useState } from "react";
 import type { Page } from "../types.js";
+import { DemoBanner } from "./demo-banner.js";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -33,6 +37,7 @@ interface LayoutProps {
 	onNavigate: (page: Page) => void;
 	children: ReactNode;
 	headerActions?: ReactNode;
+	demo?: boolean;
 }
 
 // ─── Nav Config ───────────────────────────────────────────────────────────────
@@ -98,12 +103,14 @@ const NAV_ITEMS: NavItem[] = [
 
 function KavachLogo() {
 	return (
-		<div className="flex items-center gap-2.5 px-4 py-5 border-b border-zinc-800">
-			<div className="w-7 h-7 rounded-lg bg-indigo-500 flex items-center justify-center flex-shrink-0">
+		<div className="flex items-center gap-2.5 px-4 py-5 border-b border-zinc-200 dark:border-zinc-800 dark:border-zinc-800">
+			<div className="w-7 h-7 rounded-lg bg-amber-600 flex items-center justify-center flex-shrink-0">
 				<ShieldCheck className="w-4 h-4 text-white" strokeWidth={2.5} />
 			</div>
 			<div>
-				<div className="text-sm font-semibold text-white tracking-tight">KavachOS</div>
+				<div className="text-sm font-semibold text-zinc-900 dark:text-white tracking-tight">
+					KavachOS
+				</div>
 				<div className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium">Admin</div>
 			</div>
 		</div>
@@ -114,7 +121,7 @@ function KavachLogo() {
 
 export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
 	return (
-		<aside className="w-56 flex-shrink-0 bg-zinc-950 border-r border-zinc-800 flex flex-col h-screen sticky top-0">
+		<aside className="w-56 flex-shrink-0 bg-white dark:bg-zinc-950 border-r border-zinc-200 dark:border-zinc-800 flex flex-col h-screen sticky top-0">
 			<KavachLogo />
 
 			<nav className="flex-1 px-3 py-4 space-y-0.5">
@@ -130,32 +137,68 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
 							className={[
 								"w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-all duration-100",
 								isActive
-									? "bg-zinc-800 text-white"
-									: "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900",
+									? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+									: "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-900",
 							].join(" ")}
 						>
 							<Icon
 								className={[
 									"w-4 h-4 flex-shrink-0",
-									isActive ? "text-indigo-400" : "text-current",
+									isActive ? "text-amber-500 dark:text-amber-400" : "text-current",
 								].join(" ")}
 								strokeWidth={isActive ? 2.5 : 2}
 							/>
 							<span className="text-sm font-medium">{item.label}</span>
-							{isActive && <ChevronRight className="w-3 h-3 ml-auto text-zinc-600" />}
+							{isActive && (
+								<ChevronRight className="w-3 h-3 ml-auto text-zinc-400 dark:text-zinc-600" />
+							)}
 						</button>
 					);
 				})}
 			</nav>
 
 			{/* Footer status indicator */}
-			<div className="px-4 py-4 border-t border-zinc-800">
+			<div className="px-4 py-4 border-t border-zinc-200 dark:border-zinc-800">
 				<div className="flex items-center gap-2 text-xs text-zinc-500">
 					<Activity className="w-3.5 h-3.5 text-emerald-500" />
 					<span>System Online</span>
 				</div>
 			</div>
 		</aside>
+	);
+}
+
+// ─── Theme Toggle ─────────────────────────────────────────────────────────────
+
+const STORAGE_KEY = "kavachos-theme";
+
+export function ThemeToggle() {
+	const [isDark, setIsDark] = useState<boolean>(() => {
+		if (typeof window === "undefined") return true;
+		const stored = localStorage.getItem(STORAGE_KEY);
+		if (stored !== null) return stored === "dark";
+		return window.matchMedia("(prefers-color-scheme: dark)").matches;
+	});
+
+	useEffect(() => {
+		const root = document.documentElement;
+		if (isDark) {
+			root.classList.add("dark");
+		} else {
+			root.classList.remove("dark");
+		}
+		localStorage.setItem(STORAGE_KEY, isDark ? "dark" : "light");
+	}, [isDark]);
+
+	return (
+		<button
+			type="button"
+			onClick={() => setIsDark((v) => !v)}
+			className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+			aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+		>
+			{isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+		</button>
 	);
 }
 
@@ -171,8 +214,12 @@ export function PageHeader({ title, description, actions }: PageHeaderProps) {
 	return (
 		<div className="flex items-start justify-between mb-6">
 			<div>
-				<h1 className="text-xl font-semibold text-white tracking-tight">{title}</h1>
-				{description && <p className="text-sm text-zinc-400 mt-0.5">{description}</p>}
+				<h1 className="text-xl font-semibold text-zinc-900 dark:text-white tracking-tight">
+					{title}
+				</h1>
+				{description && (
+					<p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">{description}</p>
+				)}
 			</div>
 			{actions && <div className="flex items-center gap-2">{actions}</div>}
 		</div>
@@ -181,16 +228,18 @@ export function PageHeader({ title, description, actions }: PageHeaderProps) {
 
 // ─── Main Layout ──────────────────────────────────────────────────────────────
 
-export function Layout({ currentPage, onNavigate, children, headerActions }: LayoutProps) {
+export function Layout({ currentPage, onNavigate, children, headerActions, demo }: LayoutProps) {
 	return (
-		<div className="flex min-h-screen bg-zinc-900 text-white">
+		<div className="flex min-h-screen bg-zinc-50 dark:bg-zinc-900 text-zinc-900 dark:text-white">
 			<Sidebar currentPage={currentPage} onNavigate={onNavigate} />
 			<div className="flex-1 flex flex-col overflow-hidden">
-				{headerActions && (
-					<header className="flex items-center justify-end px-6 py-3 border-b border-zinc-800 bg-zinc-900">
+				{demo && <DemoBanner />}
+				<header className="flex items-center justify-end px-6 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+					<div className="flex items-center gap-2">
+						<ThemeToggle />
 						{headerActions}
-					</header>
-				)}
+					</div>
+				</header>
 				<main className="flex-1 overflow-auto">
 					<div className="max-w-6xl mx-auto px-6 py-8">{children}</div>
 				</main>

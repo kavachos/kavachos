@@ -4,6 +4,8 @@ description: Creating, managing, and rotating agent identities in KavachOS.
 icon: Bot
 ---
 
+import { Card, Cards } from 'fumadocs-ui/components/card';
+
 
 ## What is an agent identity
 
@@ -194,3 +196,11 @@ const kavach = createKavach({
 ```
 
 Attempts to create agents beyond the limit return an error with code `AGENT_LIMIT_EXCEEDED`.
+
+## Next steps
+
+<Cards>
+  <Card title="Permission engine" description="Define what your agents can and cannot do." href="/docs/core/permissions" />
+  <Card title="Delegation chains" description="Let agents delegate access to sub-agents." href="/docs/core/delegation" />
+  <Card title="Token-based auth with adapters" description="Use agents in HTTP middleware." href="/docs/platform/adapters" />
+</Cards>

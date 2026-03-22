@@ -71,7 +71,7 @@ const RESULT_OPTIONS: Array<{ value: string; label: string }> = [
 
 function FilterBar({ filters, agentOptions, onChange }: FilterBarProps) {
 	return (
-		<div className="flex flex-wrap items-center gap-2 mb-5 p-3 bg-zinc-900 border border-zinc-800 rounded-xl">
+		<div className="flex flex-wrap items-center gap-2 mb-5 p-3 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl">
 			<Filter className="w-3.5 h-3.5 text-zinc-500 flex-shrink-0 ml-0.5" />
 
 			<Select
@@ -128,7 +128,7 @@ function FilterBar({ filters, agentOptions, onChange }: FilterBarProps) {
 						offset: 0,
 					})
 				}
-				className="bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-zinc-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+				className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-amber-500/30"
 				aria-label="From date"
 			/>
 			<span className="text-zinc-600 text-xs">to</span>
@@ -142,7 +142,7 @@ function FilterBar({ filters, agentOptions, onChange }: FilterBarProps) {
 						offset: 0,
 					})
 				}
-				className="bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-zinc-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+				className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-amber-500/30"
 				aria-label="To date"
 			/>
 
@@ -150,7 +150,7 @@ function FilterBar({ filters, agentOptions, onChange }: FilterBarProps) {
 				<button
 					type="button"
 					onClick={() => onChange({ limit: filters.limit, offset: 0 })}
-					className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors ml-auto"
+					className="text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors ml-auto"
 				>
 					Clear filters
 				</button>
@@ -205,17 +205,17 @@ function ExportButton({ client, filters }: ExportButtonProps) {
 				Export
 			</Button>
 			{open && (
-				<div className="absolute right-0 mt-1 w-36 bg-zinc-900 border border-zinc-700 rounded-lg shadow-lg z-10 overflow-hidden">
+				<div className="absolute right-0 mt-1 w-36 bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg shadow-lg z-10 overflow-hidden">
 					<button
 						type="button"
-						className="w-full text-left px-3 py-2 text-xs text-zinc-300 hover:bg-zinc-800 transition-colors"
+						className="w-full text-left px-3 py-2 text-xs text-zinc-700 dark:text-zinc-300 hover:bg-zinc-800 transition-colors"
 						onClick={() => void handleExport("json")}
 					>
 						Export as JSON
 					</button>
 					<button
 						type="button"
-						className="w-full text-left px-3 py-2 text-xs text-zinc-300 hover:bg-zinc-800 transition-colors"
+						className="w-full text-left px-3 py-2 text-xs text-zinc-700 dark:text-zinc-300 hover:bg-zinc-800 transition-colors"
 						onClick={() => void handleExport("csv")}
 					>
 						Export as CSV
@@ -292,7 +292,7 @@ export function AuditPage({ client }: AuditPageProps) {
 
 			{isLoading ? (
 				<div className="flex items-center justify-center py-16">
-					<div className="w-5 h-5 border-2 border-zinc-700 border-t-indigo-500 rounded-full animate-spin" />
+					<div className="w-5 h-5 border-2 border-zinc-300 dark:border-zinc-700 border-t-amber-500 rounded-full animate-spin" />
 				</div>
 			) : logs.length === 0 ? (
 				<Table>
@@ -309,8 +309,9 @@ export function AuditPage({ client }: AuditPageProps) {
 							<td colSpan={6}>
 								<EmptyState
 									icon={<ScrollText className="w-6 h-6" />}
-									title="No audit entries found"
-									description="Audit entries will appear here as agents perform actions."
+									title="No audit events yet"
+									description="Events are created automatically when agents call kavach.authorize(). Every allow and deny decision is recorded here."
+									docsLink="https://kavachos.com/docs/audit"
 								/>
 							</td>
 						</tr>
@@ -336,13 +337,17 @@ export function AuditPage({ client }: AuditPageProps) {
 											<div className="flex items-center gap-1.5">
 												<Clock className="w-3 h-3 text-zinc-600 flex-shrink-0" />
 												<div>
-													<span className="text-xs text-zinc-300 font-mono">{ts.time}</span>
+													<span className="text-xs text-zinc-700 dark:text-zinc-300 font-mono">
+														{ts.time}
+													</span>
 													<span className="block text-[10px] text-zinc-600">{ts.date}</span>
 												</div>
 											</div>
 										</Td>
 										<Td>
-											<span className="text-xs font-medium text-zinc-200">{entry.agentName}</span>
+											<span className="text-xs font-medium text-zinc-800 dark:text-zinc-200">
+												{entry.agentName}
+											</span>
 										</Td>
 										<Td>
 											<code className="text-xs font-mono text-zinc-400">{entry.action}</code>

@@ -1,0 +1,170 @@
+---
+title: Telemetry
+description: Exporting KavachOS authorization events as OpenTelemetry spans.
+icon: Activity
+---
+
+import { Card, Cards } from 'fumadocs-ui/components/card';
+
+
+## How it works
+
+KavachOS converts authorization, delegation, and agent lifecycle events into OpenTelemetry-compatible span shapes and delivers them through a callback you provide. No `@opentelemetry` packages are required on KavachOS's end. You wire the spans into whichever OTel SDK or vendor you are already using.
+
+<Callout type="info">
+  No `@opentelemetry` dependency on KavachOS's side. The integration is a plain callback, so you can route spans to Datadog, Grafana Tempo, Honeycomb, or any other backend without any coupling.
+</Callout>
+
+## Configuration
+
+Pass a `telemetry` object to `createKavach`:
+
+<TypeTable
+  type={{
+    onSpan: {
+      type: '(span: TelemetrySpan) => void',
+      description: 'Called for every authorization event. Receives a TelemetrySpan you forward to your OTel SDK.',
+      default: 'undefined (no export)',
+    },
+    serviceName: {
+      type: 'string',
+      description: "Service name attached to the service.name span attribute.",
+      default: "'kavachos'",
+    },
+    includeArguments: {
+      type: 'boolean',
+      description: 'Whether to include the arguments passed to authorize() as a JSON string attribute. Disable in production if arguments contain PII.',
+      default: 'false',
+    },
+  }}
+/>
+
+## Span shape
+
+Each emitted span has this structure:
+
+```typescript
+interface TelemetrySpan {
+  traceId: string;          // 32-char hex
+  spanId: string;           // 16-char hex
+  name: string;             // e.g. 'kavach.authorize'
+  kind: 'internal';
+  startTime: string;        // ISO 8601
+  endTime: string;          // ISO 8601
+  attributes: Record<string, string | number | boolean>;
+  status: 'ok' | 'error';
+}
+```
+
+## Span names
+
+| Span name | When it fires |
+|-----------|---------------|
+| `kavach.authorize` | Every `authorize()` or `authorizeByToken()` call |
+| `kavach.delegation.create` | A delegation chain is created |
+| `kavach.delegation.revoke` | A delegation chain is revoked |
+| `kavach.agent.create` | An agent is created |
+| `kavach.agent.revoke` | An agent is revoked |
+| `kavach.agent.rotate` | An agent token is rotated |
+
+## Span attributes
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `service.name` | string | From your `serviceName` config |
+| `kavach.agent.id` | string | Agent ID |
+| `kavach.action` | string | The requested action |
+| `kavach.resource` | string | The requested resource |
+| `kavach.result` | string | `'allowed'` or `'denied'` |
+| `kavach.duration_ms` | number | How long authorization took |
+| `kavach.tokens_cost` | number | Token cost if provided |
+| `kavach.user.id` | string | Owner user ID if present |
+| `kavach.reason` | string | Denial reason if denied |
+| `kavach.arguments` | string | JSON-encoded arguments (only when `includeArguments: true`) |
+
+Delegation spans add `kavach.delegation.id`, `kavach.delegation.from_agent`, `kavach.delegation.to_agent`, `kavach.delegation.depth`, and `kavach.delegation.expires_at`.
+
+## Connecting to an OTel SDK
+
+This example uses the `@opentelemetry/sdk-node` tracer directly:
+
+```typescript
+import { createKavach } from 'kavachos';
+import { trace } from '@opentelemetry/api';
+
+const tracer = trace.getTracer('kavachos');
+
+const kavach = await createKavach({
+  database: { provider: 'postgres', url: process.env.DATABASE_URL! },
+  telemetry: {
+    serviceName: 'my-agent-service',
+    onSpan(span) {
+      const otelSpan = tracer.startSpan(span.name, {
+        startTime: new Date(span.startTime),
+        kind: 0, // SpanKind.INTERNAL
+      });
+
+      for (const [key, value] of Object.entries(span.attributes)) {
+        otelSpan.setAttribute(key, value);
+      }
+
+      otelSpan.setStatus({ code: span.status === 'ok' ? 1 : 2 });
+      otelSpan.end(new Date(span.endTime));
+    },
+  },
+});
+```
+
+## Connecting to Datadog
+
+Datadog's APM SDK provides a `tracer.startSpan` API. Map KavachOS spans the same way:
+
+```typescript
+import tracer from 'dd-trace';
+
+const kavach = await createKavach({
+  database: { provider: 'postgres', url: process.env.DATABASE_URL! },
+  telemetry: {
+    serviceName: 'my-agent-service',
+    onSpan(span) {
+      const s = tracer.startSpan(span.name, {
+        startTime: new Date(span.startTime).getTime(),
+      });
+
+      for (const [key, value] of Object.entries(span.attributes)) {
+        s.setTag(key, value);
+      }
+
+      s.finish(new Date(span.endTime).getTime());
+    },
+  },
+});
+```
+
+## Connecting to Grafana Tempo via OTLP
+
+If you export via OTLP/HTTP using the `@opentelemetry/exporter-trace-otlp-http` package, the setup is the same as the OTel SDK example above. Point your `OTLPTraceExporter` at your Tempo endpoint and KavachOS spans will appear alongside your other application traces.
+
+```typescript
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
+import { NodeTracerProvider } from '@opentelemetry/sdk-node';
+import { SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base';
+
+const exporter = new OTLPTraceExporter({
+  url: 'https://tempo.yourapp.com/v1/traces',
+});
+
+const provider = new NodeTracerProvider();
+provider.addSpanProcessor(new SimpleSpanProcessor(exporter));
+provider.register();
+
+// Now pass the tracer to kavach as shown above
+```
+
+## Next steps
+
+<Cards>
+  <Card title="Lifecycle hooks" description="Fire custom callbacks at authorization and agent events." href="/docs/guides/hooks" />
+  <Card title="Cost tracking" description="Aggregate token costs across agents and days." href="/docs/guides/cost-tracking" />
+  <Card title="Audit log" description="Query the raw audit trail without OTel." href="/docs/core/audit" />
+</Cards>

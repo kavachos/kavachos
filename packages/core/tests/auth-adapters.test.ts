@@ -95,7 +95,6 @@ describe("betterAuthAdapter", () => {
 		// Cast to satisfy the narrow type – simulates a malformed response.
 		const auth: BetterAuthInstance = {
 			api: {
-				// biome-ignore lint/suspicious/noExplicitAny: intentional malformed mock
 				getSession: vi.fn().mockResolvedValue({ user: null } as any),
 			},
 		};
@@ -175,14 +174,12 @@ describe("authJsAdapter", () => {
 	});
 
 	it("returns null when session has no user", async () => {
-		// biome-ignore lint/suspicious/noExplicitAny: intentional malformed mock
 		const options: AuthJsOptions = { getSession: vi.fn().mockResolvedValue({ user: null } as any) };
 		const adapter = authJsAdapter(options);
 		expect(await adapter.resolveUser(makeRequest())).toBeNull();
 	});
 
 	it("returns null when user object has no id", async () => {
-		// biome-ignore lint/suspicious/noExplicitAny: intentional missing-id mock
 		const options: AuthJsOptions = {
 			getSession: vi.fn().mockResolvedValue({ user: { email: "e@example.com" } } as any),
 		};
@@ -324,7 +321,7 @@ describe("clerkAdapter", () => {
 
 		expect(adapter.getUser).toBeDefined();
 
-		const user = await adapter.getUser!("clerk-user-1");
+		const user = await adapter.getUser?.("clerk-user-1");
 		expect(user).toEqual({
 			id: "clerk-user-1",
 			email: "eve@example.com",
@@ -339,12 +336,12 @@ describe("clerkAdapter", () => {
 			getUser: vi.fn().mockRejectedValue(new Error("not found")),
 		};
 		const adapter = clerkAdapter(options);
-		expect(await adapter.getUser!("clerk-user-1")).toBeNull();
+		expect(await adapter.getUser?.("clerk-user-1")).toBeNull();
 	});
 
 	it("getUser returns null when getUser returns null", async () => {
 		const options = makeOptions("clerk-user-1", null);
 		const adapter = clerkAdapter(options);
-		expect(await adapter.getUser!("clerk-user-1")).toBeNull();
+		expect(await adapter.getUser?.("clerk-user-1")).toBeNull();
 	});
 });

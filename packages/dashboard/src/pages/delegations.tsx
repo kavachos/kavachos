@@ -106,7 +106,7 @@ export function DelegationsPage({ client }: DelegationsPageProps) {
 
 			{isLoading ? (
 				<div className="flex items-center justify-center py-16">
-					<div className="w-5 h-5 border-2 border-zinc-700 border-t-indigo-500 rounded-full animate-spin" />
+					<div className="w-5 h-5 border-2 border-zinc-300 dark:border-zinc-700 border-t-amber-500 rounded-full animate-spin" />
 				</div>
 			) : delegations.length === 0 ? (
 				<Table>
@@ -124,8 +124,9 @@ export function DelegationsPage({ client }: DelegationsPageProps) {
 							<td colSpan={7}>
 								<EmptyState
 									icon={<Network className="w-6 h-6" />}
-									title="No delegations"
-									description="Delegation chains appear here when agents grant permissions to other agents."
+									title="No delegation chains"
+									description="Delegations let one agent grant a subset of its permissions to another. Use the SDK to create delegation chains between agents."
+									docsLink="https://kavachos.com/docs/delegation"
 								/>
 							</td>
 						</tr>

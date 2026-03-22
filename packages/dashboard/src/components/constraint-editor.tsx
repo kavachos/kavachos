@@ -65,19 +65,19 @@ interface SectionToggleProps {
 
 function SectionToggle({ id, label, enabled, onToggle, children }: SectionToggleProps) {
 	return (
-		<div className="rounded-lg border border-zinc-800 overflow-hidden">
+		<div className="rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-hidden">
 			<button
 				type="button"
 				id={id}
 				onClick={onToggle}
-				className="w-full flex items-center justify-between px-3 py-2.5 bg-zinc-800/40 hover:bg-zinc-800/70 transition-colors"
+				className="w-full flex items-center justify-between px-3 py-2.5 bg-zinc-100/60 dark:bg-zinc-800/40 hover:bg-zinc-200/70 dark:bg-zinc-800/70 transition-colors"
 				aria-expanded={enabled}
 			>
 				<span className="text-xs font-medium text-zinc-300">{label}</span>
 				<span
 					className={[
 						"w-8 h-4 rounded-full transition-colors relative flex-shrink-0",
-						enabled ? "bg-indigo-600" : "bg-zinc-700",
+						enabled ? "bg-amber-600" : "bg-zinc-700",
 					].join(" ")}
 					aria-hidden="true"
 				>
@@ -106,7 +106,7 @@ function TagList({ tags, onRemove }: TagListProps) {
 			{tags.map((tag) => (
 				<span
 					key={tag}
-					className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-zinc-800 border border-zinc-700 text-xs text-zinc-300 font-mono"
+					className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-xs text-zinc-700 dark:text-zinc-300 font-mono"
 				>
 					{tag}
 					<button
@@ -255,12 +255,12 @@ export function ConstraintEditor({ constraints, onChange }: ConstraintEditorProp
 			</SectionToggle>
 
 			{/* Human-in-the-loop */}
-			<label className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-zinc-800 bg-zinc-800/40 cursor-pointer hover:bg-zinc-800/70 transition-colors">
+			<label className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-100/60 dark:bg-zinc-800/40 cursor-pointer hover:bg-zinc-200/70 dark:bg-zinc-800/70 transition-colors">
 				<input
 					type="checkbox"
 					checked={parsed.requireApproval}
 					onChange={() => update({ requireApproval: !parsed.requireApproval })}
-					className="w-3.5 h-3.5 rounded border-zinc-600 bg-zinc-800 accent-indigo-500"
+					className="w-3.5 h-3.5 rounded border-zinc-600 bg-zinc-100 dark:bg-zinc-800 accent-amber-500"
 				/>
 				<span className="text-xs font-medium text-zinc-300">
 					Human-in-the-loop (require approval)

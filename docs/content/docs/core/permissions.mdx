@@ -4,6 +4,8 @@ description: Resource pattern matching, actions, constraints, and permission tem
 icon: ShieldCheck
 ---
 
+import { Card, Cards } from 'fumadocs-ui/components/card';
+
 
 ## How permissions work
 
@@ -239,3 +241,11 @@ perms[0].actions.push('write'); // safe — does not mutate the original
 <Callout type="warn">
   Spreading directly from `permissionTemplates` gives you a reference to the original array entries. If you mutate the objects after spreading, you will modify the template. Use `getPermissionTemplate` when you need to modify entries.
 </Callout>
+
+## Next steps
+
+<Cards>
+  <Card title="Delegation chains" description="Delegate permission subsets to other agents." href="/docs/core/delegation" />
+  <Card title="Audit trail" description="See how permissions are logged on every call." href="/docs/core/audit" />
+  <Card title="Compliance" description="Map permissions to EU AI Act and NIST requirements." href="/docs/guides/compliance" />
+</Cards>

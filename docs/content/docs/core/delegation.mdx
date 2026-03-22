@@ -4,6 +4,8 @@ description: Grant a subset of permissions from one agent to another, with depth
 icon: Link2
 ---
 
+import { Card, Cards } from 'fumadocs-ui/components/card';
+
 
 ## What is a delegation chain
 
@@ -231,3 +233,11 @@ An orchestrator holds broad permissions, plans a task, and issues short-lived na
     ```
   </Step>
 </Steps>
+
+## Next steps
+
+<Cards>
+  <Card title="Audit trail" description="Every delegation is logged with agent and depth info." href="/docs/core/audit" />
+  <Card title="Agent identity" description="Create the agents that participate in delegation chains." href="/docs/core/agents" />
+  <Card title="MCP OAuth 2.1" description="Use delegation with MCP-authenticated agents." href="/docs/platform/mcp" />
+</Cards>

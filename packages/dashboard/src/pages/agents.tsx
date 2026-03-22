@@ -19,6 +19,7 @@ import { FormGroup, Input, Label, Select } from "../components/input.js";
 import { PageHeader } from "../components/layout.js";
 import { Modal } from "../components/modal.js";
 import { EmptyState, Table, TableBody, TableHead, Td, Th, Tr } from "../components/table.js";
+import { useToast } from "../components/toast.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -150,7 +151,7 @@ function CreateAgentModal({ open, onClose, onSubmit, loading }: CreateAgentModal
 					</Select>
 				</FormGroup>
 
-				<div className="border-t border-zinc-800 pt-4">
+				<div className="border-t border-zinc-200 dark:border-zinc-800 pt-4">
 					<p className="text-xs font-medium text-zinc-400 mb-3">Initial Permission (optional)</p>
 
 					<FormGroup>
@@ -174,8 +175,8 @@ function CreateAgentModal({ open, onClose, onSubmit, loading }: CreateAgentModal
 									className={[
 										"px-2.5 py-1 rounded-md text-xs font-medium border transition-colors",
 										actions.includes(action)
-											? "bg-indigo-600 border-indigo-500 text-white"
-											: "bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-zinc-200",
+											? "bg-amber-600 border-amber-500 text-white"
+											: "bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200",
 									].join(" ")}
 								>
 									{action}
@@ -232,13 +233,13 @@ function TokenModal({ open, onClose, token, agentName }: TokenModalProps) {
 				<div>
 					<Label>Token</Label>
 					<div className="flex items-center gap-2 mt-1.5">
-						<code className="flex-1 bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-zinc-300 font-mono break-all">
+						<code className="flex-1 bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-xs text-zinc-700 dark:text-zinc-300 font-mono break-all">
 							{token}
 						</code>
 						<button
 							type="button"
 							onClick={copyToken}
-							className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-400 hover:text-zinc-200 transition-colors"
+							className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-400 hover:text-zinc-200 transition-colors"
 							aria-label="Copy token"
 						>
 							{copied ? (
@@ -274,7 +275,7 @@ function AgentActions({ agent, onRevoke, onRotate, revoking, rotating }: AgentAc
 			<button
 				type="button"
 				onClick={() => setOpen((v) => !v)}
-				className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+				className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
 				aria-label="Agent actions"
 			>
 				<MoreHorizontal className="w-4 h-4" />
@@ -283,7 +284,7 @@ function AgentActions({ agent, onRevoke, onRotate, revoking, rotating }: AgentAc
 			{open && (
 				<>
 					<div className="fixed inset-0 z-10" onClick={() => setOpen(false)} aria-hidden="true" />
-					<div className="absolute right-0 top-8 z-20 bg-zinc-900 border border-zinc-700 rounded-xl shadow-xl py-1 min-w-[140px]">
+					<div className="absolute right-0 top-8 z-20 bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl shadow-xl py-1 min-w-[140px]">
 						<button
 							type="button"
 							onClick={() => {
@@ -291,12 +292,12 @@ function AgentActions({ agent, onRevoke, onRotate, revoking, rotating }: AgentAc
 								setOpen(false);
 							}}
 							disabled={rotating}
-							className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors disabled:opacity-50"
+							className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-zinc-700 dark:text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors disabled:opacity-50"
 						>
 							<RotateCw className="w-3.5 h-3.5" />
 							Rotate Token
 						</button>
-						<div className="border-t border-zinc-800 my-1" />
+						<div className="border-t border-zinc-200 dark:border-zinc-800 my-1" />
 						<button
 							type="button"
 							onClick={() => {
@@ -390,7 +391,9 @@ function AgentDetailModal({ open, onClose, agent, client }: AgentDetailModalProp
 						<p className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider mb-1">
 							ID
 						</p>
-						<code className="text-xs font-mono text-zinc-300 break-all">{agent.id}</code>
+						<code className="text-xs font-mono text-zinc-700 dark:text-zinc-300 break-all">
+							{agent.id}
+						</code>
 					</div>
 					<div>
 						<p className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider mb-1">
@@ -434,14 +437,14 @@ function AgentDetailModal({ open, onClose, agent, client }: AgentDetailModalProp
 					</p>
 					{permLoading ? (
 						<div className="flex items-center justify-center py-4">
-							<div className="w-4 h-4 border-2 border-zinc-700 border-t-indigo-500 rounded-full animate-spin" />
+							<div className="w-4 h-4 border-2 border-zinc-300 dark:border-zinc-700 border-t-amber-500 rounded-full animate-spin" />
 						</div>
 					) : permissions.length === 0 ? (
 						<p className="text-xs text-zinc-600 py-2">No permissions assigned.</p>
 					) : (
-						<div className="rounded-lg border border-zinc-800 overflow-hidden">
+						<div className="rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-hidden">
 							<table className="w-full text-xs">
-								<thead className="bg-zinc-900 border-b border-zinc-800">
+								<thead className="bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800">
 									<tr>
 										<th className="px-3 py-2 text-left text-[11px] font-medium text-zinc-500 uppercase tracking-wider">
 											Resource
@@ -462,7 +465,7 @@ function AgentDetailModal({ open, onClose, agent, client }: AgentDetailModalProp
 													{p.actions.map((a) => (
 														<span
 															key={a}
-															className="px-1.5 py-0.5 bg-zinc-800 border border-zinc-700 rounded text-[10px] text-zinc-400 font-mono"
+															className="px-1.5 py-0.5 bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded text-[10px] text-zinc-400 font-mono"
 														>
 															{a}
 														</span>
@@ -487,7 +490,7 @@ function AgentDetailModal({ open, onClose, agent, client }: AgentDetailModalProp
 							{agentDelegations.map((d) => (
 								<div
 									key={d.id}
-									className="flex items-center gap-2 px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-xs"
+									className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg text-xs"
 								>
 									<span className="text-zinc-300 font-medium truncate max-w-[100px]">
 										{d.fromAgentName}
@@ -516,17 +519,17 @@ function AgentDetailModal({ open, onClose, agent, client }: AgentDetailModalProp
 					</p>
 					{auditLoading ? (
 						<div className="flex items-center justify-center py-4">
-							<div className="w-4 h-4 border-2 border-zinc-700 border-t-indigo-500 rounded-full animate-spin" />
+							<div className="w-4 h-4 border-2 border-zinc-300 dark:border-zinc-700 border-t-amber-500 rounded-full animate-spin" />
 						</div>
 					) : auditEntries.length === 0 ? (
 						<p className="text-xs text-zinc-600 py-2">No audit events yet.</p>
 					) : (
-						<div className="rounded-lg border border-zinc-800 overflow-hidden">
+						<div className="rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-hidden">
 							<div className="divide-y divide-zinc-800/60">
 								{auditEntries.map((entry) => (
 									<div
 										key={entry.id}
-										className="flex items-center gap-3 px-3 py-2.5 bg-zinc-950 text-xs"
+										className="flex items-center gap-3 px-3 py-2.5 bg-white dark:bg-zinc-950 text-xs"
 									>
 										<Clock className="w-3 h-3 text-zinc-600 flex-shrink-0" />
 										<span className="text-zinc-500 tabular-nums flex-shrink-0 w-28">
@@ -560,6 +563,7 @@ interface AgentsPageProps {
 
 export function AgentsPage({ client }: AgentsPageProps) {
 	const queryClient = useQueryClient();
+	const { toast } = useToast();
 	const [createOpen, setCreateOpen] = useState(false);
 	const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
 	const [tokenModal, setTokenModal] = useState<{
@@ -579,19 +583,35 @@ export function AgentsPage({ client }: AgentsPageProps) {
 			if (result.success) {
 				void queryClient.invalidateQueries({ queryKey: ["agents"] });
 				setCreateOpen(false);
+				toast("success", `Agent "${result.data.agent.name}" created`);
 				setTokenModal({
 					open: true,
 					token: result.data.token,
 					agentName: result.data.agent.name,
 				});
+			} else {
+				toast("error", "Failed to create agent");
 			}
+		},
+		onError: () => {
+			toast("error", "Failed to create agent");
 		},
 	});
 
 	const revokeMutation = useMutation({
 		mutationFn: (agentId: string) => client.revokeAgent(agentId),
-		onSuccess: () => {
+		onSuccess: (result, agentId) => {
 			void queryClient.invalidateQueries({ queryKey: ["agents"] });
+			if (result.success) {
+				const agents = agentsResult?.success ? agentsResult.data : [];
+				const agent = agents.find((a) => a.id === agentId);
+				toast("success", `Agent "${agent?.name ?? "Agent"}" revoked`);
+			} else {
+				toast("error", "Failed to revoke agent");
+			}
+		},
+		onError: () => {
+			toast("error", "Failed to revoke agent");
 		},
 	});
 
@@ -601,12 +621,18 @@ export function AgentsPage({ client }: AgentsPageProps) {
 			if (result.success) {
 				const agents = agentsResult?.success ? agentsResult.data : [];
 				const agent = agents.find((a) => a.id === agentId);
+				toast("success", `Token rotated for "${agent?.name ?? "Agent"}"`);
 				setTokenModal({
 					open: true,
 					token: result.data.token,
 					agentName: agent?.name ?? "Agent",
 				});
+			} else {
+				toast("error", "Failed to rotate token");
 			}
+		},
+		onError: () => {
+			toast("error", "Failed to rotate token");
 		},
 	});
 
@@ -627,7 +653,7 @@ export function AgentsPage({ client }: AgentsPageProps) {
 
 			{isLoading ? (
 				<div className="flex items-center justify-center py-16">
-					<div className="w-5 h-5 border-2 border-zinc-700 border-t-indigo-500 rounded-full animate-spin" />
+					<div className="w-5 h-5 border-2 border-zinc-300 dark:border-zinc-700 border-t-amber-500 rounded-full animate-spin" />
 				</div>
 			) : agents.length === 0 ? (
 				<Table>
@@ -645,14 +671,20 @@ export function AgentsPage({ client }: AgentsPageProps) {
 							<td colSpan={7}>
 								<EmptyState
 									icon={<Bot className="w-6 h-6" />}
-									title="No agents yet"
-									description="Create your first agent to get started with KavachOS."
+									title="Create your first agent"
+									description="Agents are the primary identity in KavachOS. Each agent gets a token you use to authorize actions."
+									steps={[
+										'Click "New Agent" above',
+										"Set permissions for the resources the agent needs",
+										"Copy the token and use it in your app",
+									]}
 									action={
 										<Button variant="primary" onClick={() => setCreateOpen(true)}>
 											<Plus className="w-3.5 h-3.5" />
 											Create Agent
 										</Button>
 									}
+									docsLink="https://kavachos.com/docs/quickstart"
 								/>
 							</td>
 						</tr>

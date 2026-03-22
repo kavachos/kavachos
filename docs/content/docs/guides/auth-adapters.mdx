@@ -1,0 +1,261 @@
+---
+title: Auth adapters
+description: Connect KavachOS to your existing auth provider.
+icon: Key
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+
+Auth adapters tell KavachOS how to resolve a human user from an incoming HTTP request. KavachOS calls `adapter.resolveUser(request)` on every request that needs a user identity. The adapter inspects cookies, session tokens, or headers and returns a `ResolvedUser` (or `null` for unauthenticated requests).
+
+```typescript
+interface ResolvedUser {
+  id: string;       // stable user ID from the auth provider
+  email?: string;
+  name?: string;
+  image?: string;
+  metadata?: Record<string, unknown>;
+}
+```
+
+You pass the adapter through `createKavach()`:
+
+```typescript
+const kavach = await createKavach({
+  database: { provider: 'sqlite', url: 'kavach.db' },
+  auth: {
+    adapter: myAdapter,
+  },
+});
+```
+
+<Callout>
+  When `auth` is omitted entirely, KavachOS operates in manual user management mode and `kavach.auth.resolveUser()` always returns `null`.
+</Callout>
+
+## Adapters
+
+### better-auth
+
+The `betterAuthAdapter` wraps better-auth's `api.getSession()`. It passes request headers directly so cookie-based sessions work without any extra plumbing.
+
+```typescript
+import { createKavach } from '@kavachos/core';
+import { betterAuthAdapter } from '@kavachos/core/auth';
+import { auth } from './lib/auth'; // your better-auth instance
+
+const kavach = await createKavach({
+  database: { provider: 'sqlite', url: 'kavach.db' },
+  auth: {
+    adapter: betterAuthAdapter(auth),
+  },
+});
+```
+
+The adapter calls `auth.api.getSession({ headers: request.headers })` and maps the result to a `ResolvedUser`. Returns `null` when better-auth returns no session or when the session contains no user.
+
+### Auth.js (NextAuth v5)
+
+Auth.js v5's session API varies by framework, so the adapter is generic: you supply your own `getSession` function.
+
+<Tabs items={['Next.js App Router', 'SvelteKit']}>
+  <Tab value="Next.js App Router">
+    ```typescript
+    import { createKavach } from '@kavachos/core';
+    import { authJsAdapter } from '@kavachos/core/auth';
+    import { auth } from './auth'; // your Auth.js instance
+
+    const kavach = await createKavach({
+      database: { provider: 'sqlite', url: 'kavach.db' },
+      auth: {
+        adapter: authJsAdapter({
+          getSession: (req) => auth({ request: req }),
+        }),
+      },
+    });
+    ```
+  </Tab>
+  <Tab value="SvelteKit">
+    ```typescript
+    import { createKavach } from '@kavachos/core';
+    import { authJsAdapter } from '@kavachos/core/auth';
+
+    // Wrap your SvelteKit event-based resolver into a Request-based function.
+    async function getSession(req: Request) {
+      // Call your Auth.js getServerSession equivalent here
+      return myGetSession(req);
+    }
+
+    const kavach = await createKavach({
+      database: { provider: 'sqlite', url: 'kavach.db' },
+      auth: {
+        adapter: authJsAdapter({ getSession }),
+      },
+    });
+    ```
+  </Tab>
+</Tabs>
+
+The `getSession` function receives the incoming `Request` and must return `{ user: { id, email?, name?, image? } }` or `null`.
+
+### Clerk
+
+Clerk's SDK differs by runtime (Node.js, Edge), so the adapter is injection-based: you provide `getUserIdFromRequest` and `getUser`. This keeps `@clerk/sdk` as an optional peer dep.
+
+```typescript
+import { createKavach } from '@kavachos/core';
+import { clerkAdapter } from '@kavachos/core/auth';
+import { clerkClient, getAuth } from '@clerk/express';
+
+const kavach = await createKavach({
+  database: { provider: 'sqlite', url: 'kavach.db' },
+  auth: {
+    adapter: clerkAdapter({
+      getUserIdFromRequest: async (req) => {
+        // clerkMiddleware must run before this point
+        const { userId } = getAuth(req as Parameters<typeof getAuth>[0]);
+        return userId ?? null;
+      },
+      getUser: async (userId) => clerkClient.users.getUser(userId),
+    }),
+  },
+});
+```
+
+`getUserIdFromRequest` extracts the authenticated user ID from the request (typically via Clerk's `getAuth()` after middleware has run). `getUser` fetches the full user record from Clerk's API.
+
+### Header auth
+
+Extracts the user ID from a trusted request header. Designed for services deployed behind an auth proxy (Nginx, Cloudflare Access, AWS ALB) that injects a verified identity header before forwarding requests.
+
+```typescript
+import { headerAuth } from '@kavachos/core/auth';
+
+// Default header: X-User-Id
+const adapter = headerAuth();
+
+// Custom header
+const adapter = headerAuth({ header: 'X-Authenticated-User' });
+```
+
+<Callout type="warn">
+  Only use `headerAuth` when the proxy strips or overrides the header. Never use it when clients can forge the header directly.
+</Callout>
+
+### Bearer JWT auth
+
+Verifies a JWT from the `Authorization: Bearer <token>` header using a symmetric secret (HS256/HS384/HS512). Extracts `sub`, `email`, `name`, and `picture`/`image` from the payload.
+
+```typescript
+import { bearerAuth } from '@kavachos/core/auth';
+
+const adapter = bearerAuth({
+  secret: process.env.JWT_SECRET!,
+  issuer: 'https://my-app.example.com',  // validates iss claim
+  audience: 'kavachos',                  // validates aud claim
+});
+```
+
+Returns `null` when no `Authorization` header is present, the header is not `Bearer`, or the JWT is invalid, expired, or fails issuer/audience validation.
+
+### API key auth
+
+Reads an API key from a request header and delegates validation to a function you supply. Useful for service-to-service calls and developer tooling where session cookies are not appropriate.
+
+```typescript
+import { apiKeyAdapter } from '@kavachos/core/auth';
+
+const adapter = apiKeyAdapter({
+  // Default header is x-api-key. Override here if needed.
+  header: 'x-api-key',
+
+  validateKey: async (key) => {
+    const record = await db.apiKeys.findUnique({ where: { key } });
+    if (!record || record.revokedAt) return null;
+    return { userId: record.userId, email: record.ownerEmail };
+  },
+});
+```
+
+`validateKey` receives the raw header value and must return `{ userId, email?, name? }` or `null`.
+
+### Custom adapter
+
+Implement the `AuthAdapter` interface directly to connect any auth system.
+
+```typescript
+import type { AuthAdapter, ResolvedUser } from '@kavachos/core';
+
+const myAdapter: AuthAdapter = {
+  async resolveUser(request: Request): Promise<ResolvedUser | null> {
+    const token = request.headers.get('x-session-token');
+    if (!token) return null;
+
+    const session = await mySessionStore.get(token);
+    if (!session) return null;
+
+    return {
+      id: session.userId,
+      email: session.email,
+      name: session.displayName,
+    };
+  },
+
+  // Optional: fetch a user by ID (called before creating agents)
+  async getUser(userId: string): Promise<ResolvedUser | null> {
+    const user = await myUserStore.find(userId);
+    if (!user) return null;
+    return { id: user.id, email: user.email };
+  },
+
+  // Optional: sync user data into kavach_users table
+  async syncUser(user: ResolvedUser): Promise<void> {
+    await myUserStore.upsert(user);
+  },
+};
+```
+
+Only `resolveUser` is required. `getUser` is called when KavachOS needs to verify a user still exists before creating an agent on their behalf. `syncUser` is called after a successful `resolveUser` to keep the `kavach_users` table in sync with your provider.
+
+## Using multiple adapters
+
+You can compose adapters to support multiple auth strategies. Call each in sequence and return the first non-null result:
+
+```typescript
+import type { AuthAdapter } from '@kavachos/core';
+import { bearerAuth, apiKeyAdapter } from '@kavachos/core/auth';
+
+const jwtAdapter = bearerAuth({ secret: process.env.JWT_SECRET! });
+const keyAdapter = apiKeyAdapter({ validateKey: myValidateKey });
+
+const composedAdapter: AuthAdapter = {
+  async resolveUser(request: Request) {
+    return (
+      (await jwtAdapter.resolveUser(request)) ??
+      (await keyAdapter.resolveUser(request))
+    );
+  },
+};
+```
+
+## Passing the adapter to createKavach
+
+All adapters are passed through the `auth.adapter` field:
+
+```typescript
+const kavach = await createKavach({
+  database: { provider: 'postgres', url: process.env.DATABASE_URL! },
+  auth: {
+    adapter: myAdapter,
+    // Optionally enable KavachOS-managed sessions
+    session: {
+      secret: process.env.SESSION_SECRET!,
+      maxAge: 60 * 60 * 24 * 30,
+    },
+  },
+});
+
+// Resolve the current user in a request handler
+const user = await kavach.auth.resolveUser(request);
+```

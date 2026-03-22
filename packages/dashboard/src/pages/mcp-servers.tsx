@@ -161,8 +161,8 @@ function RegisterMcpServerModal({ open, onClose, onSubmit, loading }: RegisterMo
 						aria-checked={authRequired}
 						onClick={() => setAuthRequired((v) => !v)}
 						className={[
-							"relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-zinc-900",
-							authRequired ? "bg-indigo-600" : "bg-zinc-700",
+							"relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:ring-offset-2 focus:ring-offset-zinc-900",
+							authRequired ? "bg-amber-600" : "bg-zinc-700",
 						].join(" ")}
 					>
 						<span
@@ -172,7 +172,10 @@ function RegisterMcpServerModal({ open, onClose, onSubmit, loading }: RegisterMo
 							].join(" ")}
 						/>
 					</button>
-					<label htmlFor="mcp-auth" className="text-sm text-zinc-300 cursor-pointer select-none">
+					<label
+						htmlFor="mcp-auth"
+						className="text-sm text-zinc-700 dark:text-zinc-300 cursor-pointer select-none"
+					>
 						Auth required
 					</label>
 				</div>
@@ -223,7 +226,7 @@ export function McpServersPage({ client }: McpServersPageProps) {
 
 			{isLoading ? (
 				<div className="flex items-center justify-center py-16">
-					<div className="w-5 h-5 border-2 border-zinc-700 border-t-indigo-500 rounded-full animate-spin" />
+					<div className="w-5 h-5 border-2 border-zinc-300 dark:border-zinc-700 border-t-amber-500 rounded-full animate-spin" />
 				</div>
 			) : servers.length === 0 ? (
 				<Table>
@@ -268,10 +271,12 @@ export function McpServersPage({ client }: McpServersPageProps) {
 							<Tr key={server.id}>
 								<Td>
 									<div className="flex items-center gap-2">
-										<div className="w-6 h-6 rounded-md bg-zinc-800 border border-zinc-700 flex items-center justify-center flex-shrink-0">
+										<div className="w-6 h-6 rounded-md bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 flex items-center justify-center flex-shrink-0">
 											<Server className="w-3.5 h-3.5 text-zinc-400" />
 										</div>
-										<span className="text-sm font-medium text-white">{server.name}</span>
+										<span className="text-sm font-medium text-zinc-900 dark:text-white">
+											{server.name}
+										</span>
 									</div>
 								</Td>
 								<Td>
@@ -284,7 +289,7 @@ export function McpServersPage({ client }: McpServersPageProps) {
 										<span className="text-xs text-zinc-600">—</span>
 									) : (
 										<div className="flex items-center gap-1.5">
-											<span className="text-sm text-zinc-300 font-medium">
+											<span className="text-sm text-zinc-700 dark:text-zinc-300 font-medium">
 												{server.tools.length}
 											</span>
 											<span className="text-xs text-zinc-500">
@@ -295,7 +300,7 @@ export function McpServersPage({ client }: McpServersPageProps) {
 								</Td>
 								<Td>
 									{server.authRequired ? (
-										<Badge variant="indigo">Required</Badge>
+										<Badge variant="gold">Required</Badge>
 									) : (
 										<Badge variant="gray">None</Badge>
 									)}

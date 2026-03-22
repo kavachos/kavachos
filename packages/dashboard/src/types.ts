@@ -14,4 +14,5 @@ export type Theme = "light" | "dark";
 export interface DashboardProps {
 	apiUrl: string;
 	theme?: Theme;
+	demo?: boolean;
 }

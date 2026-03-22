@@ -1,0 +1,184 @@
+---
+title: Cost tracking
+description: Recording and aggregating token costs per agent, per user, and per day.
+icon: BarChart
+---
+
+import { Card, Cards } from 'fumadocs-ui/components/card';
+
+
+## Overview
+
+Every `authorize()` call accepts an optional `tokensCost` field. When you provide it, KavachOS writes it to the audit log alongside the authorization result. You can then query the audit log to produce usage reports, monthly billing summaries, or per-agent breakdowns.
+
+<Callout type="info">
+  `tokensCost` is optional. Calls that omit it are recorded with no cost value and do not affect budget policy counters. You can adopt cost tracking incrementally across your codebase.
+</Callout>
+
+## Passing cost at authorization time
+
+You typically know the token cost either from the LLM provider's response or by estimating before the call. Either way, pass it in the authorize context:
+
+```typescript
+// Option A: pass a pre-call estimate
+const result = await kavach.authorize('agt_abc123', {
+  action: 'execute',
+  resource: 'mcp:openai:chat',
+  tokensCost: 150,  // estimated tokens for this request
+});
+
+if (!result.allowed) {
+  return { error: result.reason };
+}
+
+// Make the LLM call
+const response = await openai.chat.completions.create({ ... });
+const actual = response.usage?.total_tokens ?? 0;
+
+// Option B: record actual usage after the call via the policy module
+await kavach.policy.recordUsage('agt_abc123', actual);
+```
+
+If you want accurate numbers in the audit log rather than estimates, call `authorize()` first to check permissions, then record the actual cost via `recordUsage()` after the call.
+
+## Querying costs from the audit log
+
+The audit log stores `tokensCost` on each entry. Query it to get raw data for aggregation:
+
+```typescript
+// All authorize calls for an agent in January
+const entries = await kavach.audit.query({
+  agentId: 'agt_abc123',
+  since: new Date('2024-01-01'),
+  until: new Date('2024-02-01'),
+});
+
+// Sum the costs
+const totalCost = entries.reduce((sum, e) => sum + (e.tokensCost ?? 0), 0);
+console.log(`Agent spent ${totalCost} tokens in January`);
+```
+
+## Aggregating by agent
+
+```typescript
+async function getCostByAgent(since: Date, until: Date) {
+  const entries = await kavach.audit.query({ since, until });
+
+  const byAgent: Record<string, number> = {};
+  for (const entry of entries) {
+    if (entry.tokensCost === undefined) continue;
+    byAgent[entry.agentId] = (byAgent[entry.agentId] ?? 0) + entry.tokensCost;
+  }
+
+  return byAgent;
+}
+
+const costs = await getCostByAgent(
+  new Date('2024-01-01'),
+  new Date('2024-02-01'),
+);
+// { 'agt_abc123': 4820, 'agt_def456': 12300, ... }
+```
+
+## Aggregating by day
+
+```typescript
+async function getCostByDay(agentId: string, since: Date, until: Date) {
+  const entries = await kavach.audit.query({ agentId, since, until });
+
+  const byDay: Record<string, number> = {};
+  for (const entry of entries) {
+    if (entry.tokensCost === undefined) continue;
+    const day = entry.timestamp.toISOString().slice(0, 10); // YYYY-MM-DD
+    byDay[day] = (byDay[day] ?? 0) + entry.tokensCost;
+  }
+
+  return byDay;
+}
+
+const daily = await getCostByDay('agt_abc123', new Date('2024-01-01'), new Date('2024-02-01'));
+// { '2024-01-01': 230, '2024-01-02': 410, ... }
+```
+
+## Monthly billing report
+
+Export all data for a billing period and process it outside KavachOS:
+
+```typescript
+async function monthlyBillingReport(year: number, month: number) {
+  const since = new Date(year, month - 1, 1);
+  const until = new Date(year, month, 1); // first of next month
+
+  const entries = await kavach.audit.query({ since, until, limit: 50_000 });
+
+  // Group by ownerId (user) via agent lookup
+  const byUser: Record<string, { calls: number; tokensCost: number }> = {};
+
+  for (const entry of entries) {
+    const key = entry.userId;
+    const row = byUser[key] ?? { calls: 0, tokensCost: 0 };
+    row.calls += 1;
+    row.tokensCost += entry.tokensCost ?? 0;
+    byUser[key] = row;
+  }
+
+  return byUser;
+}
+
+const report = await monthlyBillingReport(2024, 1);
+// {
+//   'user-123': { calls: 8420, tokensCost: 45200 },
+//   'user-456': { calls: 1200, tokensCost: 6800 },
+// }
+```
+
+## Using budget policies for enforcement
+
+Cost tracking in the audit log is for reporting. If you want to stop agents when they hit a limit, use budget policies alongside tracking:
+
+```typescript
+// Create a policy that blocks when monthly cost exceeds 5000
+await kavach.policy.create({
+  agentId: 'agt_abc123',
+  limits: { maxTokensCostPerMonth: 5000 },
+  action: 'block',
+});
+
+// In your request handler: check before authorizing
+const budgetCheck = await kavach.policy.checkBudget('agt_abc123', estimatedCost);
+if (!budgetCheck.allowed) {
+  return { error: 'Monthly budget exceeded' };
+}
+
+// Then authorize normally
+const authResult = await kavach.authorize('agt_abc123', {
+  action: 'execute',
+  resource: 'mcp:openai:chat',
+  tokensCost: estimatedCost,
+});
+```
+
+## Exporting audit data
+
+For bulk analysis, export to CSV or JSON and import into your data warehouse:
+
+```typescript
+// CSV export — easy to import into BigQuery, Redshift, or Excel
+const csv = await kavach.audit.export({
+  format: 'csv',
+  since: new Date('2024-01-01'),
+  until: new Date('2024-02-01'),
+});
+
+await fs.writeFile('january-audit.csv', csv);
+```
+
+The CSV includes `tokensCost` as a column, so you can run aggregations in SQL directly against the exported data.
+
+## Next steps
+
+<Cards>
+  <Card title="Budget policies" description="Set hard limits and choose what happens when they are exceeded." href="/docs/guides/budget-policies" />
+  <Card title="Audit log" description="Full reference for audit log queries and export options." href="/docs/core/audit" />
+  <Card title="Telemetry" description="Route authorization events to Datadog, Grafana, or any OTel backend." href="/docs/guides/telemetry" />
+</Cards>

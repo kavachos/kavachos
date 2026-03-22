@@ -15,7 +15,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "kavachos": "workspace:*"
+    "kavachos": "workspace:*",
+    "@kavachos/hono": "workspace:*",
+    "hono": "^4.0.0",
+    "@hono/node-server": "^1.13.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

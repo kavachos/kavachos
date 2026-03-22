@@ -12,9 +12,9 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
 	primary:
-		"bg-indigo-600 hover:bg-indigo-500 text-white border border-indigo-500 hover:border-indigo-400",
+		"kavach-btn-gold text-[#1a1000] border-0 shadow-[0_2px_8px_-2px_rgba(154,114,40,0.3),inset_0_1px_1px_rgba(255,255,255,0.4)] hover:shadow-[0_2px_12px_-2px_rgba(154,114,40,0.4)] relative overflow-hidden",
 	secondary:
-		"bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 hover:border-zinc-600",
+		"bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-300 dark:border-zinc-700 hover:border-zinc-600",
 	ghost:
 		"bg-transparent hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-transparent",
 	danger:
@@ -42,7 +42,7 @@ export function Button({
 			disabled={disabled ?? loading}
 			className={[
 				"inline-flex items-center gap-1.5 rounded-lg font-medium transition-all duration-100",
-				"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1 focus-visible:ring-offset-zinc-900",
+				"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/30 focus-visible:ring-offset-1 focus-visible:ring-offset-zinc-900",
 				"disabled:opacity-50 disabled:cursor-not-allowed",
 				VARIANT_CLASSES[variant],
 				SIZE_CLASSES[size],

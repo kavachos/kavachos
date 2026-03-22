@@ -20,13 +20,13 @@ interface SectionCardProps {
 
 function SectionCard({ icon, title, description, children }: SectionCardProps) {
 	return (
-		<div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+		<div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5">
 			<div className="flex items-start gap-3 mb-5">
-				<div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center flex-shrink-0 text-zinc-400">
+				<div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0 text-zinc-400">
 					{icon}
 				</div>
 				<div>
-					<h2 className="text-sm font-semibold text-white">{title}</h2>
+					<h2 className="text-sm font-semibold text-zinc-900 dark:text-white">{title}</h2>
 					<p className="text-xs text-zinc-500 mt-0.5">{description}</p>
 				</div>
 			</div>
@@ -46,7 +46,7 @@ function ReadOnlyField({ label, value }: ReadOnlyFieldProps) {
 	return (
 		<div>
 			<p className="text-xs font-medium text-zinc-500 mb-1">{label}</p>
-			<p className="text-sm font-mono text-zinc-300 bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2">
+			<p className="text-sm font-mono text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2">
 				{value}
 			</p>
 		</div>
@@ -235,7 +235,7 @@ export function SettingsPage({ client }: SettingsPageProps) {
 
 			{isLoading ? (
 				<div className="flex items-center justify-center py-16">
-					<div className="w-5 h-5 border-2 border-zinc-700 border-t-indigo-500 rounded-full animate-spin" />
+					<div className="w-5 h-5 border-2 border-zinc-300 dark:border-zinc-700 border-t-amber-500 rounded-full animate-spin" />
 				</div>
 			) : settingsResult?.success ? (
 				<SettingsForm

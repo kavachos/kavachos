@@ -10,24 +10,19 @@ export default function Layout({ children }: { children: ReactNode }) {
 				enabled: false,
 			}}
 			sidebar={{
+				collapsible: false,
 				banner: (
-					<div className="mb-1 flex items-center justify-between px-0.5 pb-2 border-b border-fd-border">
+					<div key="sidebar-banner" className="mb-1 flex items-center justify-between px-0.5 pb-2 border-b border-fd-border">
 						<span className="text-[11px] font-medium text-fd-muted-foreground uppercase tracking-widest">
 							Docs
 						</span>
 						<span className="rounded-full bg-fd-primary/10 px-2 py-0.5 text-[10px] font-medium text-fd-primary">
-							v0.0.1
+							v0.0.2
 						</span>
 					</div>
 				),
 			}}
-			links={[
-				{
-					text: "GitHub",
-					url: "https://github.com/kavachos/kavachos",
-					external: true,
-				},
-			]}
+			githubUrl="https://github.com/kavachos/kavachos"
 		>
 			{children}
 		</DocsLayout>

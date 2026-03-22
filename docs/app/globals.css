@@ -49,6 +49,7 @@
 #nd-docs-layout {
 	margin-top: var(--nav-height);
 	--fd-docs-height: calc(100dvh - var(--nav-height));
+	--fd-docs-row-1: 0px;
 }
 
 /* ===== Layout: edge-to-edge, no centering spacers ===== */
@@ -61,78 +62,64 @@
 		0px !important;
 }
 
-/* ===== Sidebar: full height, glass, polished ===== */
+/* ===== Sidebar: true black, polished ===== */
 #nd-docs-layout [data-sidebar] {
 	scrollbar-width: none;
-	padding: 0.75rem;
+	padding: 0.5rem 0.625rem;
 }
 
 #nd-docs-layout [data-sidebar]::-webkit-scrollbar {
 	display: none;
 }
 
-/* Dark sidebar: glass + subtle shadow */
+/* Dark sidebar: solid black, not glass/grey */
 .dark #nd-docs-layout [data-sidebar] {
-	background: hsl(0 0% 3.5% / 0.85);
-	backdrop-filter: blur(16px) saturate(1.1);
-	-webkit-backdrop-filter: blur(16px) saturate(1.1);
-	border-right: 1px solid hsl(0 0% 100% / 0.06);
-	box-shadow: 4px 0 24px hsl(0 0% 0% / 0.3);
+	background: hsl(0 0% 2%) !important;
+	border-right: 1px solid hsl(0 0% 100% / 0.05);
 }
 
 /* Light sidebar */
 #nd-docs-layout [data-sidebar] {
-	border-right: 1px solid hsl(0 0% 0% / 0.06);
+	border-right: 1px solid hsl(0 0% 90%);
 }
 
-/* Sidebar links: smooth transitions, rounded */
-#nd-docs-layout [data-sidebar] a {
-	transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-	border-radius: 8px;
-	padding: 0.375rem 0.625rem;
+/* All sidebar interactive items: shared base */
+#nd-docs-layout [data-sidebar] a,
+#nd-docs-layout [data-sidebar] [data-folder] > button {
+	transition: all 0.15s ease;
+	border-radius: 6px;
+	padding: 0.3rem 0.5rem;
 	font-size: 0.8125rem;
+	line-height: 1.4;
 }
 
-.dark #nd-docs-layout [data-sidebar] a:hover {
-	background: hsl(0 0% 100% / 0.05);
-	transform: translateX(2px);
+/* Hover */
+.dark #nd-docs-layout [data-sidebar] a:hover,
+.dark #nd-docs-layout [data-sidebar] [data-folder] > button:hover {
+	background: hsl(0 0% 100% / 0.04);
 }
 
-/* Active sidebar item: gold glow */
+/* Active item: gold left border */
 .dark #nd-docs-layout [data-sidebar] a[data-active="true"] {
-	background: hsl(43 50% 50% / 0.08);
+	background: hsl(43 50% 50% / 0.06);
 	color: var(--kavach-gold-primary);
-	box-shadow:
-		inset 3px 0 0 var(--kavach-gold-mid),
-		0 0 12px hsl(43 50% 50% / 0.06);
+	box-shadow: inset 2px 0 0 var(--kavach-gold-mid);
+	font-weight: 500;
 }
 
 #nd-docs-layout [data-sidebar] a[data-active="true"] {
 	font-weight: 500;
 }
 
-/* Folder buttons: smooth expand */
-#nd-docs-layout [data-sidebar] [data-folder] > button {
-	transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-	border-radius: 8px;
-	padding: 0.375rem 0.625rem;
-	font-size: 0.8125rem;
-}
-
-.dark #nd-docs-layout [data-sidebar] [data-folder] > button:hover {
-	background: hsl(0 0% 100% / 0.04);
-	color: var(--kavach-gold-primary);
-}
-
-/* Folder expand animation */
+/* Folder expand */
 #nd-docs-layout [data-sidebar] [data-folder] [role="group"] {
-	animation: sidebar-expand 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+	animation: sidebar-expand 0.2s ease both;
 }
 
 @keyframes sidebar-expand {
 	from {
 		opacity: 0;
-		transform: translateY(-4px);
+		transform: translateY(-3px);
 	}
 	to {
 		opacity: 1;
@@ -140,7 +127,7 @@
 	}
 }
 
-/* Sidebar icons: subtle gold tint on hover */
+/* Icons: gold on hover/active */
 .dark #nd-docs-layout [data-sidebar] a:hover svg,
 .dark #nd-docs-layout [data-sidebar] [data-folder] > button:hover svg {
 	color: var(--kavach-gold-mid);
@@ -152,11 +139,21 @@
 	opacity: 1;
 }
 
-/* Hide sidebar collapse trigger on desktop */
-@media (min-width: 48rem) {
-	#nd-docs-layout [data-sidebar-toggle] {
-		display: none !important;
-	}
+/* Move sidebar collapse button to bottom footer area */
+#nd-docs-layout [data-sidebar] > div:last-child {
+	margin-top: auto;
+	padding-top: 0.5rem;
+	border-top: 1px solid hsl(0 0% 100% / 0.05);
+}
+
+/* Style the footer buttons (collapse + theme) */
+#nd-docs-layout [data-sidebar] > div:last-child button {
+	opacity: 0.5;
+	transition: opacity 0.15s ease;
+}
+
+#nd-docs-layout [data-sidebar] > div:last-child button:hover {
+	opacity: 1;
 }
 
 /* ===== TOC (right sidebar) ===== */
@@ -180,18 +177,71 @@
 	border-bottom: 1px solid hsl(0 0% 100% / 0.06);
 }
 
-/* ===== Code blocks: deeper black, gold accents ===== */
+/* ===== Code blocks: black bg, line highlighting, file header ===== */
 .dark pre {
-	background: hsl(0 0% 4%) !important;
+	background: hsl(0 0% 3%) !important;
 	border: 1px solid hsl(0 0% 100% / 0.06);
+	border-radius: 10px;
 }
 
 .dark code {
 	background: hsl(0 0% 100% / 0.06);
+	border-radius: 4px;
+	padding: 0.15em 0.35em;
+	font-size: 0.85em;
 }
 
 .dark pre code {
 	background: transparent;
+	padding: 0;
+	border-radius: 0;
+	font-size: 0.8125rem;
+}
+
+/* Code block figure (wrapper with title) */
+.dark figure[data-rehype-pretty-code-figure] {
+	border: 1px solid hsl(0 0% 100% / 0.06);
+	border-radius: 10px;
+	overflow: hidden;
+}
+
+.dark figure[data-rehype-pretty-code-figure] pre {
+	border: none;
+	border-radius: 0;
+}
+
+/* File name header */
+.dark figure[data-rehype-pretty-code-figure] figcaption {
+	background: hsl(0 0% 5%);
+	border-bottom: 1px solid hsl(0 0% 100% / 0.06);
+	padding: 0.5rem 0.875rem;
+	font-size: 0.75rem;
+	font-family: var(--font-mono);
+	color: hsl(0 0% 55%);
+}
+
+/* Highlighted lines */
+.dark pre [data-highlighted-line] {
+	background: hsl(43 50% 50% / 0.06);
+	border-left: 2px solid var(--kavach-gold-mid);
+	margin-left: -1px;
+}
+
+/* Line numbers */
+.dark pre [data-line-numbers] > [data-line]::before {
+	color: hsl(0 0% 30%);
+	margin-right: 1rem;
+}
+
+/* Diff lines */
+.dark pre [data-line-diff-add] {
+	background: hsl(142 50% 50% / 0.08);
+	border-left: 2px solid hsl(142 70% 45%);
+}
+
+.dark pre [data-line-diff-remove] {
+	background: hsl(0 50% 50% / 0.08);
+	border-left: 2px solid hsl(0 70% 45%);
 }
 
 /* ===== Callout cards: glass in dark mode ===== */

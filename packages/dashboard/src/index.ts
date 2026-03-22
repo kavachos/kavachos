@@ -17,6 +17,7 @@ export type {
 	PaginatedAuditLogs,
 	PermissionTemplate,
 } from "./api/types.js";
+export { ToastProvider, useToast } from "./components/toast.js";
 export { KavachDashboard } from "./dashboard.js";
 // Type exports for consumers
 export type { DashboardProps, Page, Theme } from "./types.js";

@@ -1,5 +1,8 @@
 import type { AgentConfig } from "./agent/types.js";
+import type { ApprovalConfig } from "./approval/approval.js";
 import type { AuthAdapter } from "./auth/types.js";
+import type { DidWebConfig } from "./did/types.js";
+import type { KavachHooks } from "./hooks/lifecycle.js";
 import type { McpConfig } from "./mcp/types.js";
 import type { SessionConfig } from "./session/session.js";
 
@@ -34,6 +37,18 @@ export interface KavachConfig {
 	auth?: {
 		adapter?: AuthAdapter;
 		session?: SessionConfig;
+	};
+
+	/** Async approval flows (CIBA-style human-in-the-loop) */
+	approval?: ApprovalConfig;
+
+	/** Lifecycle hooks for agent sandboxing, logging, and custom validation */
+	hooks?: KavachHooks;
+
+	/** W3C DID (Decentralized Identifiers) configuration */
+	did?: {
+		/** did:web config — required for generating did:web identities */
+		web?: DidWebConfig;
 	};
 
 	/** Base URL for the auth server */
@@ -96,6 +111,7 @@ export interface McpModule {
 export interface AgentIdentity {
 	id: string;
 	ownerId: string;
+	tenantId?: string;
 	name: string;
 	type: "autonomous" | "delegated" | "service";
 	token: string;
@@ -122,6 +138,7 @@ export interface PermissionConstraints {
 
 export interface CreateAgentInput {
 	ownerId: string;
+	tenantId?: string;
 	name: string;
 	type: "autonomous" | "delegated" | "service";
 	permissions: Permission[];
@@ -138,6 +155,7 @@ export interface UpdateAgentInput {
 
 export interface AgentFilter {
 	userId?: string;
+	tenantId?: string;
 	status?: "active" | "revoked" | "expired";
 	type?: "autonomous" | "delegated" | "service";
 }

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-type BadgeVariant = "green" | "red" | "yellow" | "gray" | "blue" | "indigo";
+type BadgeVariant = "green" | "red" | "yellow" | "gray" | "blue" | "indigo" | "gold";
 
 interface BadgeProps {
 	variant: BadgeVariant;
@@ -11,9 +11,10 @@ const VARIANT_CLASSES: Record<BadgeVariant, string> = {
 	green: "bg-emerald-950 text-emerald-400 border-emerald-800",
 	red: "bg-red-950 text-red-400 border-red-800",
 	yellow: "bg-amber-950 text-amber-400 border-amber-800",
-	gray: "bg-zinc-800 text-zinc-400 border-zinc-700",
+	gray: "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 border-zinc-700",
 	blue: "bg-blue-950 text-blue-400 border-blue-800",
 	indigo: "bg-indigo-950 text-indigo-400 border-indigo-800",
+	gold: "bg-amber-950 text-amber-400 border-amber-700",
 };
 
 export function Badge({ variant, children }: BadgeProps) {
@@ -42,6 +43,7 @@ const DOT_CLASSES: Record<BadgeVariant, string> = {
 	gray: "bg-zinc-500",
 	blue: "bg-blue-400",
 	indigo: "bg-indigo-400",
+	gold: "bg-amber-400",
 };
 
 export function StatusDot({ variant }: StatusDotProps) {

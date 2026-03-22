@@ -6,6 +6,7 @@ import { Step, Steps } from "fumadocs-ui/components/steps";
 import { File, Folder, Files } from "fumadocs-ui/components/files";
 import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
 import { TypeTable } from "fumadocs-ui/components/type-table";
+import { Card, Cards } from "fumadocs-ui/components/card";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { source } from "@/lib/source";
@@ -23,6 +24,8 @@ const mdxComponents = {
 	Accordion,
 	Accordions,
 	TypeTable,
+	Card,
+	Cards,
 };
 
 interface Props {
@@ -37,7 +40,11 @@ export default async function Page({ params }: Props) {
 	const MDX = page.data.body;
 
 	return (
-		<DocsPage toc={page.data.toc} full={page.data.full} tableOfContent={{ style: "clerk" }}>
+		<DocsPage
+			toc={page.data.toc}
+			full={page.data.full}
+			tableOfContent={{ style: "clerk" }}
+		>
 			<DocsTitle>{page.data.title}</DocsTitle>
 			<DocsDescription>{page.data.description}</DocsDescription>
 			<DocsBody>

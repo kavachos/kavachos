@@ -73,8 +73,8 @@ export function AuthGate({ apiUrl, children }: AuthGateProps) {
 
 	if (state === "checking") {
 		return (
-			<div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-				<div className="w-5 h-5 rounded-full border-2 border-zinc-700 border-t-yellow-500 animate-spin" />
+			<div className="min-h-screen bg-white dark:bg-zinc-950 flex items-center justify-center">
+				<div className="w-5 h-5 rounded-full border-2 border-zinc-300 dark:border-zinc-700 border-t-yellow-500 animate-spin" />
 			</div>
 		);
 	}

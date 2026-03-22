@@ -4,6 +4,11 @@ description: Immutable logging of every authorization decision, with filtering, 
 icon: ScrollText
 ---
 
+import { Card, Cards } from 'fumadocs-ui/components/card';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+import { Accordions, Accordion } from 'fumadocs-ui/components/accordion';
+
 
 ## How audit logging works
 
@@ -203,3 +208,11 @@ console.log(`${highActivity.length} calls in the last hour`);
 <Callout type="warn">
 A sudden spike in call volume from a single agent often indicates a runaway loop. Use `kavach.agent.revoke()` to suspend the agent while you investigate.
 </Callout>
+
+## Next steps
+
+<Cards>
+  <Card title="Compliance" description="Map audit data to EU AI Act, NIST, SOC 2, and ISO 42001." href="/docs/guides/compliance" />
+  <Card title="REST API" description="Query audit logs via HTTP endpoints." href="/docs/reference/api" />
+  <Card title="Admin dashboard" description="Visual audit log viewer with filters and export." href="/docs/platform/dashboard" />
+</Cards>

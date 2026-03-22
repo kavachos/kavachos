@@ -27,7 +27,7 @@ export function UsersPage({ client, onNavigate }: UsersPageProps) {
 
 			{isLoading ? (
 				<div className="flex items-center justify-center py-16">
-					<div className="w-5 h-5 border-2 border-zinc-700 border-t-indigo-500 rounded-full animate-spin" />
+					<div className="w-5 h-5 border-2 border-zinc-300 dark:border-zinc-700 border-t-amber-500 rounded-full animate-spin" />
 				</div>
 			) : users.length === 0 ? (
 				<Table>
@@ -66,7 +66,7 @@ export function UsersPage({ client, onNavigate }: UsersPageProps) {
 									<code className="text-xs font-mono text-zinc-500">{user.id}</code>
 								</Td>
 								<Td>
-									<span className="text-xs text-zinc-200">{user.email}</span>
+									<span className="text-xs text-zinc-800 dark:text-zinc-200">{user.email}</span>
 								</Td>
 								<Td>
 									<span className="text-xs text-zinc-400">{user.name ?? "—"}</span>
@@ -78,9 +78,7 @@ export function UsersPage({ client, onNavigate }: UsersPageProps) {
 										className="inline-flex"
 										aria-label={`View agents for ${user.email}`}
 									>
-										<Badge variant={user.agentCount > 0 ? "indigo" : "gray"}>
-											{user.agentCount}
-										</Badge>
+										<Badge variant={user.agentCount > 0 ? "gold" : "gray"}>{user.agentCount}</Badge>
 									</button>
 								</Td>
 								<Td>

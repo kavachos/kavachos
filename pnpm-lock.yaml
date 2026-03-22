@@ -349,6 +349,15 @@ importers:
 
   packages/cli:
     dependencies:
+      '@hono/node-server':
+        specifier: ^1.13.0
+        version: 1.19.11(hono@4.12.8)
+      '@kavachos/hono':
+        specifier: workspace:*
+        version: link:../adapters/hono
+      hono:
+        specifier: ^4.0.0
+        version: 4.12.8
       kavachos:
         specifier: workspace:*
         version: link:../core
@@ -454,6 +463,52 @@ importers:
       vite:
         specifier: ^6.4.1
         version: 6.4.1(@types/node@22.19.15)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  packages/plugins/discovery:
+    dependencies:
+      drizzle-orm:
+        specifier: ^0.41.0
+        version: 0.41.0(@libsql/client@0.17.2)(@types/better-sqlite3@7.6.13)(@types/pg@8.20.0)(better-sqlite3@11.10.0)(mysql2@3.20.0(@types/node@22.19.15))(pg@8.20.0)
+    devDependencies:
+      '@types/better-sqlite3':
+        specifier: ^7.6.13
+        version: 7.6.13
+      better-sqlite3:
+        specifier: ^11.0.0
+        version: 11.10.0
+      kavachos:
+        specifier: workspace:*
+        version: link:../../core
+      tsup:
+        specifier: ^8.4.0
+        version: 8.5.1(jiti@2.6.1)(postcss@8.5.8)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
+      typescript:
+        specifier: ^5.8.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.4(@types/debug@4.1.13)(@types/node@22.19.15)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  packages/plugins/telemetry:
+    devDependencies:
+      '@types/better-sqlite3':
+        specifier: ^7.6.13
+        version: 7.6.13
+      better-sqlite3:
+        specifier: ^11.0.0
+        version: 11.10.0
+      kavachos:
+        specifier: workspace:*
+        version: link:../../core
+      tsup:
+        specifier: ^8.4.0
+        version: 8.5.1(jiti@2.6.1)(postcss@8.5.8)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
+      typescript:
+        specifier: ^5.8.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.4(@types/debug@4.1.13)(@types/node@22.19.15)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)
 
 packages:
 

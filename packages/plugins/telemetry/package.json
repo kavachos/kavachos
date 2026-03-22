@@ -1,0 +1,50 @@
+{
+  "name": "@kavachos/plugin-telemetry",
+  "version": "0.0.2",
+  "description": "OpenTelemetry integration plugin for KavachOS — converts auth events into OTel spans",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "clean": "rm -rf dist .turbo"
+  },
+  "keywords": [
+    "kavachos",
+    "telemetry",
+    "opentelemetry",
+    "otel",
+    "auth",
+    "agent"
+  ],
+  "author": "KavachOS <hello@kavachos.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kavachos/kavachos.git",
+    "directory": "packages/plugins/telemetry"
+  },
+  "peerDependencies": {
+    "kavachos": "workspace:*"
+  },
+  "devDependencies": {
+    "kavachos": "workspace:*",
+    "@types/better-sqlite3": "^7.6.13",
+    "better-sqlite3": "^11.0.0",
+    "tsup": "^8.4.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.0.0"
+  }
+}

@@ -1,8 +1,9 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createApiClient } from "./api/client.js";
 import { AuthGate, LogoutButton } from "./components/auth-gate.js";
 import { Layout } from "./components/layout.js";
+import { ToastProvider } from "./components/toast.js";
 import { AgentsPage } from "./pages/agents.js";
 import { AuditPage } from "./pages/audit.js";
 import { DelegationsPage } from "./pages/delegations.js";
@@ -31,9 +32,10 @@ const defaultQueryClient = new QueryClient({
 interface InnerDashboardProps {
 	apiUrl: string;
 	onLogout: () => void;
+	demo?: boolean;
 }
 
-function InnerDashboard({ apiUrl, onLogout }: InnerDashboardProps) {
+function InnerDashboard({ apiUrl, onLogout, demo }: InnerDashboardProps) {
 	const [currentPage, setCurrentPage] = useState<Page>("overview");
 	const client = useMemo(() => createApiClient(apiUrl), [apiUrl]);
 
@@ -65,6 +67,7 @@ function InnerDashboard({ apiUrl, onLogout }: InnerDashboardProps) {
 			currentPage={currentPage}
 			onNavigate={setCurrentPage}
 			headerActions={<LogoutButton onLogout={onLogout} />}
+			demo={demo}
 		>
 			{renderPage()}
 		</Layout>
@@ -73,13 +76,31 @@ function InnerDashboard({ apiUrl, onLogout }: InnerDashboardProps) {
 
 // ─── Public Component ─────────────────────────────────────────────────────────
 
-export function KavachDashboard({ apiUrl, theme = "dark" }: DashboardProps) {
+const STORAGE_KEY = "kavachos-theme";
+
+export function KavachDashboard({ apiUrl, theme = "dark", demo }: DashboardProps) {
+	useEffect(() => {
+		const stored = localStorage.getItem(STORAGE_KEY);
+		const prefersDark =
+			stored !== null
+				? stored === "dark"
+				: theme === "dark" || window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+		if (prefersDark) {
+			document.documentElement.classList.add("dark");
+		} else {
+			document.documentElement.classList.remove("dark");
+		}
+	}, [theme]);
+
 	return (
-		<div className={theme === "dark" ? "dark" : ""} data-kavachos-dashboard>
+		<div data-kavachos-dashboard>
 			<AuthGate apiUrl={apiUrl}>
 				{(onLogout) => (
 					<QueryClientProvider client={defaultQueryClient}>
-						<InnerDashboard apiUrl={apiUrl} onLogout={onLogout} />
+						<ToastProvider>
+							<InnerDashboard apiUrl={apiUrl} onLogout={onLogout} demo={demo} />
+						</ToastProvider>
 					</QueryClientProvider>
 				)}
 			</AuthGate>

@@ -2,10 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, Moon, Sun, Search, ArrowRight } from "lucide-react";
+import { Menu, X, Moon, Sun, Search, ArrowRight, ChevronDown } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Logo } from "./logo";
+
+const PRODUCT_LINKS = [
+	{ href: "/products/agent-identity", label: "Agent identity", description: "Cryptographic agent identity, permissions, delegation, audit" },
+	{ href: "/products/security", label: "Security", description: "Anomaly detection, trust scoring, compliance reports" },
+	{ href: "/products/platform", label: "Platform", description: "MCP OAuth 2.1, framework adapters, dashboard, SDK" },
+] as const;
 
 function NpmIcon({ className }: { className?: string }) {
 	return (
@@ -27,9 +33,12 @@ export function Nav() {
 	const pathname = usePathname();
 	const { resolvedTheme, setTheme } = useTheme();
 	const [mobileOpen, setMobileOpen] = useState(false);
+	const [productsOpen, setProductsOpen] = useState(false);
 	const [mounted, setMounted] = useState(false);
+	const productsRef = useRef<HTMLDivElement>(null);
 	const isDocsPage = pathname.startsWith("/docs");
 	const isHome = pathname === "/";
+	const isProductsPage = pathname.startsWith("/products");
 
 	useEffect(() => {
 		setMounted(true);
@@ -37,7 +46,18 @@ export function Nav() {
 
 	useEffect(() => {
 		setMobileOpen(false);
+		setProductsOpen(false);
 	}, [pathname]);
+
+	useEffect(() => {
+		function handleClickOutside(e: MouseEvent) {
+			if (productsRef.current && !productsRef.current.contains(e.target as Node)) {
+				setProductsOpen(false);
+			}
+		}
+		document.addEventListener("mousedown", handleClickOutside);
+		return () => document.removeEventListener("mousedown", handleClickOutside);
+	}, []);
 
 	// Nav is shown on all pages for consistent UX
 
@@ -64,6 +84,41 @@ export function Nav() {
 
 						{/* Desktop nav links */}
 						<nav className="hidden items-center gap-0.5 md:flex">
+							{/* Products dropdown */}
+							<div ref={productsRef} className="relative">
+								<button
+									type="button"
+									onClick={() => setProductsOpen((v) => !v)}
+									className={`relative flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm transition-all ${
+										isProductsPage
+											? "font-medium text-fd-foreground after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:h-[2px] after:w-4 after:rounded-full after:bg-[var(--kavach-gold-mid)]"
+											: "text-fd-muted-foreground/60 hover:text-fd-foreground hover:bg-fd-accent/40"
+									}`}
+								>
+									Products
+									<ChevronDown
+										className={`h-3.5 w-3.5 transition-transform duration-200 ${productsOpen ? "rotate-180" : ""}`}
+									/>
+								</button>
+								{productsOpen && (
+									<div className="absolute left-0 top-full mt-1.5 w-72 overflow-hidden rounded-xl border border-fd-border bg-fd-popover shadow-xl shadow-black/20 backdrop-blur-xl">
+										{PRODUCT_LINKS.map((link) => (
+											<Link
+												key={link.href}
+												href={link.href}
+												className="flex flex-col gap-0.5 px-4 py-3 transition-colors hover:bg-fd-accent/50 first:rounded-t-xl last:rounded-b-xl"
+											>
+												<span className="text-sm font-medium text-fd-foreground">
+													{link.label}
+												</span>
+												<span className="text-xs text-fd-muted-foreground/60">
+													{link.description}
+												</span>
+											</Link>
+										))}
+									</div>
+								)}
+							</div>
 							<NavLink href="/docs" active={isDocsPage}>
 								Docs
 							</NavLink>
@@ -168,6 +223,18 @@ export function Nav() {
 						<MobileNavLink href="/docs" active={isDocsPage}>
 							Documentation
 						</MobileNavLink>
+						<p className="mt-2 px-4 text-[10px] font-semibold uppercase tracking-[0.12em] text-fd-muted-foreground/40">
+							Products
+						</p>
+						{PRODUCT_LINKS.map((link) => (
+							<MobileNavLink
+								key={link.href}
+								href={link.href}
+								active={pathname === link.href}
+							>
+								{link.label}
+							</MobileNavLink>
+						))}
 						<MobileNavLink
 							href="https://github.com/kavachos/kavachos"
 							external

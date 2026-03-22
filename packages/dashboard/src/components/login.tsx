@@ -43,22 +43,26 @@ export function LoginScreen({ apiUrl, onAuthenticated }: LoginProps) {
 	}
 
 	return (
-		<div className="min-h-screen bg-zinc-950 flex items-center justify-center px-4">
+		<div className="min-h-screen bg-white dark:bg-zinc-950 flex items-center justify-center px-4">
 			<div className="w-full max-w-sm">
 				{/* Logo */}
 				<div className="flex flex-col items-center mb-8">
 					<div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4 bg-gradient-to-br from-yellow-500/20 to-yellow-700/10 border border-yellow-600/30">
 						<ShieldCheck className="w-6 h-6 text-yellow-500" strokeWidth={2} />
 					</div>
-					<h1 className="text-lg font-semibold text-white tracking-tight">KavachOS</h1>
+					<h1 className="text-lg font-semibold text-zinc-900 dark:text-white tracking-tight">
+						KavachOS
+					</h1>
 					<p className="text-xs text-zinc-500 uppercase tracking-widest mt-0.5 font-medium">
 						Admin Dashboard
 					</p>
 				</div>
 
 				{/* Card */}
-				<div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl shadow-black/40">
-					<h2 className="text-sm font-medium text-zinc-300 mb-1">Dashboard access</h2>
+				<div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-xl shadow-black/40">
+					<h2 className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+						Dashboard access
+					</h2>
 					<p className="text-xs text-zinc-500 mb-5">Enter the dashboard secret to continue.</p>
 
 					<form onSubmit={handleSubmit} className="space-y-4">
@@ -78,12 +82,12 @@ export function LoginScreen({ apiUrl, onAuthenticated }: LoginProps) {
 									onChange={(e) => setSecret(e.target.value)}
 									placeholder="Enter your dashboard secret"
 									autoComplete="current-password"
-									className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder-zinc-600 pr-10 focus:outline-none focus:border-yellow-600/60 focus:ring-1 focus:ring-yellow-600/20 transition-colors"
+									className="w-full bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-900 dark:text-white placeholder-zinc-600 pr-10 focus:outline-none focus:border-yellow-600/60 focus:ring-1 focus:ring-yellow-600/20 transition-colors"
 								/>
 								<button
 									type="button"
 									onClick={() => setShowSecret((v) => !v)}
-									className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+									className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
 									aria-label={showSecret ? "Hide secret" : "Show secret"}
 								>
 									{showSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}

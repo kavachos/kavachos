@@ -15,7 +15,10 @@ interface LabelProps {
 
 export function Label({ htmlFor, children, required }: LabelProps) {
 	return (
-		<label htmlFor={htmlFor} className="block text-xs font-medium text-zinc-400 mb-1.5">
+		<label
+			htmlFor={htmlFor}
+			className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1.5"
+		>
 			{children}
 			{required && <span className="text-red-400 ml-1">*</span>}
 		</label>
@@ -29,7 +32,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 const BASE_INPUT =
-	"w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-500 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed";
+	"w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed";
 
 export function Input({ error, className = "", ...props }: InputProps) {
 	return (
