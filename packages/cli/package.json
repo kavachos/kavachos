@@ -1,6 +1,6 @@
 {
   "name": "@kavachos/cli",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "KavachOS CLI - setup wizard, dashboard launcher, and development tools",
   "type": "module",
   "bin": {
