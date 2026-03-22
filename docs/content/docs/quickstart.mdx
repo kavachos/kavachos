@@ -40,7 +40,7 @@ import { Card, Cards } from 'fumadocs-ui/components/card';
 
 Pass a database config to `createKavach`. Use SQLite for local development and Postgres in production.
 
-```ts title="lib/kavach.ts"
+```ts
 import { createKavach } from 'kavachos';
 
 const kavach = createKavach({
@@ -66,7 +66,7 @@ For in-memory storage (useful in tests), pass `url: ':memory:'` instead.
 
 An agent always has an owner: the user ID from your existing auth system. KavachOS does not manage human authentication.
 
-```ts title="lib/kavach.ts"
+```ts
 const agent = await kavach.agent.create({
   ownerId: 'user-123',          // from your auth provider
   name: 'github-reader',
@@ -111,7 +111,7 @@ There are three agent types:
 
 Call `kavach.authorize` before any sensitive operation. It returns `{ allowed, reason?, auditId }`.
 
-```ts title="lib/kavach.ts"
+```ts
 const result = await kavach.authorize(agent.id, {
   action: 'read',
   resource: 'mcp:github:repos',
@@ -126,7 +126,7 @@ if (!result.allowed) {
 
 If you only have the raw bearer token (from an incoming HTTP request, for example), use `authorizeByToken` instead:
 
-```ts title="lib/kavach.ts"
+```ts
 const result = await kavach.authorizeByToken(bearerToken, {
   action: 'read',
   resource: 'mcp:github:repos',
@@ -141,7 +141,7 @@ const result = await kavach.authorizeByToken(bearerToken, {
 
 Every authorization decision is logged. Query by agent, filter by result, or export for compliance.
 
-```ts title="lib/kavach.ts"
+```ts
 // All decisions for an agent
 const logs = await kavach.audit.query({ agentId: agent.id });
 
@@ -163,7 +163,7 @@ const csv = await kavach.audit.export({ format: 'csv' });
 
 An orchestrator agent can delegate a subset of its permissions to a sub-agent. The delegation has its own expiry and a `maxDepth` to prevent unbounded chains.
 
-```ts title="lib/kavach.ts"
+```ts
 const sub = await kavach.agent.create({
   ownerId: 'user-123',
   name: 'sub-reader',
@@ -191,7 +191,7 @@ An agent cannot delegate permissions it does not hold itself. Attempts to escala
 
 A self-contained script covering agent creation, authorization by ID and token, token rotation, delegation, and audit export.
 
-```ts title="lib/kavach.ts"
+```ts
 import { createKavach } from 'kavachos';
 
 const kavach = createKavach({
@@ -262,10 +262,10 @@ const csv = await kavach.audit.export({ format: 'csv' });
 ## Next steps
 
 <Cards>
-  <Card title="Permission engine" description="Wildcards, rate limits, time windows, IP allowlists, and approval gates." href="/docs/core/permissions" />
-  <Card title="Delegation chains" description="Sub-agent delegation with depth limits and cascading revocation." href="/docs/core/delegation" />
-  <Card title="MCP OAuth 2.1" description="Set up the authorization server for MCP tool servers." href="/docs/platform/mcp" />
-  <Card title="Framework adapters" description="Drop-in middleware for Hono, Express, Next.js, and 4 more." href="/docs/platform/adapters" />
-  <Card title="Auth adapters" description="Plug into better-auth, Auth.js, Clerk, or bring your own." href="/docs/guides/auth-adapters" />
-  <Card title="Configuration" description="All createKavach() options and environment patterns." href="/docs/guides/configuration" />
+  <Card title="Permission engine" description="Wildcards, rate limits, time windows, IP allowlists, and approval gates." href="/docs/permissions" />
+  <Card title="Delegation chains" description="Sub-agent delegation with depth limits and cascading revocation." href="/docs/delegation" />
+  <Card title="MCP OAuth 2.1" description="Set up the authorization server for MCP tool servers." href="/docs/mcp" />
+  <Card title="Framework adapters" description="Drop-in middleware for Hono, Express, Next.js, and 4 more." href="/docs/adapters" />
+  <Card title="Auth adapters" description="Plug into better-auth, Auth.js, Clerk, or bring your own." href="/docs/auth-adapters" />
+  <Card title="Configuration" description="All createKavach() options and environment patterns." href="/docs/configuration" />
 </Cards>

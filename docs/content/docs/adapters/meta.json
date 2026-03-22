@@ -1,0 +1,4 @@
+{
+	"title": "Framework adapters",
+"pages": ["index", "hono", "express", "nextjs", "fastify", "nuxt", "sveltekit", "astro"]
+}

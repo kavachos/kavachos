@@ -10,6 +10,7 @@ import { Card, Cards } from "fumadocs-ui/components/card";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { source } from "@/lib/source";
+import { TocActions } from "@/components/toc-actions";
 
 const mdxComponents = {
 	...defaultMdxComponents,
@@ -38,6 +39,7 @@ export default async function Page({ params }: Props) {
 	if (!page) notFound();
 
 	const MDX = page.data.body;
+	const slugPath = slug ? slug.join("/") : "index";
 
 	return (
 		<DocsPage
@@ -45,7 +47,12 @@ export default async function Page({ params }: Props) {
 			full={page.data.full}
 			tableOfContent={{ style: "clerk" }}
 		>
-			<DocsTitle>{page.data.title}</DocsTitle>
+			<div className="flex items-center justify-between gap-4">
+				<DocsTitle className="mb-0">{page.data.title}</DocsTitle>
+				<div className="flex items-center gap-2 not-prose shrink-0">
+					<TocActions slug={slugPath} />
+				</div>
+			</div>
 			<DocsDescription>{page.data.description}</DocsDescription>
 			<DocsBody>
 				<MDX components={mdxComponents} />

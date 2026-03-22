@@ -1,5 +1,0 @@
-{
-	"title": "Framework adapters",
-	"icon": "Code",
-	"pages": ["index", "hono", "express", "nextjs", "fastify", "nuxt", "sveltekit", "astro"]
-}

@@ -1,0 +1,96 @@
+---
+title: Magic link
+description: Passwordless sign-in via a one-time email link.
+icon: Link2
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+
+Magic links let users sign in by clicking a link sent to their email. No password needed. The link is a signed, single-use token that expires after a configurable window.
+
+## Setup
+
+<Steps>
+
+<Step>
+
+### Add the plugin
+
+```typescript title="lib/kavach.ts"
+import { createKavach } from '@kavachos/core';
+import { magicLink } from '@kavachos/core/plugins/magic-link';
+
+const kavach = await createKavach({
+  database: { provider: 'postgres', url: process.env.DATABASE_URL! },
+  secret: process.env.KAVACH_SECRET!,
+  baseUrl: 'https://auth.example.com',
+  plugins: [
+    magicLink({
+      sendEmail: async ({ to, link }) => {
+        await resend.emails.send({
+          from: 'auth@example.com',
+          to,
+          subject: 'Your sign-in link',
+          html: `<a href="${link}">Sign in to Example</a>. Link expires in 15 minutes.`,
+        });
+      },
+    }),
+  ],
+});
+```
+
+</Step>
+
+<Step>
+
+### Handle the callback route
+
+Magic links redirect to `baseUrl + /auth/magic-link/callback?token=...`. KavachOS handles this automatically. You can set a `redirectTo` to control where users land after sign-in:
+
+```typescript
+magicLink({
+  redirectTo: '/dashboard',
+  sendEmail: async ({ to, link }) => { /* ... */ },
+}),
+```
+
+</Step>
+
+</Steps>
+
+## The sign-in flow
+
+1. User submits their email to `POST /auth/magic-link/send`.
+2. KavachOS generates a signed token and calls your `sendEmail` function.
+3. User clicks the link in their email.
+4. KavachOS validates the token, creates or retrieves the user, sets a session cookie, and redirects.
+
+If the email belongs to an existing account, the same user ID is returned. If it is new, an account is created automatically.
+
+## Sending the link request
+
+`POST /auth/magic-link/send`
+
+```typescript
+await fetch('/auth/magic-link/send', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ email: 'user@example.com' }),
+});
+```
+
+The response is always 200 to prevent email enumeration.
+
+## Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `sendEmail` | `function` | required | Called with `{ to, link, token }` |
+| `tokenTtl` | `number` | `900` | Token lifetime in seconds (default: 15 minutes) |
+| `redirectTo` | `string` | `/` | Where to redirect after successful sign-in |
+| `createUserIfNotFound` | `boolean` | `true` | Auto-create accounts for new emails |
+
+<Callout type="warn">
+  Magic links are single-use. Clicking an expired or already-used link returns a 400. Show the user a "resend" option in your UI.
+</Callout>

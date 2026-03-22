@@ -1,0 +1,5 @@
+{
+	"title": "OAuth providers",
+	"icon": "Globe",
+	"pages": ["index", "google", "github", "apple", "discord", "slack", "microsoft", "gitlab", "linkedin"]
+}

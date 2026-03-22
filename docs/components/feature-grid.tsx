@@ -67,12 +67,12 @@ export function FeatureGrid() {
 				{/* Visual: chain */}
 				<div className="mt-5 flex items-center gap-1.5 text-[11px]">
 					<ChainNode name="orchestrator" color="text-blue-400" />
-					<ArrowRight className="h-3 w-3 text-fd-muted-foreground/30" />
+					<ArrowRight className="h-3 w-3 text-fd-muted-foreground/50" />
 					<ChainNode
 						name="sub-agent"
 						color="text-[var(--kavach-gold-primary)]"
 					/>
-					<ArrowRight className="h-3 w-3 text-fd-muted-foreground/30" />
+					<ArrowRight className="h-3 w-3 text-fd-muted-foreground/50" />
 					<ChainNode name="worker" color="text-emerald-400" />
 				</div>
 			</div>
@@ -153,7 +153,7 @@ export function FeatureGrid() {
 
 function Label({ number, text }: { number: string; text: string }) {
 	return (
-		<p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-fd-muted-foreground/40">
+		<p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-fd-muted-foreground/60">
 			<span className="text-[var(--kavach-gold-deep)] dark:text-[var(--kavach-gold-primary)]">
 				{number}
 			</span>{" "}
@@ -228,7 +228,7 @@ function LogEntry({
 			<span className="font-mono text-fd-muted-foreground/60">
 				{action}:{resource}
 			</span>
-			<span className="ml-auto text-fd-muted-foreground/30">{time}</span>
+			<span className="ml-auto text-fd-muted-foreground/50">{time}</span>
 		</div>
 	);
 }
@@ -253,7 +253,7 @@ function FrameworkBadge({
 			className={`rounded-md border px-2 py-1 text-[11px] font-medium ${
 				active
 					? "border-fd-border bg-fd-card text-fd-foreground"
-					: "border-fd-border/50 text-fd-muted-foreground/40"
+					: "border-fd-border/50 text-fd-muted-foreground/60"
 			}`}
 		>
 			{children}

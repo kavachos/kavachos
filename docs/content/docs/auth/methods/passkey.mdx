@@ -1,0 +1,52 @@
+---
+title: Passkey
+description: WebAuthn/FIDO2 biometric and hardware key authentication.
+icon: Key
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+<Callout type="warn">
+  Passkey support is coming soon. This page describes the planned API. Watch the [changelog](/changelog) for updates.
+</Callout>
+
+Passkeys use the WebAuthn standard (FIDO2) to authenticate users with device biometrics (Touch ID, Face ID, Windows Hello) or hardware security keys (YubiKey). No password is ever created or stored.
+
+## Planned API
+
+```typescript title="lib/kavach.ts"
+import { createKavach } from '@kavachos/core';
+import { passkey } from '@kavachos/core/plugins/passkey';
+
+const kavach = await createKavach({
+  database: { provider: 'postgres', url: process.env.DATABASE_URL! },
+  secret: process.env.KAVACH_SECRET!,
+  baseUrl: 'https://auth.example.com',
+  plugins: [
+    passkey({
+      rpName: 'Example App',       // Shown in the browser prompt
+      rpId: 'auth.example.com',    // Must match your domain
+    }),
+  ],
+});
+```
+
+## Planned endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `POST /auth/passkey/register/start` | Begin credential registration (returns challenge) |
+| `POST /auth/passkey/register/complete` | Store the new credential |
+| `POST /auth/passkey/authenticate/start` | Begin authentication (returns challenge) |
+| `POST /auth/passkey/authenticate/complete` | Verify assertion, set session |
+
+## What to expect
+
+- Works alongside email/password and OAuth — a user can have multiple sign-in methods
+- Credentials are stored per-device; users can register multiple passkeys
+- Conditional UI (autofill-driven passkey prompts) will be supported from launch
+- Synced passkeys via iCloud Keychain and Google Password Manager will work automatically
+
+## Register interest
+
+If passkey support is blocking your adoption of KavachOS, open an issue on GitHub. Upvotes help prioritize the roadmap.

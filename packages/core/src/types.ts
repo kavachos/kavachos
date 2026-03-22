@@ -1,9 +1,18 @@
 import type { AgentConfig } from "./agent/types.js";
 import type { ApprovalConfig } from "./approval/approval.js";
+import type { AdminConfig } from "./auth/admin.js";
+import type { ApiKeyManagerConfig } from "./auth/api-key-manager.js";
+import type { EmailOtpConfig } from "./auth/email-otp.js";
+import type { MagicLinkConfig } from "./auth/magic-link.js";
+import type { OrgConfig } from "./auth/organization.js";
+import type { PasskeyConfig } from "./auth/passkey.js";
+import type { SsoConfig } from "./auth/sso.js";
+import type { TotpConfig } from "./auth/totp.js";
 import type { AuthAdapter } from "./auth/types.js";
 import type { DidWebConfig } from "./did/types.js";
 import type { KavachHooks } from "./hooks/lifecycle.js";
 import type { McpConfig } from "./mcp/types.js";
+import type { KavachPlugin } from "./plugin/types.js";
 import type { SessionConfig } from "./session/session.js";
 
 /**
@@ -51,11 +60,83 @@ export interface KavachConfig {
 		web?: DidWebConfig;
 	};
 
+	/** Auth plugins (email, OAuth, 2FA, org, etc.) */
+	plugins?: KavachPlugin[];
+
 	/** Base URL for the auth server */
 	baseUrl?: string;
 
 	/** Secret key for signing tokens */
 	secret?: string;
+
+	/**
+	 * Magic link (passwordless email) authentication.
+	 *
+	 * When provided, `kavach.magicLink` is available with `sendLink`,
+	 * `verify`, and `handleRequest`. Requires `auth.session` to be configured
+	 * so that sessions can be issued on successful verification.
+	 */
+	magicLink?: MagicLinkConfig;
+
+	/**
+	 * Email OTP (one-time password) authentication.
+	 *
+	 * When provided, `kavach.emailOtp` is available with `sendCode`,
+	 * `verifyCode`, and `handleRequest`. Requires `auth.session` to be
+	 * configured so that sessions can be issued on successful verification.
+	 */
+	emailOtp?: EmailOtpConfig;
+
+	/**
+	 * TOTP two-factor authentication.
+	 *
+	 * When provided, `kavach.totp` is available with `setup`, `enable`,
+	 * `disable`, `verify`, `isEnabled`, `regenerateBackupCodes`, and
+	 * `handleRequest`. Users call `setup` to get a secret + backup codes,
+	 * then `enable` after scanning their authenticator app.
+	 */
+	totp?: TotpConfig;
+
+	/**
+	 * Passkey / WebAuthn authentication.
+	 *
+	 * When provided, `kavach.passkey` is available for registering and
+	 * authenticating with platform authenticators (Face ID, Touch ID,
+	 * Windows Hello) and roaming authenticators (hardware security keys).
+	 */
+	passkey?: PasskeyConfig;
+
+	/**
+	 * Organizations + RBAC.
+	 *
+	 * When provided, `kavach.org` is available with org CRUD, membership
+	 * management, invitation flows, and role-based permission checking.
+	 */
+	org?: OrgConfig;
+
+	/**
+	 * SSO (SAML 2.0 + OIDC) enterprise authentication.
+	 *
+	 * When provided, `kavach.sso` is available for creating org-level SSO
+	 * connections, generating auth URLs, and processing callbacks.
+	 */
+	sso?: SsoConfig;
+
+	/**
+	 * Admin module.
+	 *
+	 * When provided, `kavach.admin` is available for listing users, banning,
+	 * impersonation, and deletion.
+	 */
+	admin?: AdminConfig;
+
+	/**
+	 * API key management.
+	 *
+	 * When provided, `kavach.apiKeys` is available for creating and validating
+	 * static API keys with permission scopes.
+	 */
+	apiKeys?: ApiKeyManagerConfig;
 }
 
 export interface DatabaseConfig {

@@ -1,6 +1,7 @@
 packages:
   - "packages/*"
   - "packages/adapters/*"
+  - "packages/auth/*"
   - "packages/plugins/*"
   - "examples/*"
   - "docs"

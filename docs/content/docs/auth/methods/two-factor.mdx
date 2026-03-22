@@ -1,0 +1,129 @@
+---
+title: Two-factor auth
+description: TOTP-based second factor with backup codes.
+icon: Shield
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+
+The `twoFactor()` plugin adds TOTP (time-based one-time password) support compatible with Google Authenticator, Authy, 1Password, and any RFC 6238 app. Users enroll once by scanning a QR code, then provide a 6-digit code on every sign-in.
+
+## Setup
+
+```typescript title="lib/kavach.ts"
+import { createKavach } from '@kavachos/core';
+import { emailPassword } from '@kavachos/core/plugins/email-password';
+import { twoFactor } from '@kavachos/core/plugins/two-factor';
+
+const kavach = await createKavach({
+  database: { provider: 'postgres', url: process.env.DATABASE_URL! },
+  secret: process.env.KAVACH_SECRET!,
+  baseUrl: 'https://auth.example.com',
+  plugins: [
+    emailPassword(),
+    twoFactor({
+      issuer: 'Example App',  // Shown in the authenticator app
+      enforce: false,         // Set true to require 2FA for all users
+    }),
+  ],
+});
+```
+
+<Callout type="info">
+  `twoFactor()` works with any primary auth method, not only email/password. Pair it with OAuth providers or magic link too.
+</Callout>
+
+## Enrollment flow
+
+<Steps>
+
+<Step>
+
+### Generate a TOTP secret
+
+After the user signs in, call the enrollment start endpoint:
+
+`POST /auth/two-factor/enroll/start`
+
+```typescript
+const res = await fetch('/auth/two-factor/enroll/start', {
+  method: 'POST',
+  credentials: 'include',
+});
+
+const { secret, qrCodeUrl, backupCodes } = await res.json();
+```
+
+Show `qrCodeUrl` as a QR code in your UI. Store `backupCodes` somewhere the user can access them.
+
+</Step>
+
+<Step>
+
+### Confirm the enrollment
+
+Ask the user to enter their first code to confirm enrollment:
+
+`POST /auth/two-factor/enroll/complete`
+
+```typescript
+await fetch('/auth/two-factor/enroll/complete', {
+  method: 'POST',
+  credentials: 'include',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ code: '482910' }),
+});
+```
+
+</Step>
+
+</Steps>
+
+## Verification at sign-in
+
+When a user with 2FA enabled signs in, the primary auth endpoint returns `{ status: 'two_factor_required', challengeToken }` instead of a session. Submit the TOTP code to complete sign-in:
+
+`POST /auth/two-factor/verify`
+
+```typescript
+const res = await fetch('/auth/two-factor/verify', {
+  method: 'POST',
+  credentials: 'include',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    challengeToken,   // From the primary auth response
+    code: '482910',   // From the user's authenticator app
+  }),
+});
+```
+
+## Backup codes
+
+Ten single-use backup codes are generated at enrollment. Each is a 10-character alphanumeric string. Users can submit a backup code in place of a TOTP code at the verify endpoint.
+
+To regenerate backup codes (invalidates all existing ones):
+
+`POST /auth/two-factor/backup-codes/regenerate`
+
+## Enforcement
+
+Set `enforce: true` to require 2FA for all users. Users who have not enrolled are prompted to do so after their first sign-in. You can also enforce selectively based on user role in a hook:
+
+```typescript
+twoFactor({
+  issuer: 'Example App',
+  enforce: false,
+  shouldEnforce: async (user) => user.role === 'admin',
+}),
+```
+
+## Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `issuer` | `string` | required | App name shown in authenticator |
+| `enforce` | `boolean` | `false` | Require 2FA for all users |
+| `shouldEnforce` | `function` | — | Per-user enforcement logic |
+| `backupCodeCount` | `number` | `10` | Number of backup codes generated |
+| `challengeTokenTtl` | `number` | `300` | Seconds to complete verification after primary auth |

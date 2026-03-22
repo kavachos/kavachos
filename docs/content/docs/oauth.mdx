@@ -1,0 +1,203 @@
+---
+title: OAuth providers
+description: Configure Google, GitHub, and custom OAuth 2.0 providers for human sign-in.
+icon: Globe
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+
+The `oauth()` plugin adds social sign-in to KavachOS. It implements the OAuth 2.0 authorization code flow with PKCE and handles token exchange, account linking, and session creation automatically.
+
+## Setup
+
+<Steps>
+
+<Step>
+
+### Install the plugin
+
+The `oauth()` plugin is included in `@kavachos/core`. No extra package needed.
+
+</Step>
+
+<Step>
+
+### Configure your providers
+
+Pass provider names and credentials to `createKavach()`:
+
+<Tabs items={['Google + GitHub', 'Google only', 'GitHub only']}>
+  <Tab value="Google + GitHub">
+    ```typescript title="lib/kavach.ts"
+    import { createKavach } from '@kavachos/core';
+    import { oauth } from '@kavachos/core/plugins/oauth';
+
+    const kavach = await createKavach({
+      database: { provider: 'postgres', url: process.env.DATABASE_URL! },
+      secret: process.env.KAVACH_SECRET!,
+      baseUrl: 'https://auth.example.com',
+      plugins: [
+        oauth({
+          providers: [
+            {
+              id: 'google',
+              clientId: process.env.GOOGLE_CLIENT_ID!,
+              clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+            },
+            {
+              id: 'github',
+              clientId: process.env.GITHUB_CLIENT_ID!,
+              clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+            },
+          ],
+        }),
+      ],
+    });
+    ```
+  </Tab>
+  <Tab value="Google only">
+    ```typescript title="lib/kavach.ts"
+    import { createKavach } from '@kavachos/core';
+    import { oauth } from '@kavachos/core/plugins/oauth';
+
+    const kavach = await createKavach({
+      database: { provider: 'postgres', url: process.env.DATABASE_URL! },
+      secret: process.env.KAVACH_SECRET!,
+      baseUrl: 'https://auth.example.com',
+      plugins: [
+        oauth({
+          providers: [
+            {
+              id: 'google',
+              clientId: process.env.GOOGLE_CLIENT_ID!,
+              clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+            },
+          ],
+        }),
+      ],
+    });
+    ```
+  </Tab>
+  <Tab value="GitHub only">
+    ```typescript title="lib/kavach.ts"
+    import { createKavach } from '@kavachos/core';
+    import { oauth } from '@kavachos/core/plugins/oauth';
+
+    const kavach = await createKavach({
+      database: { provider: 'postgres', url: process.env.DATABASE_URL! },
+      secret: process.env.KAVACH_SECRET!,
+      baseUrl: 'https://auth.example.com',
+      plugins: [
+        oauth({
+          providers: [
+            {
+              id: 'github',
+              clientId: process.env.GITHUB_CLIENT_ID!,
+              clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+            },
+          ],
+        }),
+      ],
+    });
+    ```
+  </Tab>
+</Tabs>
+
+</Step>
+
+<Step>
+
+### Register redirect URIs
+
+Register the KavachOS callback URL with each provider's developer console:
+
+| Provider | Console URL | Redirect URI |
+|----------|-------------|--------------|
+| Google | [console.cloud.google.com](https://console.cloud.google.com) | `https://auth.example.com/auth/oauth/google/callback` |
+| GitHub | [github.com/settings/applications](https://github.com/settings/applications) | `https://auth.example.com/auth/oauth/github/callback` |
+
+The callback path pattern is always `/auth/oauth/{providerId}/callback` relative to `baseUrl`.
+
+</Step>
+
+</Steps>
+
+## The callback flow
+
+When a user clicks "Sign in with Google":
+
+1. Your frontend redirects to `/auth/oauth/google/authorize`. KavachOS generates a state parameter and PKCE challenge, then redirects to Google.
+2. Google redirects back to `/auth/oauth/google/callback` with an authorization code.
+3. KavachOS exchanges the code for tokens, fetches the user profile, and creates or updates the user record.
+4. A session cookie is set and the user is redirected to your app.
+
+The user ID returned is stable across sign-ins: the same Google account always resolves to the same `kavach_users` row.
+
+## Account linking
+
+When a user signs in with a provider whose email matches an existing account, KavachOS links the OAuth identity to the existing user automatically. A single user can have multiple connected providers.
+
+```typescript
+// Check which providers a user has connected
+const connections = await kavach.auth.getOAuthConnections(userId);
+// [{ provider: 'google', connectedAt: Date }, { provider: 'github', connectedAt: Date }]
+
+// Disconnect a provider (requires at least one remaining sign-in method)
+await kavach.auth.disconnectOAuth(userId, 'github');
+```
+
+<Callout type="warn">
+  Auto-linking trusts the email address from the OAuth provider. If your threat model requires stronger guarantees, set `autoLink: false` in the plugin config and handle linking explicitly.
+</Callout>
+
+```typescript
+oauth({
+  autoLink: false,  // default: true
+  providers: [...],
+})
+```
+
+## Adding custom providers
+
+Any OAuth 2.0 provider works by supplying the authorization and token endpoints:
+
+```typescript
+oauth({
+  providers: [
+    {
+      id: 'linear',
+      clientId: process.env.LINEAR_CLIENT_ID!,
+      clientSecret: process.env.LINEAR_CLIENT_SECRET!,
+      authorizationUrl: 'https://linear.app/oauth/authorize',
+      tokenUrl: 'https://api.linear.app/oauth/token',
+      userInfoUrl: 'https://api.linear.app/graphql',
+      scopes: ['read'],
+      // Map the provider's user object to KavachOS fields
+      getUserProfile: (data) => ({
+        id: data.data.viewer.id,
+        email: data.data.viewer.email,
+        name: data.data.viewer.name,
+      }),
+    },
+  ],
+})
+```
+
+`getUserProfile` receives the raw response from `userInfoUrl` and returns `{ id, email?, name?, image? }`. The `id` is the provider-side user ID and is stored alongside the email for deduplication.
+
+## Scopes
+
+Providers ship with sensible default scopes: `openid email profile` for Google, `user:email` for GitHub. Override them if you need additional permissions:
+
+```typescript
+{
+  id: 'google',
+  clientId: process.env.GOOGLE_CLIENT_ID!,
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+  scopes: ['openid', 'email', 'profile', 'https://www.googleapis.com/auth/calendar.readonly'],
+}
+```
+
+Storing and refreshing provider access tokens (for calling the provider API on behalf of the user) is covered in the [hooks guide](/docs/guides/hooks).

@@ -4,6 +4,22 @@ import { createAgentModule } from "./agent/agent.js";
 import { createPrivilegeAnalyzer } from "./analyzer/privilege.js";
 import { createApprovalModule } from "./approval/approval.js";
 import { createAuditModule } from "./audit/audit.js";
+import type { AdminModule } from "./auth/admin.js";
+import { createAdminModule } from "./auth/admin.js";
+import type { ApiKeyManagerModule } from "./auth/api-key-manager.js";
+import { createApiKeyManagerModule } from "./auth/api-key-manager.js";
+import type { EmailOtpModule } from "./auth/email-otp.js";
+import { createEmailOtpModule } from "./auth/email-otp.js";
+import type { MagicLinkModule } from "./auth/magic-link.js";
+import { createMagicLinkModule } from "./auth/magic-link.js";
+import type { OrgModule } from "./auth/organization.js";
+import { createOrgModule } from "./auth/organization.js";
+import type { PasskeyModule } from "./auth/passkey.js";
+import { createPasskeyModule } from "./auth/passkey.js";
+import type { SsoModule } from "./auth/sso.js";
+import { createSsoModule } from "./auth/sso.js";
+import type { TotpModule } from "./auth/totp.js";
+import { createTotpModule } from "./auth/totp.js";
 import type { ResolvedUser } from "./auth/types.js";
 import { createDatabase } from "./db/database.js";
 import { createTables } from "./db/migrations.js";
@@ -12,6 +28,9 @@ import { createDelegationModule } from "./delegation/delegation.js";
 import { createDidModule } from "./did/module.js";
 import type { ViolationType } from "./hooks/lifecycle.js";
 import { createPermissionEngine } from "./permission/engine.js";
+import { createPluginRouter } from "./plugin/router.js";
+import { initializePlugins } from "./plugin/runner.js";
+import type { EndpointContext } from "./plugin/types.js";
 import { createPolicyModule } from "./policies/budget.js";
 import type { SessionManager } from "./session/session.js";
 import { createSessionManager } from "./session/session.js";
@@ -129,6 +148,64 @@ export async function createKavach(config: KavachConfig) {
 
 	// DID module — W3C Decentralized Identifiers for agents
 	const didModule = createDidModule(db, config.did);
+
+	// Magic link — only created when the caller provides config.magicLink.
+	// Requires a session manager to issue sessions on verification.
+	const magicLinkModule: MagicLinkModule | null =
+		config.magicLink && sessionManager
+			? createMagicLinkModule(config.magicLink, db, sessionManager)
+			: null;
+
+	// Email OTP — only created when the caller provides config.emailOtp.
+	// Requires a session manager to issue sessions on verification.
+	const emailOtpModule: EmailOtpModule | null =
+		config.emailOtp && sessionManager
+			? createEmailOtpModule(config.emailOtp, db, sessionManager)
+			: null;
+
+	// TOTP — only created when the caller provides config.totp.
+	const totpModule: TotpModule | null = config.totp ? createTotpModule(config.totp, db) : null;
+
+	// Passkey — only created when the caller provides config.passkey.
+	const passkeyModule: PasskeyModule | null = config.passkey
+		? createPasskeyModule(config.passkey, db)
+		: null;
+
+	// Org — only created when the caller provides config.org.
+	const orgModule: OrgModule | null = config.org ? createOrgModule(config.org, db) : null;
+
+	// SSO — only created when the caller provides config.sso.
+	const ssoModule: SsoModule | null = config.sso ? createSsoModule(config.sso, db) : null;
+
+	// Admin — only created when the caller provides config.admin.
+	const adminModule: AdminModule | null = config.admin
+		? createAdminModule(config.admin, db, sessionManager)
+		: null;
+
+	// API Keys — only created when the caller provides config.apiKeys.
+	const apiKeyManagerModule: ApiKeyManagerModule | null = config.apiKeys
+		? createApiKeyManagerModule(config.apiKeys, db)
+		: null;
+
+	// Plugin system — runs after core modules so plugins can depend on them.
+	// Plugins may register endpoints, run migrations, and collect lifecycle hooks.
+	const pluginRegistry = await initializePlugins(config.plugins ?? [], db, config);
+
+	// Build an EndpointContext that plugins can use inside their handlers.
+	// We capture sessionManager in closure so it's available if configured.
+	const endpointCtx: EndpointContext = {
+		db,
+		async getUser(request: Request): Promise<ResolvedUser | null> {
+			if (!authAdapter) return null;
+			return authAdapter.resolveUser(request);
+		},
+		async getSession(token: string) {
+			if (!sessionManager) return null;
+			return sessionManager.validate(token);
+		},
+	};
+
+	const pluginRouter = createPluginRouter(pluginRegistry.endpoints);
 
 	// Authorize: look up agent, check own permissions then delegated permissions
 	async function authorize(
@@ -474,6 +551,154 @@ export async function createKavach(config: KavachConfig) {
 		 * ```
 		 */
 		did: didModule,
+		/**
+		 * Magic link (passwordless email) authentication.
+		 *
+		 * Null when `magicLink` config was not provided or `auth.session` is not
+		 * configured (sessions are required to issue tokens on verification).
+		 *
+		 * @example
+		 * ```typescript
+		 * // In your route handler
+		 * const response = await kavach.magicLink?.handleRequest(request);
+		 * if (response) return response;
+		 * ```
+		 */
+		magicLink: magicLinkModule,
+		/**
+		 * Email OTP (one-time password) authentication.
+		 *
+		 * Null when `emailOtp` config was not provided or `auth.session` is not
+		 * configured.
+		 *
+		 * @example
+		 * ```typescript
+		 * const response = await kavach.emailOtp?.handleRequest(request);
+		 * if (response) return response;
+		 * ```
+		 */
+		emailOtp: emailOtpModule,
+		/**
+		 * TOTP two-factor authentication.
+		 *
+		 * Null when `totp` config was not provided.
+		 *
+		 * @example
+		 * ```typescript
+		 * // On setup (show QR code to user)
+		 * const { secret, uri, backupCodes } = await kavach.totp.setup(userId);
+		 *
+		 * // After user scans QR and enters code
+		 * const { enabled } = await kavach.totp.enable(userId, totpCode);
+		 *
+		 * // On login (after password check)
+		 * const { valid } = await kavach.totp.verify(userId, totpCode);
+		 * ```
+		 */
+		totp: totpModule,
+		/**
+		 * Passkey / WebAuthn authentication.
+		 *
+		 * Null when `passkey` config was not provided.
+		 *
+		 * @example
+		 * ```typescript
+		 * // Registration — step 1: get options, send to browser
+		 * const options = await kavach.passkey.getRegistrationOptions(userId, userName);
+		 *
+		 * // Registration — step 2: verify browser response
+		 * const { credential } = await kavach.passkey.verifyRegistration(userId, response);
+		 *
+		 * // Authentication — step 1: get options
+		 * const options = await kavach.passkey.getAuthenticationOptions(userId);
+		 *
+		 * // Authentication — step 2: verify browser response
+		 * const result = await kavach.passkey.verifyAuthentication(response);
+		 * if (result) console.log('Authenticated user:', result.userId);
+		 * ```
+		 */
+		passkey: passkeyModule,
+		/**
+		 * Organizations + RBAC.
+		 *
+		 * Null when `org` config was not provided.
+		 *
+		 * @example
+		 * ```typescript
+		 * const org = await kavach.org?.create({ name: 'Acme', slug: 'acme', ownerId: userId });
+		 * const allowed = await kavach.org?.hasPermission(org.id, userId, 'agents:create');
+		 * ```
+		 */
+		org: orgModule,
+		/**
+		 * SSO (SAML 2.0 + OIDC) enterprise authentication.
+		 *
+		 * Null when `sso` config was not provided.
+		 *
+		 * @example
+		 * ```typescript
+		 * const conn = await kavach.sso?.createConnection({ orgId, providerId: 'okta', type: 'saml', domain: 'acme.com' });
+		 * const url = await kavach.sso?.getSamlAuthUrl(conn.id);
+		 * ```
+		 */
+		sso: ssoModule,
+		/**
+		 * Admin module.
+		 *
+		 * Null when `admin` config was not provided.
+		 *
+		 * @example
+		 * ```typescript
+		 * await kavach.admin?.banUser(userId, 'Spam');
+		 * const { session } = await kavach.admin?.impersonate(adminId, userId);
+		 * ```
+		 */
+		admin: adminModule,
+		/**
+		 * API key management.
+		 *
+		 * Null when `apiKeys` config was not provided.
+		 *
+		 * @example
+		 * ```typescript
+		 * const { key, apiKey } = await kavach.apiKeys?.create({ userId, name: 'CI', permissions: ['agents:read'] });
+		 * const result = await kavach.apiKeys?.validate(key);
+		 * ```
+		 */
+		apiKeys: apiKeyManagerModule,
+		/**
+		 * Plugin system.
+		 *
+		 * Route incoming HTTP requests through plugin-registered endpoints,
+		 * retrieve all endpoints for adapter mounting, or access plugin-provided
+		 * context values.
+		 *
+		 * @example
+		 * ```typescript
+		 * // In a framework adapter
+		 * app.all('/kavach/*', async (req) => {
+		 *   const response = await kavach.plugins.handleRequest(req);
+		 *   if (response) return response;
+		 *   return new Response('Not Found', { status: 404 });
+		 * });
+		 * ```
+		 */
+		plugins: {
+			/** Route a request through plugin endpoints. Returns null if no plugin handles it. */
+			handleRequest(request: Request, basePath = ""): Promise<Response | null> {
+				return pluginRouter.handle(request, basePath, endpointCtx);
+			},
+			/** Get all endpoints registered by plugins (for framework adapter mounting). */
+			getEndpoints() {
+				return pluginRouter.getEndpoints();
+			},
+			/** Get the merged plugin context (values returned from plugin init). */
+			getContext(): Record<string, unknown> {
+				return { ...pluginRegistry.pluginContext };
+			},
+			/** Access the raw plugin registry (hooks, migrations, etc.). */
+			registry: pluginRegistry,
+		},
 	};
 }
 

@@ -51,12 +51,12 @@ export default function HomePage() {
 							</span>
 						</h1>
 
-						<p className="mt-5 max-w-sm text-[15px] font-light text-fd-muted-foreground/70 leading-relaxed">
+						<p className="mt-5 max-w-sm text-[15px] font-light text-fd-muted-foreground leading-relaxed">
 							Give every AI agent a cryptographic identity, scoped permissions,
 							and an audit trail. Plugs into your existing auth stack.
 						</p>
 
-						<p className="mt-3 text-[11px] font-light text-fd-muted-foreground/40 italic">
+						<p className="mt-3 text-[11px] font-light text-fd-muted-foreground/60 italic">
 							kavach (कवच) — armor, from Sanskrit. Karna&apos;s divine shield in the Mahabharata.
 						</p>
 
@@ -71,14 +71,14 @@ export default function HomePage() {
 						</div>
 
 						<div className="mt-5">
-							<code className="inline-flex items-center gap-2 rounded-lg border border-fd-border bg-fd-card px-3.5 py-2 font-mono text-xs text-fd-muted-foreground/60">
+							<code className="inline-flex items-center gap-2 rounded-lg border border-fd-border bg-fd-card px-3.5 py-2 font-mono text-xs text-fd-muted-foreground/80">
 								<Terminal className="h-3.5 w-3.5 text-[var(--kavach-gold-deep)] dark:text-[var(--kavach-gold-primary)]" />
 								pnpm add kavachos
 							</code>
 						</div>
 
 						<div className="mt-8 hidden lg:block">
-							<p className="mb-2.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-fd-muted-foreground/30">
+							<p className="mb-2.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-fd-muted-foreground/50">
 								Works with
 							</p>
 							{/* Marquee */}
@@ -114,7 +114,7 @@ export default function HomePage() {
 				<div className="w-full lg:w-[60%]">
 					{/* 1. Flow diagram */}
 					<div className="border-b border-fd-border px-6 py-5 sm:px-10 lg:px-12">
-						<p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-fd-muted-foreground/50">
+						<p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-fd-muted-foreground/70">
 							How it works
 						</p>
 						<FlowDiagram />
@@ -122,7 +122,7 @@ export default function HomePage() {
 
 					{/* 2. Features (moved up) */}
 					<div className="border-b border-fd-border px-6 py-3 sm:px-10 lg:px-12">
-						<p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-fd-muted-foreground/50">
+						<p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-fd-muted-foreground/70">
 							Features
 						</p>
 					</div>
@@ -130,7 +130,7 @@ export default function HomePage() {
 
 					{/* 3. Stats */}
 					<div className="border-t border-fd-border px-6 py-6 sm:px-10 lg:px-12">
-						<p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-fd-muted-foreground/50">
+						<p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-fd-muted-foreground/70">
 							Why now
 						</p>
 						<div className="grid grid-cols-2 gap-3">
@@ -143,26 +143,26 @@ export default function HomePage() {
 
 					{/* 4. Comparison */}
 					<div className="border-t border-fd-border px-6 py-6 sm:px-10 lg:px-12">
-						<p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-fd-muted-foreground/50">
+						<p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-fd-muted-foreground/70">
 							Comparison
 						</p>
 						<div className="overflow-hidden rounded-lg border border-fd-border">
 							<table className="w-full text-[12px]">
 								<thead>
 									<tr className="border-b border-fd-border bg-fd-secondary/30">
-										<th className="px-3 py-2.5 text-left font-medium text-fd-muted-foreground/60" />
+										<th className="px-3 py-2.5 text-left font-medium text-fd-muted-foreground/80" />
 										<th className="px-3 py-2.5 text-center font-heading font-semibold text-[var(--kavach-gold-deep)] dark:text-[var(--kavach-gold-primary)]">
 											KavachOS
 										</th>
-										<th className="px-3 py-2.5 text-center font-medium text-fd-muted-foreground/50">
+										<th className="px-3 py-2.5 text-center font-medium text-fd-muted-foreground/70">
 											better-auth
 										</th>
-										<th className="px-3 py-2.5 text-center font-medium text-fd-muted-foreground/50">
+										<th className="px-3 py-2.5 text-center font-medium text-fd-muted-foreground/70">
 											DIY
 										</th>
 									</tr>
 								</thead>
-								<tbody className="text-fd-muted-foreground/70">
+								<tbody className="text-fd-muted-foreground">
 									<CompRow feature="Agent-first identity" ba={false} diy="depends" />
 									<CompRow feature="Wildcard permissions" ba={false} diy="depends" />
 									<CompRow feature="Delegation chains" ba={false} diy={false} />
@@ -180,7 +180,7 @@ export default function HomePage() {
 						<h2 className="text-2xl font-bold tracking-tight text-lift sm:text-3xl">
 							Armor for every identity
 						</h2>
-						<p className="mx-auto mt-3 max-w-md text-sm font-light text-fd-muted-foreground/60 leading-relaxed">
+						<p className="mx-auto mt-3 max-w-md text-sm font-light text-fd-muted-foreground/80 leading-relaxed">
 							TypeScript, MIT licensed, works with any auth provider.
 						</p>
 						<div className="mt-8 flex flex-wrap justify-center gap-3">
@@ -207,10 +207,10 @@ function StatCard({ number, label, source }: { number: string; label: string; so
 			<p className="font-heading text-xl font-bold tracking-tight text-fd-foreground">
 				{number}
 			</p>
-			<p className="mt-1 text-[11px] font-light text-fd-muted-foreground/60 leading-snug">
+			<p className="mt-1 text-[11px] font-light text-fd-muted-foreground/80 leading-snug">
 				{label}
 			</p>
-			<p className="mt-2 font-mono text-[9px] text-fd-muted-foreground/30">{source}</p>
+			<p className="mt-2 font-mono text-[9px] text-fd-muted-foreground/50">{source}</p>
 		</div>
 	);
 }
@@ -234,7 +234,7 @@ function CompRow({ feature, ba, diy }: { feature: string; ba?: boolean | string;
 
 function FrameworkPill({ icon: Icon, name }: { icon: typeof HonoIcon; name: string }) {
 	return (
-		<span className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-fd-border/50 bg-fd-card/60 px-3 py-1.5 text-xs font-medium text-fd-muted-foreground/60 backdrop-blur-sm">
+		<span className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-fd-border/70 bg-fd-card/60 px-3 py-1.5 text-xs font-medium text-fd-muted-foreground/80 backdrop-blur-sm">
 			<Icon className="h-4 w-4" />
 			{name}
 		</span>

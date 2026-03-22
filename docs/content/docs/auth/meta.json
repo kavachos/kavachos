@@ -1,0 +1,11 @@
+{
+	"title": "Authentication",
+	"icon": "Key",
+	"pages": [
+		"index",
+		"---Methods---",
+		"methods",
+		"---Providers---",
+		"providers"
+	]
+}

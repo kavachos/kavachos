@@ -1,5 +1,0 @@
-{
-	"title": "Guides",
-	"icon": "BookOpen",
-	"pages": ["configuration", "auth-adapters", "database", "compliance", "budget-policies", "hooks", "telemetry", "cost-tracking"]
-}

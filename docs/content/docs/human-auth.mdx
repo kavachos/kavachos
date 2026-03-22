@@ -1,0 +1,96 @@
+---
+title: Human authentication
+description: Add email/password and OAuth sign-in for the humans behind your agents.
+icon: User
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Card, Cards } from 'fumadocs-ui/components/card';
+
+KavachOS handles both agent identity and human authentication. Agent identity is the core of the system: every agent has an owner, and that owner is a human user. Human auth is how you get that user ID.
+
+By default, KavachOS expects you to provide a user ID from your existing auth system via an [auth adapter](/docs/guides/auth-adapters). If you want KavachOS to manage human sign-in directly, use plugins.
+
+## The plugin pattern
+
+Pass plugins to `createKavach()` to enable built-in auth methods:
+
+```typescript title="lib/kavach.ts"
+import { createKavach } from '@kavachos/core';
+import { emailPassword } from '@kavachos/core/plugins/email-password';
+import { oauth } from '@kavachos/core/plugins/oauth';
+
+const kavach = await createKavach({
+  database: { provider: 'sqlite', url: 'kavach.db' },
+  secret: process.env.KAVACH_SECRET!,
+  plugins: [
+    emailPassword(),
+    oauth({
+      providers: ['google', 'github'],
+    }),
+  ],
+});
+```
+
+Each plugin registers its own HTTP endpoints, database tables, and session logic. You pick only what you need.
+
+<Callout type="info">
+  Plugins and auth adapters can coexist. For example, you might use `emailPassword()` for web sign-in and a `bearerAuth` adapter for API calls from the same app.
+</Callout>
+
+## Available auth methods
+
+| Method | Plugin | Description |
+|--------|--------|-------------|
+| Email and password | `emailPassword()` | Register, sign in, password reset, email verification |
+| OAuth | `oauth()` | Google, GitHub, and custom providers |
+| Magic link | `magicLink()` | Passwordless sign-in via email |
+| Passkey | `passkey()` | WebAuthn credentials |
+
+## Using the session after sign-in
+
+Once a user is signed in, resolve their identity from any request:
+
+```typescript
+const user = await kavach.auth.resolveUser(request);
+
+if (!user) {
+  return new Response('Unauthorized', { status: 401 });
+}
+
+// user.id is the stable ID to pass as ownerId when creating agents
+const agent = await kavach.agent.create({
+  ownerId: user.id,
+  name: 'my-agent',
+  type: 'autonomous',
+  permissions: [{ resource: 'mcp:*', actions: ['read'] }],
+});
+```
+
+## Connecting an existing auth system
+
+If you already have Clerk, Auth.js, or better-auth handling sign-in, you do not need the plugins at all. Use an auth adapter to bridge the two systems instead.
+
+```typescript
+import { betterAuthAdapter } from '@kavachos/core/auth';
+import { auth } from './lib/auth'; // your better-auth instance
+
+const kavach = await createKavach({
+  database: { provider: 'postgres', url: process.env.DATABASE_URL! },
+  auth: {
+    adapter: betterAuthAdapter(auth),
+  },
+});
+```
+
+<Callout>
+  Auth adapters are the recommended path when you have an existing auth setup. Plugins are best for greenfield apps or when you want everything in one place.
+</Callout>
+
+## Next steps
+
+<Cards>
+  <Card title="OAuth providers" description="Configure Google, GitHub, and custom OAuth providers." href="/docs/oauth" />
+  <Card title="Sessions" description="Cookie config, CSRF protection, and session revocation." href="/docs/sessions" />
+  <Card title="Auth adapters" description="Bridge KavachOS to Clerk, Auth.js, or any custom provider." href="/docs/auth-adapters" />
+</Cards>

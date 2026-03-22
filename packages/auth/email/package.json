@@ -1,0 +1,33 @@
+{
+  "name": "@kavachos/auth-email",
+  "version": "0.0.1",
+  "description": "Email and password authentication for KavachOS",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "kavachos": "workspace:*"
+  },
+  "devDependencies": {
+    "kavachos": "workspace:*",
+    "better-sqlite3": "^11.0.0",
+    "@types/better-sqlite3": "^7.0.0",
+    "tsup": "^8.4.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.0.0"
+  }
+}

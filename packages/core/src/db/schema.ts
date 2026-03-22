@@ -10,6 +10,11 @@ export const users = sqliteTable("kavach_users", {
 	externalId: text("external_id"), // ID from external auth (better-auth, Auth.js, etc.)
 	externalProvider: text("external_provider"), // "better-auth", "authjs", "clerk", etc.
 	metadata: text("metadata", { mode: "json" }).$type<Record<string, unknown>>(),
+	// Admin ban fields (populated by admin module)
+	banned: integer("banned").notNull().default(0),
+	banReason: text("ban_reason"),
+	banExpiresAt: integer("ban_expires_at", { mode: "timestamp" }),
+	forcePasswordReset: integer("force_password_reset").notNull().default(0),
 	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 	updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
 });
@@ -336,6 +341,161 @@ export const trustScores = sqliteTable("kavach_trust_scores", {
 	}).notNull(),
 	factors: text("factors", { mode: "json" }).notNull().$type<Record<string, unknown>>(),
 	computedAt: integer("computed_at", { mode: "timestamp" }).notNull(),
+});
+
+// ============================================================
+// Magic Links (passwordless email login)
+// ============================================================
+export const magicLinks = sqliteTable("kavach_magic_links", {
+	id: text("id").primaryKey(),
+	email: text("email").notNull(),
+	token: text("token").notNull().unique(),
+	expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
+	used: integer("used", { mode: "boolean" }).notNull().default(false),
+	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+});
+
+// ============================================================
+// Email OTPs (one-time password login)
+// ============================================================
+export const emailOtps = sqliteTable("kavach_email_otps", {
+	id: text("id").primaryKey(),
+	email: text("email").notNull(),
+	codeHash: text("code_hash").notNull(),
+	expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
+	attempts: integer("attempts").notNull().default(0),
+	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+});
+
+// ============================================================
+// TOTP (Two-Factor Authentication)
+// ============================================================
+export const totpRecords = sqliteTable("kavach_totp", {
+	userId: text("user_id")
+		.primaryKey()
+		.references(() => users.id),
+	secret: text("secret").notNull(), // base32-encoded TOTP secret
+	enabled: integer("enabled", { mode: "boolean" }).notNull().default(false),
+	backupCodes: text("backup_codes", { mode: "json" }).notNull().$type<TotpBackupCode[]>(),
+	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+	updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+});
+
+interface TotpBackupCode {
+	hash: string;
+	used: boolean;
+}
+
+// ============================================================
+// Organizations (multi-member org with RBAC)
+// ============================================================
+export const organizations = sqliteTable("kavach_organizations", {
+	id: text("id").primaryKey(),
+	name: text("name").notNull(),
+	slug: text("slug").notNull().unique(),
+	ownerId: text("owner_id")
+		.notNull()
+		.references(() => users.id),
+	metadata: text("metadata", { mode: "json" }).$type<Record<string, unknown>>(),
+	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+	updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+});
+
+export const orgMembers = sqliteTable("kavach_org_members", {
+	id: text("id").primaryKey(),
+	orgId: text("org_id")
+		.notNull()
+		.references(() => organizations.id, { onDelete: "cascade" }),
+	userId: text("user_id")
+		.notNull()
+		.references(() => users.id),
+	role: text("role").notNull().default("member"),
+	joinedAt: integer("joined_at", { mode: "timestamp" }).notNull(),
+});
+
+export const orgInvitations = sqliteTable("kavach_org_invitations", {
+	id: text("id").primaryKey(),
+	orgId: text("org_id")
+		.notNull()
+		.references(() => organizations.id, { onDelete: "cascade" }),
+	email: text("email").notNull(),
+	role: text("role").notNull().default("member"),
+	invitedBy: text("invited_by")
+		.notNull()
+		.references(() => users.id),
+	status: text("status", { enum: ["pending", "accepted", "expired"] })
+		.notNull()
+		.default("pending"),
+	expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
+	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+});
+
+export const orgRoles = sqliteTable("kavach_org_roles", {
+	id: text("id").primaryKey(),
+	orgId: text("org_id")
+		.notNull()
+		.references(() => organizations.id, { onDelete: "cascade" }),
+	name: text("name").notNull(),
+	permissions: text("permissions", { mode: "json" }).notNull().$type<string[]>(),
+});
+
+// ============================================================
+// Passkey Credentials (WebAuthn / FIDO2)
+// ============================================================
+export const passkeyCredentials = sqliteTable("kavach_passkey_credentials", {
+	id: text("id").primaryKey(),
+	userId: text("user_id")
+		.notNull()
+		.references(() => users.id),
+	credentialId: text("credential_id").notNull().unique(),
+	publicKey: text("public_key").notNull(), // base64url-encoded COSE key
+	counter: integer("counter").notNull().default(0),
+	deviceName: text("device_name"),
+	transports: text("transports"), // JSON array, e.g. '["internal","usb"]'
+	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+	lastUsedAt: integer("last_used_at", { mode: "timestamp" }).notNull(),
+});
+
+// ============================================================
+// SSO Connections (SAML / OIDC enterprise SSO)
+// ============================================================
+export const ssoConnections = sqliteTable("kavach_sso_connections", {
+	id: text("id").primaryKey(),
+	orgId: text("org_id").notNull(),
+	providerId: text("provider_id").notNull(),
+	type: text("type", { enum: ["saml", "oidc"] }).notNull(),
+	domain: text("domain").notNull().unique(),
+	enabled: integer("enabled").notNull().default(1),
+	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+});
+
+// ============================================================
+// API Keys (static bearer tokens with permission scopes)
+// ============================================================
+export const apiKeys = sqliteTable("kavach_api_keys", {
+	id: text("id").primaryKey(),
+	userId: text("user_id")
+		.notNull()
+		.references(() => users.id),
+	name: text("name").notNull(),
+	keyHash: text("key_hash").notNull(),
+	keyPrefix: text("key_prefix").notNull(),
+	permissions: text("permissions", { mode: "json" }).notNull().$type<string[]>(),
+	expiresAt: integer("expires_at", { mode: "timestamp" }),
+	lastUsedAt: integer("last_used_at", { mode: "timestamp" }),
+	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+});
+
+// ============================================================
+// Passkey Challenges (WebAuthn challenge state — short-lived)
+// ============================================================
+export const passkeyChallenges = sqliteTable("kavach_passkey_challenges", {
+	id: text("id").primaryKey(),
+	challenge: text("challenge").notNull().unique(),
+	userId: text("user_id"), // null for discoverable credential flows
+	type: text("type", { enum: ["registration", "authentication"] }).notNull(),
+	expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
+	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 });
 
 // ============================================================

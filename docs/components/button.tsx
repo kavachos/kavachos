@@ -21,20 +21,20 @@ const sizeStyles: Record<ButtonSize, string> = {
 
 const variantStyles: Record<ButtonVariant, string> = {
 	gold: [
-		"kavach-btn-gold relative overflow-hidden rounded-full font-semibold text-[#1a1000]",
+		"btn-gold-gradient kavach-btn-gold relative overflow-hidden rounded-xl font-semibold text-[#3D2E00]",
 		"shadow-[0_2px_8px_-2px_rgba(154,114,40,0.3),0_4px_20px_-4px_rgba(197,148,58,0.45),inset_0_1px_1px_rgba(255,255,255,0.4),inset_0_-1px_1px_rgba(0,0,0,0.15)]",
-		"hover:-translate-y-0.5 hover:shadow-[0_2px_12px_-2px_rgba(154,114,40,0.4),0_6px_28px_-4px_rgba(197,148,58,0.55),inset_0_1px_1px_rgba(255,255,255,0.5),inset_0_-1px_1px_rgba(0,0,0,0.15)]",
+		"hover:-translate-y-0.5 hover:shadow-[0_0_40px_var(--kavach-glow),0_2px_12px_-2px_rgba(154,114,40,0.4),0_6px_28px_-4px_rgba(197,148,58,0.55),inset_0_1px_1px_rgba(255,255,255,0.5)]",
 		"active:translate-y-0 active:scale-[0.98]",
 		"transition-all duration-200",
 	].join(" "),
 	outline: [
-		"rounded-full border border-fd-border bg-fd-background font-medium text-fd-foreground",
-		"hover:bg-fd-accent hover:border-fd-foreground/15",
+		"ghost-border rounded-xl bg-transparent font-medium text-[var(--kavach-gold-primary)]",
+		"hover:bg-[var(--kavach-surface-mid)] hover:shadow-[0_0_20px_var(--kavach-glow)]",
 		"transition-all duration-200",
 	].join(" "),
 	ghost: [
-		"rounded-full font-medium text-fd-muted-foreground",
-		"hover:bg-fd-accent hover:text-fd-foreground",
+		"rounded-xl font-medium text-[var(--kavach-text-muted)]",
+		"hover:bg-[var(--kavach-surface-mid)] hover:text-[var(--kavach-text)]",
 		"transition-all duration-200",
 	].join(" "),
 };

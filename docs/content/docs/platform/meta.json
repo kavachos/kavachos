@@ -1,5 +1,0 @@
-{
-	"title": "Platform",
-	"icon": "Globe",
-	"pages": ["mcp", "adapters", "dashboard", "discovery", "client-sdk", "multi-tenant"]
-}

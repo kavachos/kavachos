@@ -59,8 +59,8 @@ export function FlowDiagram() {
 						<ConnectorLine d={0.08} />
 						{/* Auth provider */}
 						<motion.div variants={fadeIn(0.15)} className="flex items-center gap-1.5 rounded-md border border-fd-border bg-fd-secondary/20 px-2.5 py-1.5">
-							<KeyRound className="h-3 w-3 text-fd-muted-foreground/40" />
-							<span className="text-[10px] text-fd-muted-foreground/50">Clerk / Auth.js / etc.</span>
+							<KeyRound className="h-3 w-3 text-fd-muted-foreground/60" />
+							<span className="text-[10px] text-fd-muted-foreground/70">Clerk / Auth.js / etc.</span>
 							<div className="ml-1 flex gap-1 text-fd-muted-foreground/20">
 								<ClerkIcon className="h-2.5 w-2.5" />
 								<Auth0Icon className="h-2.5 w-2.5" />
@@ -117,7 +117,7 @@ export function FlowDiagram() {
 
 				{/* ===== RIGHT: Without KavachOS ===== */}
 				<div className="flex-1 p-5 opacity-60 sm:p-6">
-					<p className="mb-4 text-[9px] font-semibold uppercase tracking-[0.2em] text-fd-muted-foreground/30">
+					<p className="mb-4 text-[9px] font-semibold uppercase tracking-[0.2em] text-fd-muted-foreground/50">
 						Without
 					</p>
 
@@ -128,7 +128,7 @@ export function FlowDiagram() {
 						<ConnectorLine d={0.5} />
 						<Node icon={Bot} label="AI agent" sub="no identity" color="neutral" d={0.56} />
 						<ConnectorLine d={0.62} dashed />
-						<motion.div variants={fadeIn(0.66)} className="rounded-md border border-dashed border-fd-muted-foreground/15 px-2 py-0.5 text-[8px] text-fd-muted-foreground/30">
+						<motion.div variants={fadeIn(0.66)} className="rounded-md border border-dashed border-fd-muted-foreground/15 px-2 py-0.5 text-[8px] text-fd-muted-foreground/50">
 							shared .env key
 						</motion.div>
 						<ConnectorLine d={0.7} dashed />
@@ -171,7 +171,7 @@ function Node({
 }) {
 	const colors = {
 		blue: "border-blue-400/30 bg-blue-50 text-blue-600 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-400",
-		neutral: "border-neutral-200 bg-neutral-50 text-neutral-400 dark:border-fd-border dark:bg-fd-secondary/20 dark:text-fd-muted-foreground/50",
+		neutral: "border-neutral-200 bg-neutral-50 text-neutral-400 dark:border-fd-border dark:bg-fd-secondary/20 dark:text-fd-muted-foreground/70",
 		gold: "border-[var(--kavach-gold-mid)]/40 bg-amber-50 text-[var(--kavach-gold-deep)] dark:border-[var(--kavach-gold-mid)]/25 dark:bg-[var(--kavach-gold-mid)]/10 dark:text-[var(--kavach-gold-bright)]",
 		green: "border-emerald-400/30 bg-emerald-50 text-emerald-600 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400",
 		purple: "border-purple-400/30 bg-purple-50 text-purple-600 dark:border-purple-500/20 dark:bg-purple-500/10 dark:text-purple-400",

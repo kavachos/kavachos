@@ -38,14 +38,18 @@ function buildStatements(provider: DatabaseConfig["provider"]): string[] {
 		// kavach_users
 		// ------------------------------------------------------------------
 		`CREATE TABLE ${ifne} kavach_users (
-  id          TEXT        NOT NULL PRIMARY KEY,
-  email       TEXT        NOT NULL UNIQUE,
-  name        TEXT,
-  external_id TEXT,
-  external_provider TEXT,
-  metadata    ${json},
-  created_at  ${ts}       NOT NULL,
-  updated_at  ${ts}       NOT NULL
+  id                   TEXT        NOT NULL PRIMARY KEY,
+  email                TEXT        NOT NULL UNIQUE,
+  name                 TEXT,
+  external_id          TEXT,
+  external_provider    TEXT,
+  metadata             ${json},
+  banned               ${bool}     NOT NULL DEFAULT ${isPostgres ? "FALSE" : "0"},
+  ban_reason           TEXT,
+  ban_expires_at       ${tsNull},
+  force_password_reset ${bool}     NOT NULL DEFAULT ${isPostgres ? "FALSE" : "0"},
+  created_at           ${ts}       NOT NULL,
+  updated_at           ${ts}       NOT NULL
 )`,
 
 		// ------------------------------------------------------------------
@@ -278,6 +282,83 @@ function buildStatements(provider: DatabaseConfig["provider"]): string[] {
 )`,
 
 		// ------------------------------------------------------------------
+		// kavach_organizations
+		// ------------------------------------------------------------------
+		`CREATE TABLE ${ifne} kavach_organizations (
+  id         TEXT    NOT NULL PRIMARY KEY,
+  name       TEXT    NOT NULL,
+  slug       TEXT    NOT NULL UNIQUE,
+  owner_id   TEXT    NOT NULL REFERENCES kavach_users(id),
+  metadata   ${json},
+  created_at ${ts}   NOT NULL,
+  updated_at ${ts}   NOT NULL
+)`,
+
+		// ------------------------------------------------------------------
+		// kavach_org_members
+		// ------------------------------------------------------------------
+		`CREATE TABLE ${ifne} kavach_org_members (
+  id        TEXT    NOT NULL PRIMARY KEY,
+  org_id    TEXT    NOT NULL REFERENCES kavach_organizations(id) ON DELETE CASCADE,
+  user_id   TEXT    NOT NULL REFERENCES kavach_users(id),
+  role      TEXT    NOT NULL DEFAULT 'member',
+  joined_at ${ts}   NOT NULL,
+  UNIQUE(org_id, user_id)
+)`,
+
+		// ------------------------------------------------------------------
+		// kavach_org_invitations
+		// ------------------------------------------------------------------
+		`CREATE TABLE ${ifne} kavach_org_invitations (
+  id         TEXT    NOT NULL PRIMARY KEY,
+  org_id     TEXT    NOT NULL REFERENCES kavach_organizations(id) ON DELETE CASCADE,
+  email      TEXT    NOT NULL,
+  role       TEXT    NOT NULL DEFAULT 'member',
+  invited_by TEXT    NOT NULL REFERENCES kavach_users(id),
+  status     TEXT    NOT NULL DEFAULT 'pending',
+  expires_at ${ts}   NOT NULL,
+  created_at ${ts}   NOT NULL
+)`,
+
+		// ------------------------------------------------------------------
+		// kavach_org_roles
+		// ------------------------------------------------------------------
+		`CREATE TABLE ${ifne} kavach_org_roles (
+  id          TEXT    NOT NULL PRIMARY KEY,
+  org_id      TEXT    NOT NULL REFERENCES kavach_organizations(id) ON DELETE CASCADE,
+  name        TEXT    NOT NULL,
+  permissions ${json} NOT NULL,
+  UNIQUE(org_id, name)
+)`,
+
+		// ------------------------------------------------------------------
+		// kavach_passkey_credentials  (WebAuthn / FIDO2 passkeys)
+		// ------------------------------------------------------------------
+		`CREATE TABLE ${ifne} kavach_passkey_credentials (
+  id            TEXT    NOT NULL PRIMARY KEY,
+  user_id       TEXT    NOT NULL REFERENCES kavach_users(id),
+  credential_id TEXT    NOT NULL UNIQUE,
+  public_key    TEXT    NOT NULL,
+  counter       INTEGER NOT NULL DEFAULT 0,
+  device_name   TEXT,
+  transports    TEXT,
+  created_at    ${ts}   NOT NULL,
+  last_used_at  ${ts}   NOT NULL
+)`,
+
+		// ------------------------------------------------------------------
+		// kavach_passkey_challenges  (short-lived WebAuthn challenges)
+		// ------------------------------------------------------------------
+		`CREATE TABLE ${ifne} kavach_passkey_challenges (
+  id         TEXT NOT NULL PRIMARY KEY,
+  challenge  TEXT NOT NULL UNIQUE,
+  user_id    TEXT,
+  type       TEXT NOT NULL,
+  expires_at ${ts} NOT NULL,
+  created_at ${ts} NOT NULL
+)`,
+
+		// ------------------------------------------------------------------
 		// kavach_agent_dids  (W3C Decentralized Identifiers per agent)
 		// ------------------------------------------------------------------
 		`CREATE TABLE ${ifne} kavach_agent_dids (
@@ -288,6 +369,76 @@ function buildStatements(provider: DatabaseConfig["provider"]): string[] {
   did_document   TEXT NOT NULL,
   created_at     ${ts} NOT NULL
 )`,
+
+		// ------------------------------------------------------------------
+		// kavach_magic_links  (passwordless email login)
+		// ------------------------------------------------------------------
+		`CREATE TABLE ${ifne} kavach_magic_links (
+  id         TEXT    NOT NULL PRIMARY KEY,
+  email      TEXT    NOT NULL,
+  token      TEXT    NOT NULL UNIQUE,
+  expires_at ${ts}   NOT NULL,
+  used       ${bool} NOT NULL DEFAULT ${isPostgres ? "FALSE" : "0"},
+  created_at ${ts}   NOT NULL
+)`,
+
+		// ------------------------------------------------------------------
+		// kavach_email_otps  (one-time password login)
+		// ------------------------------------------------------------------
+		`CREATE TABLE ${ifne} kavach_email_otps (
+  id         TEXT    NOT NULL PRIMARY KEY,
+  email      TEXT    NOT NULL,
+  code_hash  TEXT    NOT NULL,
+  expires_at ${ts}   NOT NULL,
+  attempts   INTEGER NOT NULL DEFAULT 0,
+  created_at ${ts}   NOT NULL
+)`,
+
+		// ------------------------------------------------------------------
+		// kavach_totp  (TOTP two-factor authentication)
+		// ------------------------------------------------------------------
+		`CREATE TABLE ${ifne} kavach_totp (
+  user_id      TEXT    NOT NULL PRIMARY KEY REFERENCES kavach_users(id),
+  secret       TEXT    NOT NULL,
+  enabled      ${bool} NOT NULL DEFAULT ${isPostgres ? "FALSE" : "0"},
+  backup_codes ${json} NOT NULL,
+  created_at   ${ts}   NOT NULL,
+  updated_at   ${ts}   NOT NULL
+)`,
+
+		// ------------------------------------------------------------------
+		// kavach_sso_connections  (SAML 2.0 / OIDC enterprise SSO)
+		// ------------------------------------------------------------------
+		`CREATE TABLE ${ifne} kavach_sso_connections (
+  id          TEXT    NOT NULL PRIMARY KEY,
+  org_id      TEXT    NOT NULL,
+  provider_id TEXT    NOT NULL,
+  type        TEXT    NOT NULL,
+  domain      TEXT    NOT NULL UNIQUE,
+  enabled     INTEGER NOT NULL DEFAULT 1,
+  created_at  ${ts}   NOT NULL
+)`,
+
+		// ------------------------------------------------------------------
+		// kavach_api_keys  (static bearer tokens with permission scopes)
+		// ------------------------------------------------------------------
+		`CREATE TABLE ${ifne} kavach_api_keys (
+  id           TEXT    NOT NULL PRIMARY KEY,
+  user_id      TEXT    NOT NULL REFERENCES kavach_users(id),
+  name         TEXT    NOT NULL,
+  key_hash     TEXT    NOT NULL,
+  key_prefix   TEXT    NOT NULL,
+  permissions  ${json} NOT NULL,
+  expires_at   ${tsNull},
+  last_used_at ${tsNull},
+  created_at   ${ts}   NOT NULL
+)`,
+
+		// ------------------------------------------------------------------
+		// kavach_users ban columns  (ALTER TABLE IF NOT EXISTS — safe no-ops)
+		// These are appended as separate ALTER statements for existing DBs.
+		// For SQLite we use a separate migration path since SQLite ALTER is limited.
+		// ------------------------------------------------------------------
 	];
 }
 

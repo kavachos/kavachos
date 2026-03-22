@@ -347,6 +347,27 @@ importers:
         specifier: ^3.24.0
         version: 3.25.76
 
+  packages/auth/email:
+    devDependencies:
+      '@types/better-sqlite3':
+        specifier: ^7.0.0
+        version: 7.6.13
+      better-sqlite3:
+        specifier: ^11.0.0
+        version: 11.10.0
+      kavachos:
+        specifier: workspace:*
+        version: link:../../core
+      tsup:
+        specifier: ^8.4.0
+        version: 8.5.1(jiti@2.6.1)(postcss@8.5.8)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
+      typescript:
+        specifier: ^5.8.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.4(@types/debug@4.1.13)(@types/node@22.19.15)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)
+
   packages/cli:
     dependencies:
       '@hono/node-server':

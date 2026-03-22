@@ -19,6 +19,7 @@ export type { Kavach } from "./kavach.js";
 export { createKavach } from "./kavach.js";
 export { generateOpenAPISpec } from "./openapi.js";
 export * from "./permission/index.js";
+export * from "./plugin/index.js";
 export * from "./policies/index.js";
 export * from "./session/index.js";
 export * from "./tenant/index.js";

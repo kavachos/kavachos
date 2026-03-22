@@ -11,7 +11,7 @@ import { Steps, Step } from 'fumadocs-ui/components/steps';
 
 KavachOS is a TypeScript SDK that gives AI agents their own identity, enforces permissions at call time, and logs every decision. It plugs into your existing auth provider (Clerk, Auth.js, better-auth) and handles everything after the human is authenticated.
 
-```ts title="lib/kavach.ts" {4-6,8-13}
+```ts {4-6,8-13}
 import { createKavach } from 'kavachos';
 
 const kavach = await createKavach({
@@ -35,12 +35,12 @@ const result = await kavach.authorize(agent.id, {
 ## What it does
 
 <Cards>
-  <Card title="Agent identity" description="Create agents with bearer tokens (kv_...), rotate credentials instantly, set expiry dates. Tokens are SHA-256 hashed in the database." href="/docs/core/agents" />
-  <Card title="Permission engine" description="Resource wildcards (mcp:github:*), rate limits, time windows, IP allowlists, and human-in-the-loop approval gates." href="/docs/core/permissions" />
-  <Card title="Delegation chains" description="An orchestrator delegates a subset of its permissions to a sub-agent, with depth limits and expiry. Revocation cascades." href="/docs/core/delegation" />
-  <Card title="Audit trail" description="Every authorize() call is logged: agent, user, resource, action, result, duration. Export as JSON or CSV." href="/docs/core/audit" />
-  <Card title="MCP OAuth 2.1" description="Spec-compliant auth server with PKCE (S256), Protected Resource Metadata (RFC 9728), and Dynamic Client Registration." href="/docs/platform/mcp" />
-  <Card title="7 framework adapters" description="Drop-in middleware for Hono, Express, Next.js, Fastify, Nuxt, SvelteKit, and Astro." href="/docs/platform/adapters" />
+  <Card title="Agent identity" description="Create agents with bearer tokens (kv_...), rotate credentials instantly, set expiry dates. Tokens are SHA-256 hashed in the database." href="/docs/agents" />
+  <Card title="Permission engine" description="Resource wildcards (mcp:github:*), rate limits, time windows, IP allowlists, and human-in-the-loop approval gates." href="/docs/permissions" />
+  <Card title="Delegation chains" description="An orchestrator delegates a subset of its permissions to a sub-agent, with depth limits and expiry. Revocation cascades." href="/docs/delegation" />
+  <Card title="Audit trail" description="Every authorize() call is logged: agent, user, resource, action, result, duration. Export as JSON or CSV." href="/docs/audit" />
+  <Card title="MCP OAuth 2.1" description="Spec-compliant auth server with PKCE (S256), Protected Resource Metadata (RFC 9728), and Dynamic Client Registration." href="/docs/mcp" />
+  <Card title="7 framework adapters" description="Drop-in middleware for Hono, Express, Next.js, Fastify, Nuxt, SvelteKit, and Astro." href="/docs/adapters" />
 </Cards>
 
 ## How it fits
@@ -103,7 +103,7 @@ Three things break without agent-specific auth:
 
 <Cards>
   <Card title="Quickstart" description="Create your first agent in 5 minutes." href="/docs/quickstart" />
-  <Card title="Configuration" description="All createKavach() options explained." href="/docs/guides/configuration" />
-  <Card title="Auth adapters" description="Plug into better-auth, Auth.js, Clerk." href="/docs/guides/auth-adapters" />
-  <Card title="REST API reference" description="All HTTP endpoints." href="/docs/reference/api" />
+  <Card title="Configuration" description="All createKavach() options explained." href="/docs/configuration" />
+  <Card title="Auth adapters" description="Plug into better-auth, Auth.js, Clerk." href="/docs/auth-adapters" />
+  <Card title="REST API reference" description="All HTTP endpoints." href="/docs/api" />
 </Cards>
