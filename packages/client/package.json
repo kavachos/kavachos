@@ -2,6 +2,13 @@
   "name": "@kavachos/client",
   "version": "0.0.2",
   "description": "TypeScript client for the KavachOS REST API",
+  "license": "MIT",
+  "author": "KavachOS <hello@kavachos.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kavachos/kavachos.git",
+    "directory": "packages/client"
+  },
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
