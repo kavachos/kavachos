@@ -8,12 +8,14 @@
 // Re-export submodules
 export * from "./agent/index.js";
 export * from "./audit/index.js";
+export * from "./auth/index.js";
 export * from "./db/index.js";
 export * from "./delegation/index.js";
 export type { Kavach } from "./kavach.js";
 export { createKavach } from "./kavach.js";
 export { generateOpenAPISpec } from "./openapi.js";
 export * from "./permission/index.js";
+export * from "./session/index.js";
 export type {
 	AgentFilter,
 	AgentIdentity,

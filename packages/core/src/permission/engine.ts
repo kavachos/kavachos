@@ -318,5 +318,7 @@ async function writeAuditLog(
 		reason: result.reason ?? null,
 		durationMs,
 		timestamp: new Date(),
+		ip: request.context?.ip ?? null,
+		userAgent: request.context?.userAgent ?? null,
 	});
 }

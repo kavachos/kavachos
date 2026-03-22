@@ -32,6 +32,7 @@ interface LayoutProps {
 	currentPage: Page;
 	onNavigate: (page: Page) => void;
 	children: ReactNode;
+	headerActions?: ReactNode;
 }
 
 // ─── Nav Config ───────────────────────────────────────────────────────────────
@@ -180,13 +181,20 @@ export function PageHeader({ title, description, actions }: PageHeaderProps) {
 
 // ─── Main Layout ──────────────────────────────────────────────────────────────
 
-export function Layout({ currentPage, onNavigate, children }: LayoutProps) {
+export function Layout({ currentPage, onNavigate, children, headerActions }: LayoutProps) {
 	return (
 		<div className="flex min-h-screen bg-zinc-900 text-white">
 			<Sidebar currentPage={currentPage} onNavigate={onNavigate} />
-			<main className="flex-1 overflow-auto">
-				<div className="max-w-6xl mx-auto px-6 py-8">{children}</div>
-			</main>
+			<div className="flex-1 flex flex-col overflow-hidden">
+				{headerActions && (
+					<header className="flex items-center justify-end px-6 py-3 border-b border-zinc-800 bg-zinc-900">
+						{headerActions}
+					</header>
+				)}
+				<main className="flex-1 overflow-auto">
+					<div className="max-w-6xl mx-auto px-6 py-8">{children}</div>
+				</main>
+			</div>
 		</div>
 	);
 }

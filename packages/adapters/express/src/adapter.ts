@@ -347,12 +347,25 @@ export function kavachExpress(kavach: Kavach, options?: { mcp?: McpAuthModule })
 			sendValidationError(res, parsed.error.issues);
 			return;
 		}
+		const xForwardedFor = req.headers["x-forwarded-for"];
+		const ip =
+			(Array.isArray(xForwardedFor) ? xForwardedFor[0] : xForwardedFor?.split(",")[0]?.trim()) ??
+			req.ip ??
+			undefined;
+		const userAgent =
+			(Array.isArray(req.headers["user-agent"])
+				? req.headers["user-agent"][0]
+				: req.headers["user-agent"]) ?? undefined;
 		kavach
-			.authorize(parsed.data.agentId, {
-				action: parsed.data.action,
-				resource: parsed.data.resource,
-				arguments: parsed.data.arguments,
-			})
+			.authorize(
+				parsed.data.agentId,
+				{
+					action: parsed.data.action,
+					resource: parsed.data.resource,
+					arguments: parsed.data.arguments,
+				},
+				{ ip, userAgent },
+			)
 			.then((result) => {
 				const status = result.allowed ? 200 : 403;
 				res.status(status).json({ data: result });
@@ -377,12 +390,25 @@ export function kavachExpress(kavach: Kavach, options?: { mcp?: McpAuthModule })
 			sendValidationError(res, parsed.error.issues);
 			return;
 		}
+		const xForwardedFor = req.headers["x-forwarded-for"];
+		const ip =
+			(Array.isArray(xForwardedFor) ? xForwardedFor[0] : xForwardedFor?.split(",")[0]?.trim()) ??
+			req.ip ??
+			undefined;
+		const userAgent =
+			(Array.isArray(req.headers["user-agent"])
+				? req.headers["user-agent"][0]
+				: req.headers["user-agent"]) ?? undefined;
 		kavach
-			.authorizeByToken(token, {
-				action: parsed.data.action,
-				resource: parsed.data.resource,
-				arguments: parsed.data.arguments,
-			})
+			.authorizeByToken(
+				token,
+				{
+					action: parsed.data.action,
+					resource: parsed.data.resource,
+					arguments: parsed.data.arguments,
+				},
+				{ ip, userAgent },
+			)
 			.then((result) => {
 				const status = result.allowed ? 200 : 403;
 				res.status(status).json({ data: result });

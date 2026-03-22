@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { createApiClient } from "./api/client.js";
+import { AuthGate, LogoutButton } from "./components/auth-gate.js";
 import { Layout } from "./components/layout.js";
 import { AgentsPage } from "./pages/agents.js";
 import { AuditPage } from "./pages/audit.js";
@@ -29,9 +30,10 @@ const defaultQueryClient = new QueryClient({
 
 interface InnerDashboardProps {
 	apiUrl: string;
+	onLogout: () => void;
 }
 
-function InnerDashboard({ apiUrl }: InnerDashboardProps) {
+function InnerDashboard({ apiUrl, onLogout }: InnerDashboardProps) {
 	const [currentPage, setCurrentPage] = useState<Page>("overview");
 	const client = useMemo(() => createApiClient(apiUrl), [apiUrl]);
 
@@ -59,7 +61,11 @@ function InnerDashboard({ apiUrl }: InnerDashboardProps) {
 	}
 
 	return (
-		<Layout currentPage={currentPage} onNavigate={setCurrentPage}>
+		<Layout
+			currentPage={currentPage}
+			onNavigate={setCurrentPage}
+			headerActions={<LogoutButton onLogout={onLogout} />}
+		>
 			{renderPage()}
 		</Layout>
 	);
@@ -70,9 +76,13 @@ function InnerDashboard({ apiUrl }: InnerDashboardProps) {
 export function KavachDashboard({ apiUrl, theme = "dark" }: DashboardProps) {
 	return (
 		<div className={theme === "dark" ? "dark" : ""} data-kavachos-dashboard>
-			<QueryClientProvider client={defaultQueryClient}>
-				<InnerDashboard apiUrl={apiUrl} />
-			</QueryClientProvider>
+			<AuthGate apiUrl={apiUrl}>
+				{(onLogout) => (
+					<QueryClientProvider client={defaultQueryClient}>
+						<InnerDashboard apiUrl={apiUrl} onLogout={onLogout} />
+					</QueryClientProvider>
+				)}
+			</AuthGate>
 		</div>
 	);
 }

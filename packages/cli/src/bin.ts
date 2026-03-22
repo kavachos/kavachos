@@ -1,5 +1,6 @@
 import { argv, exit, stdout } from "node:process";
 import { startDashboardServer } from "./dashboard-server.js";
+import { runInit } from "./init.js";
 
 const VERSION = "0.0.1";
 
@@ -36,23 +37,13 @@ function printHelp(): void {
 }
 
 async function handleInit(): Promise<void> {
-	stdout.write("\nKavachOS Project Setup\n");
-	stdout.write("=====================\n\n");
-	stdout.write("1. Install the core package:\n");
-	stdout.write("   npm install kavachos\n\n");
-	stdout.write("2. Add to your project:\n\n");
-	stdout.write('   import { createKavach } from "kavachos";\n\n');
-	stdout.write("   const kavach = createKavach({\n");
-	stdout.write('     database: { provider: "sqlite", url: "kavach.db" },\n');
-	stdout.write("     agents: { enabled: true },\n");
-	stdout.write("   });\n\n");
-	stdout.write("3. Run migrations:\n");
-	stdout.write("   kavachos migrate\n\n");
-	stdout.write("4. (Optional) Install an adapter:\n");
-	stdout.write("   npm install @kavachos/hono    # for Hono\n");
-	stdout.write("   npm install @kavachos/express  # for Express\n");
-	stdout.write("   npm install @kavachos/nextjs   # for Next.js\n\n");
-	stdout.write("Documentation: https://kavachos.com/docs\n\n");
+	const result = await runInit();
+	if (!result.success) {
+		if (result.error.code !== "ABORTED") {
+			stdout.write(`\nInit failed: ${result.error.message}\n`);
+			exit(1);
+		}
+	}
 }
 
 async function handleMigrate(): Promise<void> {

@@ -1,5 +1,7 @@
 import type { AgentConfig } from "./agent/types.js";
+import type { AuthAdapter } from "./auth/types.js";
 import type { McpConfig } from "./mcp/types.js";
+import type { SessionConfig } from "./session/session.js";
 
 /**
  * Main configuration for KavachOS
@@ -13,6 +15,26 @@ export interface KavachConfig {
 
 	/** MCP authorization server configuration */
 	mcp?: McpConfig;
+
+	/**
+	 * Human auth configuration.
+	 *
+	 * `adapter` plugs in an existing auth provider (better-auth, Auth.js,
+	 * Clerk, custom) so KavachOS can resolve the human user behind an
+	 * incoming request.
+	 *
+	 * `session` enables KavachOS-managed session tokens backed by the
+	 * `kavach_sessions` database table.  When provided, the returned
+	 * `kavach.auth.session` manager is available for creating, validating,
+	 * and revoking sessions.
+	 *
+	 * When omitted entirely the instance operates in *manual user management*
+	 * mode – `kavach.auth.resolveUser()` always returns `null`.
+	 */
+	auth?: {
+		adapter?: AuthAdapter;
+		session?: SessionConfig;
+	};
 
 	/** Base URL for the auth server */
 	baseUrl?: string;
@@ -128,12 +150,21 @@ export interface AuthorizeResult {
 
 export type AuthorizeFn = (agentId: string, request: AuthorizeRequest) => Promise<AuthorizeResult>;
 
+export interface RequestContext {
+	/** Client IP address, used for ipAllowlist enforcement and audit logging */
+	ip?: string;
+	/** User-Agent string from the originating HTTP request */
+	userAgent?: string;
+}
+
 export interface AuthorizeRequest {
 	action: string;
 	resource: string;
 	arguments?: Record<string, unknown>;
 	/** Client IP address for ipAllowlist constraint enforcement */
 	ip?: string;
+	/** HTTP request context (IP, User-Agent) for audit log enrichment */
+	context?: RequestContext;
 }
 
 export interface DelegateInput {

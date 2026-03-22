@@ -4,7 +4,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { createServer } from "node:http";
 import { createRequire } from "node:module";
 import { extname, join, resolve } from "node:path";
-import { stdout } from "node:process";
+import { env, stdout } from "node:process";
 
 // ─── Options ──────────────────────────────────────────────────────────────────
 
@@ -107,10 +107,58 @@ function serveFile(filePath: string, res: ServerResponse): void {
 	createReadStream(filePath).pipe(res);
 }
 
+// ─── Auth ─────────────────────────────────────────────────────────────────────
+
+function sendJson(res: ServerResponse, status: number, body: Record<string, unknown>): void {
+	const payload = JSON.stringify(body);
+	res.writeHead(status, {
+		"Content-Type": "application/json; charset=utf-8",
+		"Content-Length": Buffer.byteLength(payload),
+	});
+	res.end(payload);
+}
+
+function resolveDashboardSecret(): string | null {
+	return env.KAVACHOS_DASHBOARD_SECRET ?? null;
+}
+
+function handleAuthRequest(
+	req: IncomingMessage,
+	res: ServerResponse,
+	secret: string | null,
+): boolean {
+	const rawUrl = req.url ?? "/";
+	const pathname = rawUrl.split("?")[0] ?? "/";
+
+	if (pathname !== "/api/dashboard/auth") return false;
+
+	// No secret configured — open dev mode
+	if (secret === null) {
+		sendJson(res, 200, { ok: true, mode: "dev" });
+		return true;
+	}
+
+	const authHeader = req.headers.authorization ?? "";
+	const provided = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+
+	if (provided === secret) {
+		sendJson(res, 200, { ok: true });
+	} else {
+		sendJson(res, 401, { code: "UNAUTHORIZED", message: "Invalid dashboard secret." });
+	}
+	return true;
+}
+
 // ─── Server ───────────────────────────────────────────────────────────────────
 
 export async function startDashboardServer(options: DashboardServerOptions): Promise<void> {
 	const { port, apiUrl } = options;
+
+	const dashboardSecret = resolveDashboardSecret();
+
+	if (dashboardSecret === null) {
+		stdout.write("  [warn] KAVACHOS_DASHBOARD_SECRET is not set — dashboard auth is disabled.\n");
+	}
 
 	const distDir = resolveDashboardDistDir();
 
@@ -122,6 +170,9 @@ export async function startDashboardServer(options: DashboardServerOptions): Pro
 		const rawUrl = req.url ?? "/";
 		// Strip query string and decode
 		const pathname = decodeURIComponent(rawUrl.split("?")[0] ?? "/");
+
+		// Auth endpoint — handled before static files
+		if (handleAuthRequest(req, res, dashboardSecret)) return;
 
 		// SPA: serve index.html for navigation routes (no file extension)
 		const isSpaRoute = extname(pathname) === "";

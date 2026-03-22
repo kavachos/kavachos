@@ -355,11 +355,26 @@ export function kavachFastify(kavach: Kavach, options?: KavachFastifyOptions) {
 			if (!parsed.success) return sendValidationError(reply, parsed.error.issues);
 
 			try {
-				const result = await kavach.authorize(parsed.data.agentId, {
-					action: parsed.data.action,
-					resource: parsed.data.resource,
-					arguments: parsed.data.arguments,
-				});
+				const xForwardedFor = request.headers["x-forwarded-for"];
+				const ip =
+					(Array.isArray(xForwardedFor)
+						? xForwardedFor[0]
+						: xForwardedFor?.split(",")[0]?.trim()) ??
+					request.ip ??
+					undefined;
+				const userAgent =
+					(Array.isArray(request.headers["user-agent"])
+						? request.headers["user-agent"][0]
+						: request.headers["user-agent"]) ?? undefined;
+				const result = await kavach.authorize(
+					parsed.data.agentId,
+					{
+						action: parsed.data.action,
+						resource: parsed.data.resource,
+						arguments: parsed.data.arguments,
+					},
+					{ ip, userAgent },
+				);
 				const status = result.allowed ? 200 : 403;
 				return reply
 					.status(status)
@@ -383,11 +398,26 @@ export function kavachFastify(kavach: Kavach, options?: KavachFastifyOptions) {
 			if (!parsed.success) return sendValidationError(reply, parsed.error.issues);
 
 			try {
-				const result = await kavach.authorizeByToken(token, {
-					action: parsed.data.action,
-					resource: parsed.data.resource,
-					arguments: parsed.data.arguments,
-				});
+				const xForwardedFor = request.headers["x-forwarded-for"];
+				const ip =
+					(Array.isArray(xForwardedFor)
+						? xForwardedFor[0]
+						: xForwardedFor?.split(",")[0]?.trim()) ??
+					request.ip ??
+					undefined;
+				const userAgent =
+					(Array.isArray(request.headers["user-agent"])
+						? request.headers["user-agent"][0]
+						: request.headers["user-agent"]) ?? undefined;
+				const result = await kavach.authorizeByToken(
+					token,
+					{
+						action: parsed.data.action,
+						resource: parsed.data.resource,
+						arguments: parsed.data.arguments,
+					},
+					{ ip, userAgent },
+				);
 				const status = result.allowed ? 200 : 403;
 				return reply
 					.status(status)

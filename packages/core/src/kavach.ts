@@ -2,11 +2,14 @@ import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { createAgentModule } from "./agent/agent.js";
 import { createAuditModule } from "./audit/audit.js";
+import type { ResolvedUser } from "./auth/types.js";
 import { createDatabase } from "./db/database.js";
 import { createTables } from "./db/migrations.js";
 import { mcpServers } from "./db/schema.js";
 import { createDelegationModule } from "./delegation/delegation.js";
 import { createPermissionEngine } from "./permission/engine.js";
+import type { SessionManager } from "./session/session.js";
+import { createSessionManager } from "./session/session.js";
 import type {
 	AuditExportOptions,
 	AuditFilter,
@@ -17,6 +20,7 @@ import type {
 	KavachConfig,
 	McpServer,
 	McpServerInput,
+	RequestContext,
 } from "./types.js";
 
 /**
@@ -54,6 +58,8 @@ import type {
  * ```
  */
 export async function createKavach(config: KavachConfig) {
+	const authAdapter = config.auth?.adapter ?? null;
+
 	const db = await createDatabase(config.database);
 
 	// Automatically create tables unless the caller has opted out.
@@ -80,8 +86,17 @@ export async function createKavach(config: KavachConfig) {
 
 	const delegationModule = createDelegationModule({ db });
 
+	// Session manager – only created when the caller opts in via auth.session.
+	const sessionManager: SessionManager | null = config.auth?.session
+		? createSessionManager(config.auth.session, db)
+		: null;
+
 	// Authorize: look up agent, check own permissions then delegated permissions
-	async function authorize(agentId: string, request: AuthorizeRequest): Promise<AuthorizeResult> {
+	async function authorize(
+		agentId: string,
+		request: AuthorizeRequest,
+		context?: RequestContext,
+	): Promise<AuthorizeResult> {
 		const agent = await agentModule.get(agentId);
 		if (!agent) {
 			return {
@@ -98,8 +113,10 @@ export async function createKavach(config: KavachConfig) {
 			};
 		}
 
+		const enrichedRequest: AuthorizeRequest = context ? { ...request, context } : request;
+
 		// First check the agent's own permissions
-		const ownResult = await permissionEngine.authorize(agent, request);
+		const ownResult = await permissionEngine.authorize(agent, enrichedRequest);
 		if (ownResult.allowed) return ownResult;
 
 		// If own permissions deny, check effective permissions from delegation chains
@@ -108,7 +125,7 @@ export async function createKavach(config: KavachConfig) {
 
 		// Build a synthetic agent view with delegated permissions merged in
 		const agentWithDelegated = { ...agent, permissions: delegatedPerms };
-		const delegatedResult = await permissionEngine.authorize(agentWithDelegated, request);
+		const delegatedResult = await permissionEngine.authorize(agentWithDelegated, enrichedRequest);
 		if (delegatedResult.allowed) return delegatedResult;
 
 		// Both denied — return the original denial so the message references the agent by name
@@ -119,6 +136,7 @@ export async function createKavach(config: KavachConfig) {
 	async function authorizeByToken(
 		token: string,
 		request: AuthorizeRequest,
+		context?: RequestContext,
 	): Promise<AuthorizeResult> {
 		const agent = await agentModule.validateToken(token);
 		if (!agent) {
@@ -128,7 +146,8 @@ export async function createKavach(config: KavachConfig) {
 				auditId: "",
 			};
 		}
-		return permissionEngine.authorize(agent, request);
+		const enrichedRequest: AuthorizeRequest = context ? { ...request, context } : request;
+		return permissionEngine.authorize(agent, enrichedRequest);
 	}
 
 	// Delegate: verify parent permissions then create chain
@@ -239,6 +258,40 @@ export async function createKavach(config: KavachConfig) {
 		 * database table — no separate in-memory store needed.
 		 */
 		mcp: mcpRegistry,
+		/**
+		 * Human auth integration.
+		 *
+		 * `resolveUser` extracts the authenticated human from an inbound HTTP
+		 * request via the configured adapter.  `session` is a full session
+		 * manager (create / validate / revoke) when `auth.session` was passed
+		 * to `createKavach()`.
+		 *
+		 * @example
+		 * ```typescript
+		 * app.use(async (req, res, next) => {
+		 *   const user = await kavach.auth.resolveUser(req);
+		 *   if (!user) return res.status(401).json({ error: 'Unauthorized' });
+		 *   req.user = user;
+		 *   next();
+		 * });
+		 * ```
+		 */
+		auth: {
+			async resolveUser(request: Request): Promise<ResolvedUser | null> {
+				if (!authAdapter) return null;
+				return authAdapter.resolveUser(request);
+			},
+			session: sessionManager,
+		},
+		/**
+		 * Resolve a human user from an incoming HTTP request.
+		 *
+		 * @deprecated Use `kavach.auth.resolveUser(request)` instead.
+		 */
+		async resolveUser(request: Request): Promise<ResolvedUser | null> {
+			if (!authAdapter) return null;
+			return authAdapter.resolveUser(request);
+		},
 		/** Direct database access for advanced usage */
 		db,
 	};

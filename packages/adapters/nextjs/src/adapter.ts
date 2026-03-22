@@ -265,6 +265,15 @@ async function handleAgentRotate(id: string, kavach: Kavach): Promise<Response> 
 	}
 }
 
+function extractRequestContext(request: Request): { ip?: string; userAgent?: string } {
+	const ip =
+		request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+		request.headers.get("x-real-ip") ??
+		undefined;
+	const userAgent = request.headers.get("user-agent") ?? undefined;
+	return { ip, userAgent };
+}
+
 async function handleAuthorize(request: Request, kavach: Kavach): Promise<Response> {
 	const bodyResult = await parseJsonBody(request);
 	if (!bodyResult.success) return bodyResult.response;
@@ -273,11 +282,16 @@ async function handleAuthorize(request: Request, kavach: Kavach): Promise<Respon
 	if (!parsed.success) return validationError(parsed.error.issues);
 
 	try {
-		const result = await kavach.authorize(parsed.data.agentId, {
-			action: parsed.data.action,
-			resource: parsed.data.resource,
-			arguments: parsed.data.arguments,
-		});
+		const context = extractRequestContext(request);
+		const result = await kavach.authorize(
+			parsed.data.agentId,
+			{
+				action: parsed.data.action,
+				resource: parsed.data.resource,
+				arguments: parsed.data.arguments,
+			},
+			context,
+		);
 		const status = result.allowed ? 200 : 403;
 		return new Response(JSON.stringify({ data: result }), {
 			status,
@@ -303,11 +317,16 @@ async function handleAuthorizeByToken(request: Request, kavach: Kavach): Promise
 	if (!parsed.success) return validationError(parsed.error.issues);
 
 	try {
-		const result = await kavach.authorizeByToken(token, {
-			action: parsed.data.action,
-			resource: parsed.data.resource,
-			arguments: parsed.data.arguments,
-		});
+		const context = extractRequestContext(request);
+		const result = await kavach.authorizeByToken(
+			token,
+			{
+				action: parsed.data.action,
+				resource: parsed.data.resource,
+				arguments: parsed.data.arguments,
+			},
+			context,
+		);
 		const status = result.allowed ? 200 : 403;
 		return new Response(JSON.stringify({ data: result }), {
 			status,

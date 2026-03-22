@@ -138,6 +138,19 @@ export const mcpServers = sqliteTable("kavach_mcp_servers", {
 });
 
 // ============================================================
+// Sessions (human user sessions managed by KavachOS)
+// ============================================================
+export const sessions = sqliteTable("kavach_sessions", {
+	id: text("id").primaryKey(),
+	userId: text("user_id")
+		.notNull()
+		.references(() => users.id),
+	expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
+	metadata: text("metadata", { mode: "json" }).$type<Record<string, unknown>>(),
+	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+});
+
+// ============================================================
 // OAuth Clients (for MCP OAuth 2.1 - dynamic client registration)
 // ============================================================
 export const oauthClients = sqliteTable("kavach_oauth_clients", {

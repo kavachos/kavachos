@@ -132,10 +132,10 @@ export function Nav() {
 							</button>
 						)}
 
-						{/* CTA - outline style, not duplicate of hero gold */}
+						{/* CTA */}
 						<Link
 							href="/docs"
-							className="hidden items-center gap-1.5 rounded-full border border-fd-foreground/15 bg-fd-foreground/5 px-4 py-1.5 text-xs font-semibold text-fd-foreground transition-all hover:bg-fd-foreground/10 sm:inline-flex"
+							className="hidden items-center gap-1.5 rounded-full bg-fd-foreground px-4 py-1.5 text-xs font-semibold text-fd-background transition-all hover:opacity-90 sm:inline-flex"
 						>
 							Docs
 							<ArrowRight className="h-3 w-3" />

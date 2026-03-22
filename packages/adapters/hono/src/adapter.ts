@@ -333,11 +333,20 @@ export function kavachHono(kavach: Kavach, options?: { mcp?: McpAuthModule }): H
 			return c.newResponse(res.body, res);
 		}
 		try {
-			const result = await kavach.authorize(parsed.data.agentId, {
-				action: parsed.data.action,
-				resource: parsed.data.resource,
-				arguments: parsed.data.arguments,
-			});
+			const ip =
+				c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ??
+				c.req.header("x-real-ip") ??
+				undefined;
+			const userAgent = c.req.header("user-agent") ?? undefined;
+			const result = await kavach.authorize(
+				parsed.data.agentId,
+				{
+					action: parsed.data.action,
+					resource: parsed.data.resource,
+					arguments: parsed.data.arguments,
+				},
+				{ ip, userAgent },
+			);
 			const status = result.allowed ? 200 : 403;
 			const res = new Response(JSON.stringify({ data: result }), {
 				status,
@@ -373,11 +382,20 @@ export function kavachHono(kavach: Kavach, options?: { mcp?: McpAuthModule }): H
 			return c.newResponse(res.body, res);
 		}
 		try {
-			const result = await kavach.authorizeByToken(token, {
-				action: parsed.data.action,
-				resource: parsed.data.resource,
-				arguments: parsed.data.arguments,
-			});
+			const ip =
+				c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ??
+				c.req.header("x-real-ip") ??
+				undefined;
+			const userAgent = c.req.header("user-agent") ?? undefined;
+			const result = await kavach.authorizeByToken(
+				token,
+				{
+					action: parsed.data.action,
+					resource: parsed.data.resource,
+					arguments: parsed.data.arguments,
+				},
+				{ ip, userAgent },
+			);
 			const status = result.allowed ? 200 : 403;
 			const res = new Response(JSON.stringify({ data: result }), {
 				status,

@@ -139,6 +139,17 @@ function buildStatements(provider: DatabaseConfig["provider"]): string[] {
 )`,
 
 		// ------------------------------------------------------------------
+		// kavach_sessions
+		// ------------------------------------------------------------------
+		`CREATE TABLE ${ifne} kavach_sessions (
+  id         TEXT    NOT NULL PRIMARY KEY,
+  user_id    TEXT    NOT NULL REFERENCES kavach_users(id),
+  expires_at ${ts}   NOT NULL,
+  metadata   ${json},
+  created_at ${ts}   NOT NULL
+)`,
+
+		// ------------------------------------------------------------------
 		// kavach_oauth_clients
 		// ------------------------------------------------------------------
 		`CREATE TABLE ${ifne} kavach_oauth_clients (

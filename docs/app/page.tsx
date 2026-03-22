@@ -56,6 +56,10 @@ export default function HomePage() {
 							and an audit trail. Plugs into your existing auth stack.
 						</p>
 
+						<p className="mt-3 text-[11px] font-light text-fd-muted-foreground/40 italic">
+							kavach (कवच) — armor, from Sanskrit. Karna&apos;s divine shield in the Mahabharata.
+						</p>
+
 						<div className="mt-8 flex flex-wrap items-center gap-3">
 							<Button href="/docs/quickstart" variant="gold">
 								Get started
