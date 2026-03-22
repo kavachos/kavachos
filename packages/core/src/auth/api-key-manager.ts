@@ -22,7 +22,7 @@
  */
 
 import { createHash, randomBytes, randomUUID } from "node:crypto";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import type { Database } from "../db/database.js";
 import { apiKeys as apiKeysTable } from "../db/schema.js";
 
@@ -57,6 +57,11 @@ export interface ApiKeyManagerModule {
 	}) => Promise<{ apiKey: ApiKey; key: string }>;
 	validate: (
 		key: string,
+	) => Promise<{ userId: string; permissions: string[]; keyId: string } | null>;
+	/** Validate a key and check that it has the required permission */
+	validateWithScope: (
+		key: string,
+		requiredPermission: string,
 	) => Promise<{ userId: string; permissions: string[]; keyId: string } | null>;
 	list: (userId: string) => Promise<ApiKey[]>;
 	revoke: (keyId: string) => Promise<void>;
@@ -167,30 +172,38 @@ export function createApiKeyManagerModule(
 		const keyHash = hashKey(key);
 		const now = new Date();
 
-		const rows = await db
-			.select()
-			.from(apiKeysTable)
-			.where(
-				and(
-					eq(apiKeysTable.keyHash, keyHash),
-					// Filter out expired keys (null expiresAt = never expires)
-				),
-			);
+		const rows = await db.select().from(apiKeysTable).where(eq(apiKeysTable.keyHash, keyHash));
 
 		const row = rows[0] as ApiKeyRow | undefined;
 		if (!row) return null;
 
-		// Check expiry manually to handle null case
+		// Check expiry (null expiresAt = never expires)
 		if (row.expiresAt !== null && row.expiresAt <= now) return null;
 
-		// Update lastUsedAt asynchronously (don't block response)
-		void db.update(apiKeysTable).set({ lastUsedAt: now }).where(eq(apiKeysTable.id, row.id));
+		// Update lastUsedAt (awaited to guarantee tracking)
+		await db.update(apiKeysTable).set({ lastUsedAt: now }).where(eq(apiKeysTable.id, row.id));
 
 		return {
 			userId: row.userId,
 			permissions: row.permissions,
 			keyId: row.id,
 		};
+	}
+
+	async function validateWithScope(
+		key: string,
+		requiredPermission: string,
+	): Promise<{ userId: string; permissions: string[]; keyId: string } | null> {
+		const result = await validate(key);
+		if (!result) return null;
+
+		// Wildcard permission grants access to everything
+		if (result.permissions.includes("*")) return result;
+
+		// Check the specific permission
+		if (!result.permissions.includes(requiredPermission)) return null;
+
+		return result;
 	}
 
 	async function list(userId: string): Promise<ApiKey[]> {
@@ -298,6 +311,7 @@ export function createApiKeyManagerModule(
 	return {
 		create,
 		validate,
+		validateWithScope,
 		list,
 		revoke,
 		rotate,

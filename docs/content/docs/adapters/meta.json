@@ -1,4 +1,14 @@
 {
 	"title": "Framework adapters",
-"pages": ["index", "hono", "express", "nextjs", "fastify", "nuxt", "sveltekit", "astro"]
+	"icon": "Code",
+	"pages": [
+		"index",
+		"hono",
+		"express",
+		"nextjs",
+		"fastify",
+		"nuxt",
+		"sveltekit",
+		"astro"
+	]
 }

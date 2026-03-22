@@ -40,8 +40,12 @@ export interface OAuthProvider {
 	authorizationUrl: string;
 	/** Token exchange endpoint URL. */
 	tokenUrl: string;
-	/** User profile endpoint URL. */
-	userInfoUrl: string;
+	/**
+	 * User profile endpoint URL.
+	 * Optional — some providers (e.g. Notion) embed user info in the token
+	 * response and have no separate endpoint.
+	 */
+	userInfoUrl: string | undefined;
 	/** Effective scopes (defaults merged with any user-supplied extras). */
 	scopes: string[];
 
@@ -92,7 +96,12 @@ export interface OAuthTokens {
 export interface OAuthUserInfo {
 	/** Stable user ID at the provider. */
 	id: string;
-	email: string;
+	/**
+	 * User email address.
+	 * Some providers (e.g. Reddit) do not expose email via OAuth; callers must
+	 * handle the undefined case, typically by requiring a separate email step.
+	 */
+	email: string | undefined;
 	name?: string;
 	/** URL to the user's avatar image. */
 	avatar?: string;

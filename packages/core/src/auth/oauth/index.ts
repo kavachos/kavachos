@@ -32,6 +32,9 @@
 export { createOAuthModule } from "./module.js";
 // PKCE utilities (useful for testing or custom providers)
 export { deriveCodeChallenge, generateCodeVerifier } from "./pkce.js";
+export type { OAuthPluginConfig } from "./plugin.js";
+// Plugin
+export { oauth } from "./plugin.js";
 // Built-in providers
 export { createAppleProvider } from "./providers/apple.js";
 export { createDiscordProvider } from "./providers/discord.js";
@@ -40,7 +43,10 @@ export { createGitlabProvider } from "./providers/gitlab.js";
 export { createGoogleProvider } from "./providers/google.js";
 export { createLinkedInProvider } from "./providers/linkedin.js";
 export { createMicrosoftProvider } from "./providers/microsoft.js";
+export { createNotionProvider } from "./providers/notion.js";
+export { createRedditProvider } from "./providers/reddit.js";
 export { createSlackProvider } from "./providers/slack.js";
+export { createTwitchProvider } from "./providers/twitch.js";
 export { createTwitterProvider } from "./providers/twitter.js";
 
 // Schema tables (for use in migrations or direct DB queries)

@@ -8,6 +8,8 @@ import type { AdminModule } from "./auth/admin.js";
 import { createAdminModule } from "./auth/admin.js";
 import type { ApiKeyManagerModule } from "./auth/api-key-manager.js";
 import { createApiKeyManagerModule } from "./auth/api-key-manager.js";
+import type { CaptchaModule } from "./auth/captcha.js";
+import { createCaptchaModule } from "./auth/captcha.js";
 import type { EmailOtpModule } from "./auth/email-otp.js";
 import { createEmailOtpModule } from "./auth/email-otp.js";
 import type { MagicLinkModule } from "./auth/magic-link.js";
@@ -16,11 +18,17 @@ import type { OrgModule } from "./auth/organization.js";
 import { createOrgModule } from "./auth/organization.js";
 import type { PasskeyModule } from "./auth/passkey.js";
 import { createPasskeyModule } from "./auth/passkey.js";
+import type { PhoneAuthModule } from "./auth/phone.js";
+import { createPhoneAuthModule } from "./auth/phone.js";
 import type { SsoModule } from "./auth/sso.js";
 import { createSsoModule } from "./auth/sso.js";
 import type { TotpModule } from "./auth/totp.js";
 import { createTotpModule } from "./auth/totp.js";
 import type { ResolvedUser } from "./auth/types.js";
+import type { UsernameAuthModule } from "./auth/username.js";
+import { createUsernameAuthModule } from "./auth/username.js";
+import type { WebhookModule } from "./auth/webhooks.js";
+import { createWebhookModule } from "./auth/webhooks.js";
 import { createDatabase } from "./db/database.js";
 import { createTables } from "./db/migrations.js";
 import { mcpServers } from "./db/schema.js";
@@ -186,6 +194,25 @@ export async function createKavach(config: KavachConfig) {
 	const apiKeyManagerModule: ApiKeyManagerModule | null = config.apiKeys
 		? createApiKeyManagerModule(config.apiKeys, db)
 		: null;
+
+	// Username auth — only created when the caller provides config.username.
+	const usernameModule: UsernameAuthModule | null =
+		config.username && sessionManager
+			? createUsernameAuthModule(config.username, db, sessionManager)
+			: null;
+
+	// Phone auth — only created when the caller provides config.phone.
+	const phoneModule: PhoneAuthModule | null =
+		config.phone && sessionManager ? createPhoneAuthModule(config.phone, db, sessionManager) : null;
+
+	// Captcha — only created when the caller provides config.captcha.
+	const captchaModule: CaptchaModule | null = config.captcha
+		? createCaptchaModule(config.captcha)
+		: null;
+
+	// Webhooks — only created when the caller provides config.webhooks.
+	const webhookModule: WebhookModule | null =
+		config.webhooks && config.webhooks.length > 0 ? createWebhookModule(config.webhooks) : null;
 
 	// Plugin system — runs after core modules so plugins can depend on them.
 	// Plugins may register endpoints, run migrations, and collect lifecycle hooks.
@@ -666,6 +693,55 @@ export async function createKavach(config: KavachConfig) {
 		 * ```
 		 */
 		apiKeys: apiKeyManagerModule,
+		/**
+		 * Username + password authentication.
+		 *
+		 * Null when `username` config was not provided or `auth.session` is not
+		 * configured (sessions are required to issue tokens on sign-in/up).
+		 *
+		 * @example
+		 * ```typescript
+		 * const response = await kavach.username?.handleRequest(request);
+		 * if (response) return response;
+		 * ```
+		 */
+		username: usernameModule,
+		/**
+		 * Phone number (SMS OTP) authentication.
+		 *
+		 * Null when `phone` config was not provided or `auth.session` is not
+		 * configured.
+		 *
+		 * @example
+		 * ```typescript
+		 * const response = await kavach.phone?.handleRequest(request);
+		 * if (response) return response;
+		 * ```
+		 */
+		phone: phoneModule,
+		/**
+		 * Captcha integration (reCAPTCHA, hCaptcha, Cloudflare Turnstile).
+		 *
+		 * Null when `captcha` config was not provided.
+		 *
+		 * @example
+		 * ```typescript
+		 * const result = await kavach.captcha?.verify(token, ip);
+		 * if (!result?.success) return new Response('Captcha failed', { status: 403 });
+		 * ```
+		 */
+		captcha: captchaModule,
+		/**
+		 * Webhook system.
+		 *
+		 * Null when `webhooks` config was not provided or the array is empty.
+		 *
+		 * @example
+		 * ```typescript
+		 * kavach.webhooks?.emit('user.created', { userId: user.id });
+		 * ```
+		 */
+		webhooks: webhookModule,
 		/**
 		 * Plugin system.
 		 *

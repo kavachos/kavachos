@@ -670,6 +670,32 @@ export function kavachFastify(kavach: Kavach, options?: KavachFastifyOptions) {
 			}
 		});
 
+		// ── Plugin Endpoints ─────────────────────────────────────────
+
+		for (const endpoint of kavach.plugins.getEndpoints()) {
+			const method = endpoint.method.toLowerCase() as "get" | "post" | "put" | "patch" | "delete";
+			fastify[method](endpoint.path, async (request, reply) => {
+				const url = `${request.protocol}://${request.hostname}${request.url}`;
+				const headers = new Headers(request.headers as Record<string, string>);
+				const hasBody = request.method !== "GET" && request.method !== "HEAD";
+				const body =
+					hasBody && request.body !== undefined ? JSON.stringify(request.body) : undefined;
+				const webReq = new Request(url, { method: request.method, headers, body });
+
+				const response = await kavach.plugins.handleRequest(webReq);
+				if (!response) {
+					return sendNotFound(reply, "Plugin endpoint not found");
+				}
+
+				reply.status(response.status);
+				response.headers.forEach((value, key) => {
+					reply.header(key, value);
+				});
+				const text = await response.text();
+				return reply.send(text);
+			});
+		}
+
 		// POST /mcp/token
 		fastify.post("/mcp/token", async (request, reply) => {
 			if (!mcp) return sendNotFound(reply, "MCP module not configured");

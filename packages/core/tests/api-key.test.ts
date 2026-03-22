@@ -257,6 +257,109 @@ describe("ApiKeyManagerModule.rotate", () => {
 	});
 });
 
+describe("ApiKeyManagerModule.validateWithScope", () => {
+	let db: Database;
+	let mod: ApiKeyManagerModule;
+
+	beforeEach(async () => {
+		db = await createTestDb();
+		await seedUser(db, USER_ID, "test@example.com");
+		mod = createApiKeyManagerModule({ prefix: "kos_" }, db);
+	});
+
+	it("returns result when key has the required permission", async () => {
+		const { key } = await mod.create({
+			userId: USER_ID,
+			name: "Scoped",
+			permissions: ["agents:read", "agents:write"],
+		});
+		const result = await mod.validateWithScope(key, "agents:read");
+		expect(result).not.toBeNull();
+		expect(result?.userId).toBe(USER_ID);
+	});
+
+	it("returns null when key lacks the required permission", async () => {
+		const { key } = await mod.create({
+			userId: USER_ID,
+			name: "Scoped",
+			permissions: ["agents:read"],
+		});
+		const result = await mod.validateWithScope(key, "admin:delete");
+		expect(result).toBeNull();
+	});
+
+	it("wildcard permission grants access to any scope", async () => {
+		const { key } = await mod.create({
+			userId: USER_ID,
+			name: "Wildcard",
+			permissions: ["*"],
+		});
+		const result = await mod.validateWithScope(key, "anything:here");
+		expect(result).not.toBeNull();
+	});
+
+	it("returns null for an invalid key regardless of scope", async () => {
+		const result = await mod.validateWithScope("kos_fakekeythatdoesnotexist", "agents:read");
+		expect(result).toBeNull();
+	});
+
+	it("returns null for an expired key regardless of scope", async () => {
+		const expiresAt = new Date(Date.now() - 1000);
+		const { key } = await mod.create({
+			userId: USER_ID,
+			name: "Expired",
+			permissions: ["agents:read"],
+			expiresAt,
+		});
+		const result = await mod.validateWithScope(key, "agents:read");
+		expect(result).toBeNull();
+	});
+});
+
+describe("ApiKeyManagerModule.lastUsedAt tracking", () => {
+	let db: Database;
+	let mod: ApiKeyManagerModule;
+
+	beforeEach(async () => {
+		db = await createTestDb();
+		await seedUser(db, USER_ID, "test@example.com");
+		mod = createApiKeyManagerModule({ prefix: "kos_" }, db);
+	});
+
+	it("updates lastUsedAt on validate", async () => {
+		const { key, apiKey } = await mod.create({
+			userId: USER_ID,
+			name: "Track",
+			permissions: PERMISSIONS,
+		});
+		expect(apiKey.lastUsedAt).toBeNull();
+
+		await mod.validate(key);
+
+		const keys = await mod.list(USER_ID);
+		const updated = keys.find((k) => k.id === apiKey.id);
+		expect(updated?.lastUsedAt).toBeInstanceOf(Date);
+	});
+});
+
+describe("ApiKeyManagerModule.key prefix format", () => {
+	it("keys use the configured prefix", async () => {
+		const db = await createTestDb();
+		await seedUser(db, USER_ID, "test@example.com");
+		const mod = createApiKeyManagerModule({ prefix: "kak_" }, db);
+		const { key } = await mod.create({ userId: USER_ID, name: "Custom", permissions: [] });
+		expect(key).toMatch(/^kak_/);
+	});
+
+	it("default prefix is kos_", async () => {
+		const db = await createTestDb();
+		await seedUser(db, USER_ID, "test@example.com");
+		const mod = createApiKeyManagerModule({}, db);
+		const { key } = await mod.create({ userId: USER_ID, name: "Default", permissions: [] });
+		expect(key).toMatch(/^kos_/);
+	});
+});
+
 describe("ApiKeyManagerModule.handleRequest", () => {
 	let db: Database;
 	let mod: ApiKeyManagerModule;

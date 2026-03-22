@@ -1,0 +1,36 @@
+{
+  "name": "@kavachos/vue",
+  "version": "0.0.2",
+  "description": "Vue 3 composables for KavachOS auth",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit"
+  },
+  "license": "MIT",
+  "author": "KavachOS <hello@kavachos.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kavachos/kavachos.git",
+    "directory": "packages/vue"
+  },
+  "peerDependencies": {
+    "vue": ">=3.3.0"
+  },
+  "devDependencies": {
+    "vue": "^3.5.0",
+    "tsup": "^8.4.0",
+    "typescript": "^5.8.0"
+  }
+}

@@ -79,7 +79,7 @@ export function InteractiveGrid({
 		<svg
 			viewBox={`0 0 ${width * horizontal} ${height * vertical}`}
 			preserveAspectRatio="xMidYMid slice"
-			className="absolute inset-0 h-full w-full"
+			className="absolute inset-0 h-full w-full opacity-[0.12] dark:opacity-100"
 			aria-hidden="true"
 			onMouseLeave={handleSvgMouseLeave}
 		>
@@ -94,16 +94,16 @@ export function InteractiveGrid({
 				let transition: string;
 
 				if (isHovered) {
-					fill = "rgba(201, 168, 76, 0.22)";
-					stroke = "rgba(201, 168, 76, 0.4)";
+					fill = "rgba(201, 168, 76, 0.3)";
+					stroke = "rgba(154, 123, 34, 0.5)";
 					transition = "fill 50ms ease-out, stroke 50ms ease-out";
 				} else if (isActive) {
-					fill = "rgba(201, 168, 76, 0.08)";
-					stroke = "rgba(201, 168, 76, 0.12)";
+					fill = "rgba(201, 168, 76, 0.15)";
+					stroke = "rgba(154, 123, 34, 0.25)";
 					transition = "fill 800ms ease-out, stroke 800ms ease-out";
 				} else {
 					fill = "transparent";
-					stroke = "rgba(201, 168, 76, 0.03)";
+					stroke = "rgba(154, 123, 34, 0.08)";
 					transition = "fill 1200ms ease-out, stroke 1200ms ease-out";
 				}
 

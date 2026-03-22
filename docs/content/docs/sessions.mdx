@@ -1,210 +1,62 @@
 ---
 title: Sessions
-description: Configure session storage, cookies, CSRF protection, and revocation.
-icon: Clock
+description: Cookie-based session management, CSRF protection, and token lifecycle.
+icon: Key
 ---
 
-import { Callout } from 'fumadocs-ui/components/callout';
-import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
-import { TypeTable } from 'fumadocs-ui/components/type-table';
+## Session management
 
-KavachOS supports two session strategies: database sessions and stateless (JWT) sessions. Database sessions are the default when you use built-in auth plugins. Stateless sessions are a lighter option for read-heavy workloads where you control token revocation outside KavachOS.
+KavachOS provides cookie-based session management for human users alongside bearer tokens for agents.
 
-## Database sessions
+### Cookie sessions
 
-A session record is written to `kavach_sessions` on every sign-in. Each request validates the session ID from the cookie against this table. Revocation is immediate.
+```typescript
+import { createCookieSessionManager } from 'kavachos';
 
-```typescript title="lib/kavach.ts"
-import { createKavach } from '@kavachos/core';
-import { emailPassword } from '@kavachos/core/plugins/email-password';
-
-const kavach = await createKavach({
-  database: { provider: 'postgres', url: process.env.DATABASE_URL! },
-  secret: process.env.KAVACH_SECRET!,
-  auth: {
-    session: {
-      strategy: 'database',   // default
-      secret: process.env.SESSION_SECRET!,
-      maxAge: 60 * 60 * 24 * 30,  // 30 days in seconds
-    },
+const sessions = createCookieSessionManager({
+  sessionName: 'kavach_session',
+  maxAge: 7 * 24 * 60 * 60, // 7 days
+  autoRefresh: true,
+  cookie: {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'lax',
   },
-  plugins: [emailPassword()],
-});
+}, kavach.db);
+
+// Create session after login
+const { session, setCookieHeader } = await sessions.createSession(userId);
+
+// Validate on each request
+const { session: valid } = await sessions.validateSession(req.headers.cookie);
+
+// Revoke
+await sessions.revokeSession(sessionId);
 ```
 
-<Callout type="info">
-  The `SESSION_SECRET` is used to sign the session cookie (an HMAC). The actual session data lives in the database, not the cookie. Generate it with `openssl rand -base64 32`.
-</Callout>
+### CSRF protection
 
-## Stateless sessions
-
-With `strategy: 'jwt'`, KavachOS signs a compact JWT and stores it in the cookie. No database read on each request: the server verifies the signature locally.
+KavachOS uses the double-submit cookie pattern with timing-safe comparison:
 
 ```typescript
-auth: {
-  session: {
-    strategy: 'jwt',
-    secret: process.env.SESSION_SECRET!,
-    maxAge: 60 * 60 * 24 * 7,  // 7 days
-  },
-},
+import { generateCsrfToken, validateCsrfToken, validateOrigin } from 'kavachos';
+
+// Generate token and set as cookie
+const token = generateCsrfToken();
+
+// Validate on mutation requests
+const valid = validateCsrfToken(requestToken, cookieToken);
+
+// Also validate origin header
+const originOk = validateOrigin(request, ['https://myapp.com']);
 ```
 
-The trade-off: revoking a stateless session requires a blocklist. See [session revocation](#session-revocation) below.
+### Human sessions vs agent tokens
 
-## Cookie configuration
-
-<TypeTable
-  type={{
-    name: {
-      description: 'Cookie name. Defaults to "kavach_session".',
-      type: 'string',
-    },
-    maxAge: {
-      description: 'Cookie lifetime in seconds.',
-      type: 'number',
-    },
-    httpOnly: {
-      description: 'Blocks JavaScript access to the cookie. Defaults to true.',
-      type: 'boolean',
-    },
-    secure: {
-      description: 'Only send over HTTPS. Defaults to true in production (NODE_ENV === "production").',
-      type: 'boolean',
-    },
-    sameSite: {
-      description: 'CSRF mitigation. Defaults to "lax".',
-      type: '"strict" | "lax" | "none"',
-    },
-    domain: {
-      description: 'Cookie domain. Set for cross-subdomain sharing.',
-      type: 'string',
-    },
-    path: {
-      description: 'Cookie path. Defaults to "/".',
-      type: 'string',
-    },
-  }}
-/>
-
-```typescript
-auth: {
-  session: {
-    strategy: 'database',
-    secret: process.env.SESSION_SECRET!,
-    maxAge: 60 * 60 * 24 * 30,
-    cookie: {
-      name: 'my_app_session',
-      sameSite: 'strict',
-      domain: '.example.com',  // shared across app.example.com and api.example.com
-    },
-  },
-},
-```
-
-## CSRF protection
-
-KavachOS enables CSRF protection by default for all state-changing requests when `sameSite` is `'lax'` or `'none'`. It uses the double-submit cookie pattern: a CSRF token is set as a separate readable cookie and must be echoed in the `X-CSRF-Token` header.
-
-```typescript
-// Read the CSRF token (set automatically on sign-in)
-const csrfToken = getCookie('kavach_csrf');
-
-// Include it in fetch calls
-fetch('/api/agents', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'X-CSRF-Token': csrfToken,
-  },
-  body: JSON.stringify({ name: 'my-agent' }),
-});
-```
-
-To disable CSRF protection (not recommended except in trusted internal services):
-
-```typescript
-auth: {
-  session: {
-    csrf: false,
-  },
-},
-```
-
-<Callout type="warn">
-  Only disable CSRF protection when all requests come from non-browser clients that cannot be tricked via cross-site requests (server-to-server, CLI tools, etc.).
-</Callout>
-
-## Session revocation
-
-### Revoke a single session
-
-```typescript
-// Revoke by session ID (available from kavach.auth.resolveSession(request))
-await kavach.auth.revokeSession(sessionId);
-```
-
-### Revoke all sessions for a user
-
-Useful after a password change or account compromise:
-
-```typescript
-await kavach.auth.revokeAllSessions(userId);
-```
-
-### Stateless session revocation
-
-JWT sessions cannot be invalidated by deleting a record. KavachOS maintains a revocation blocklist in the database for this case:
-
-```typescript
-// Works for both database and JWT sessions
-await kavach.auth.revokeSession(sessionId);
-```
-
-For JWT sessions, `revokeSession` adds the token's `jti` claim to `kavach_revoked_tokens`. Every request checks this table. If you want to minimize database reads, set a short `maxAge` (1 hour or less) and accept that revocation is eventually consistent within that window.
-
-## Auto-refresh
-
-When a session is within 25% of its `maxAge`, KavachOS automatically issues a new cookie with a fresh expiry on the next request. This keeps active users signed in without re-authentication.
-
-```typescript
-// Opt out of auto-refresh
-auth: {
-  session: {
-    autoRefresh: false,
-  },
-},
-```
-
-You can also refresh manually, for example after a permission change:
-
-```typescript
-const response = new Response(body);
-await kavach.auth.refreshSession(request, response);
-return response;
-```
-
-## Reading the current session
-
-```typescript
-// From any request handler
-const user = await kavach.auth.resolveUser(request);
-if (!user) {
-  return new Response('Unauthorized', { status: 401 });
-}
-
-// Full session record (includes expiry and metadata)
-const session = await kavach.auth.resolveSession(request);
-console.log(session?.expiresAt);
-```
-
-## Sessions and agents
-
-Sessions are for human users. Agents authenticate via bearer tokens (`kv_...`), not cookies. The two systems do not interact directly: a session gives you a `user.id`, and you use that ID as `ownerId` when creating or querying agents.
-
-```typescript
-const user = await kavach.auth.resolveUser(request);
-if (!user) return new Response('Unauthorized', { status: 401 });
-
-const agents = await kavach.agent.listByOwner(user.id);
-```
+| | Human sessions | Agent tokens |
+|---|---|---|
+| Format | Signed JWT in httpOnly cookie | `kv_...` bearer token |
+| Lifetime | 7 days (configurable) | 24 hours (configurable) |
+| Storage | Database row | SHA-256 hash in database |
+| Revocation | Per-session or per-user bulk | Per-agent |
+| CSRF | Required (cookie-based) | Not needed (header-based) |

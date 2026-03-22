@@ -41,9 +41,9 @@ KavachOS supports multiple authentication methods for the humans who own and man
 Pass plugins to `createKavach()`. Each plugin registers its own routes, database tables, and session logic:
 
 ```typescript title="lib/kavach.ts"
-import { createKavach } from '@kavachos/core';
-import { emailPassword } from '@kavachos/core/plugins/email-password';
-import { oauth } from '@kavachos/core/plugins/oauth';
+import { createKavach } from 'kavachos';
+import { emailPassword } from 'kavachos/plugins/email-password';
+import { oauth } from 'kavachos/plugins/oauth';
 
 const kavach = await createKavach({
   database: { provider: 'postgres', url: process.env.DATABASE_URL! },

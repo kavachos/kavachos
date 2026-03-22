@@ -15,5 +15,12 @@ export type {
 	ValidateSessionResult,
 } from "./manager.js";
 export { createCookieSessionManager } from "./manager.js";
+// Multi-session support
+export type { MultiSessionConfig, MultiSessionModule, SessionInfo } from "./multi-session.js";
+export {
+	buildSessionMetadata,
+	createMultiSessionModule,
+	MultiSessionLimitError,
+} from "./multi-session.js";
 export type { Session, SessionConfig, SessionManager } from "./session.js";
 export { createSessionManager } from "./session.js";

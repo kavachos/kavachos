@@ -21,10 +21,10 @@ KavachOS uses [Drizzle ORM](https://orm.drizzle.team) under the hood. You pick a
 
 <Tabs items={['SQLite', 'Postgres', 'MySQL']}>
   <Tab value="SQLite">
-    SQLite is the default for development. No peer dependencies beyond `better-sqlite3`, which ships with `@kavachos/core`.
+    SQLite is the default for development. No peer dependencies beyond `better-sqlite3`, which ships with `kavachos`.
 
     ```typescript
-    import { createKavach } from '@kavachos/core';
+    import { createKavach } from 'kavachos';
 
     const kavach = await createKavach({
       database: {
@@ -60,7 +60,7 @@ KavachOS uses [Drizzle ORM](https://orm.drizzle.team) under the hood. You pick a
     ```
 
     ```typescript
-    import { createKavach } from '@kavachos/core';
+    import { createKavach } from 'kavachos';
 
     const kavach = await createKavach({
       database: {
@@ -81,7 +81,7 @@ KavachOS uses [Drizzle ORM](https://orm.drizzle.team) under the hood. You pick a
     ```
 
     ```typescript
-    import { createKavach } from '@kavachos/core';
+    import { createKavach } from 'kavachos';
 
     const kavach = await createKavach({
       database: {
@@ -159,7 +159,7 @@ Install it with: npm install pg
 Use `:memory:` for fast, isolated tests that need no setup or teardown:
 
 ```typescript
-import { createKavach } from '@kavachos/core';
+import { createKavach } from 'kavachos';
 import { describe, beforeEach, it } from 'vitest';
 
 let kavach: Awaited<ReturnType<typeof createKavach>>;

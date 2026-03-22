@@ -30,6 +30,18 @@ export interface AdminConfig {
 	adminUserIds?: string[];
 	/** Allow impersonation (default: true) */
 	allowImpersonation?: boolean;
+	/** Impersonation session TTL in seconds (default: 3600 = 1 hour) */
+	impersonationTtlSeconds?: number;
+	/** Callback for audit logging admin actions */
+	onAdminAction?: (entry: AdminAuditEntry) => void | Promise<void>;
+}
+
+export interface AdminAuditEntry {
+	adminUserId: string;
+	action: string;
+	targetUserId: string;
+	details?: Record<string, unknown>;
+	timestamp: Date;
 }
 
 export interface AdminUser {
@@ -73,6 +85,8 @@ type UserRow = typeof users.$inferSelect;
 // Factory
 // ---------------------------------------------------------------------------
 
+const DEFAULT_IMPERSONATION_TTL_SECONDS = 3600; // 1 hour
+
 export function createAdminModule(
 	config: AdminConfig,
 	db: Database,
@@ -80,6 +94,30 @@ export function createAdminModule(
 ): AdminModule {
 	const adminUserIds = new Set(config.adminUserIds ?? []);
 	const allowImpersonation = config.allowImpersonation ?? true;
+	const impersonationTtlSeconds =
+		config.impersonationTtlSeconds ?? DEFAULT_IMPERSONATION_TTL_SECONDS;
+	const onAdminAction = config.onAdminAction;
+
+	async function logAdminAction(
+		adminUserId: string,
+		action: string,
+		targetUserId: string,
+		details?: Record<string, unknown>,
+	): Promise<void> {
+		if (onAdminAction) {
+			try {
+				await onAdminAction({
+					adminUserId,
+					action,
+					targetUserId,
+					details,
+					timestamp: new Date(),
+				});
+			} catch {
+				// Audit logging should never break the admin action
+			}
+		}
+	}
 
 	async function isAdmin(userId: string): Promise<boolean> {
 		return adminUserIds.has(userId);
@@ -169,6 +207,14 @@ export function createAdminModule(
 
 		// Revoke all active sessions for the banned user
 		await db.delete(sessions).where(eq(sessions.userId, userId));
+
+		// Revoke all active agent tokens for the banned user
+		await db.update(agents).set({ status: "revoked" }).where(eq(agents.ownerId, userId));
+
+		await logAdminAction("system", "ban_user", userId, {
+			reason,
+			expiresAt: expiresAt?.toISOString(),
+		});
 	}
 
 	async function unbanUser(userId: string): Promise<void> {
@@ -181,6 +227,8 @@ export function createAdminModule(
 				updatedAt: new Date(),
 			})
 			.where(eq(users.id, userId));
+
+		await logAdminAction("system", "unban_user", userId);
 	}
 
 	async function deleteUser(userId: string): Promise<void> {
@@ -189,6 +237,8 @@ export function createAdminModule(
 		// Mark agents as revoked to preserve audit trail
 		await db.update(agents).set({ status: "revoked" }).where(eq(agents.ownerId, userId));
 		await db.delete(users).where(eq(users.id, userId));
+
+		await logAdminAction("system", "delete_user", userId);
 	}
 
 	async function impersonate(
@@ -201,13 +251,20 @@ export function createAdminModule(
 		const isAdminUser = await isAdmin(adminUserId);
 		if (!isAdminUser) throw new Error(`User "${adminUserId}" is not an admin`);
 
-		const { session, token } = await sessionManager.create(targetUserId, {
+		// Impersonation sessions use a shorter TTL (default: 1 hour)
+		const impersonationExpiresAt = new Date(Date.now() + impersonationTtlSeconds * 1000);
+
+		const { token } = await sessionManager.create(targetUserId, {
 			impersonating: true,
 			adminUserId,
+			impersonationExpiresAt: impersonationExpiresAt.toISOString(),
+			sessionType: "impersonation",
 		});
 
+		await logAdminAction(adminUserId, "impersonate", targetUserId);
+
 		return {
-			session: { token, expiresAt: session.expiresAt },
+			session: { token, expiresAt: impersonationExpiresAt },
 			impersonating: true,
 		};
 	}
@@ -224,6 +281,8 @@ export function createAdminModule(
 			.update(users)
 			.set({ forcePasswordReset: 1, updatedAt: new Date() })
 			.where(eq(users.id, userId));
+
+		await logAdminAction("system", "force_password_reset", userId);
 	}
 
 	// ── HTTP handler ──────────────────────────────────────────────────────────

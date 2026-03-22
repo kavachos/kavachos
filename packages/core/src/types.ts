@@ -2,13 +2,17 @@ import type { AgentConfig } from "./agent/types.js";
 import type { ApprovalConfig } from "./approval/approval.js";
 import type { AdminConfig } from "./auth/admin.js";
 import type { ApiKeyManagerConfig } from "./auth/api-key-manager.js";
+import type { CaptchaConfig } from "./auth/captcha.js";
 import type { EmailOtpConfig } from "./auth/email-otp.js";
 import type { MagicLinkConfig } from "./auth/magic-link.js";
 import type { OrgConfig } from "./auth/organization.js";
 import type { PasskeyConfig } from "./auth/passkey.js";
+import type { PhoneAuthConfig } from "./auth/phone.js";
 import type { SsoConfig } from "./auth/sso.js";
 import type { TotpConfig } from "./auth/totp.js";
 import type { AuthAdapter } from "./auth/types.js";
+import type { UsernameAuthConfig } from "./auth/username.js";
+import type { WebhookConfig } from "./auth/webhooks.js";
 import type { DidWebConfig } from "./did/types.js";
 import type { KavachHooks } from "./hooks/lifecycle.js";
 import type { McpConfig } from "./mcp/types.js";
@@ -137,6 +141,39 @@ export interface KavachConfig {
 	 * static API keys with permission scopes.
 	 */
 	apiKeys?: ApiKeyManagerConfig;
+
+	/**
+	 * Username + password authentication.
+	 *
+	 * When provided, `kavach.username` is available with `signUp`, `signIn`,
+	 * `changePassword`, `changeUsername`, and `handleRequest`. Requires
+	 * `auth.session` to be configured so that sessions can be issued.
+	 */
+	username?: UsernameAuthConfig;
+
+	/**
+	 * Phone number (SMS OTP) authentication.
+	 *
+	 * When provided, `kavach.phone` is available with `sendCode`, `verifyCode`,
+	 * and `handleRequest`. Requires `auth.session` to be configured.
+	 */
+	phone?: PhoneAuthConfig;
+
+	/**
+	 * Captcha integration (reCAPTCHA v2/v3, hCaptcha, Cloudflare Turnstile).
+	 *
+	 * When provided, `kavach.captcha` is available with `verify` and
+	 * `middleware`.
+	 */
+	captcha?: CaptchaConfig;
+
+	/**
+	 * Webhook endpoints to notify on auth events.
+	 *
+	 * Each entry specifies a URL, signing secret, and the events it subscribes
+	 * to. Deliveries are fire-and-forget with exponential backoff retries.
+	 */
+	webhooks?: WebhookConfig[];
 }
 
 export interface DatabaseConfig {

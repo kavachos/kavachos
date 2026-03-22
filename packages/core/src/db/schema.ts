@@ -7,6 +7,7 @@ export const users = sqliteTable("kavach_users", {
 	id: text("id").primaryKey(),
 	email: text("email").notNull().unique(),
 	name: text("name"),
+	username: text("username").unique(),
 	externalId: text("external_id"), // ID from external auth (better-auth, Auth.js, etc.)
 	externalProvider: text("external_provider"), // "better-auth", "authjs", "clerk", etc.
 	metadata: text("metadata", { mode: "json" }).$type<Record<string, unknown>>(),
@@ -496,6 +497,46 @@ export const passkeyChallenges = sqliteTable("kavach_passkey_challenges", {
 	type: text("type", { enum: ["registration", "authentication"] }).notNull(),
 	expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
 	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+});
+
+// ============================================================
+// Username Accounts (username + password auth)
+// ============================================================
+export const usernameAccounts = sqliteTable("kavach_username_accounts", {
+	id: text("id").primaryKey(),
+	userId: text("user_id")
+		.notNull()
+		.references(() => users.id, { onDelete: "cascade" }),
+	username: text("username").notNull().unique(),
+	passwordHash: text("password_hash").notNull(),
+	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+	updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+});
+
+// ============================================================
+// Phone Verifications (SMS OTP)
+// ============================================================
+export const phoneVerifications = sqliteTable("kavach_phone_verifications", {
+	id: text("id").primaryKey(),
+	phoneNumber: text("phone_number").notNull(),
+	codeHash: text("code_hash").notNull(),
+	attempts: integer("attempts").notNull().default(0),
+	expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
+	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+});
+
+// ============================================================
+// Trusted Devices (skip 2FA on known devices for a time window)
+// ============================================================
+export const trustedDevices = sqliteTable("kavach_trusted_devices", {
+	id: text("id").primaryKey(),
+	userId: text("user_id")
+		.notNull()
+		.references(() => users.id, { onDelete: "cascade" }),
+	fingerprint: text("fingerprint").notNull(), // HMAC-SHA256 of stable request headers
+	label: text("label").notNull(), // human-readable, e.g. "Mac", "iPhone"
+	trustedAt: integer("trusted_at", { mode: "timestamp" }).notNull(),
+	expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
 });
 
 // ============================================================

@@ -11,7 +11,7 @@ import { Card, Cards } from 'fumadocs-ui/components/card';
 `createKavach()` accepts a `KavachConfig` object. The only required field is `database`. Everything else is optional and enables features incrementally.
 
 ```typescript
-import { createKavach } from '@kavachos/core';
+import { createKavach } from 'kavachos';
 
 const kavach = await createKavach({
   database: { provider: 'sqlite', url: 'kavach.db' },

@@ -1,0 +1,52 @@
+// ─── Domain types ─────────────────────────────────────────────────────────────
+
+export interface KavachUser {
+	id: string;
+	email?: string;
+	name?: string;
+	image?: string;
+}
+
+export interface KavachSession {
+	token: string;
+	user: KavachUser;
+	expiresAt?: string;
+}
+
+export interface KavachAgent {
+	id: string;
+	ownerId: string;
+	name: string;
+	type: "autonomous" | "delegated" | "service";
+	token: string;
+	permissions: KavachPermission[];
+	status: "active" | "revoked" | "expired";
+	expiresAt: string | null;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface KavachPermission {
+	resource: string;
+	actions: string[];
+	constraints?: {
+		maxCallsPerHour?: number;
+		allowedArgPatterns?: string[];
+		requireApproval?: boolean;
+		timeWindow?: { start: string; end: string };
+		ipAllowlist?: string[];
+	};
+}
+
+export interface CreateAgentInput {
+	ownerId: string;
+	name: string;
+	type: "autonomous" | "delegated" | "service";
+	permissions: KavachPermission[];
+	expiresAt?: string;
+	metadata?: Record<string, unknown>;
+}
+
+// ─── Result type ──────────────────────────────────────────────────────────────
+
+export type ActionResult<T = void> = { success: true; data: T } | { success: false; error: string };

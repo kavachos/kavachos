@@ -802,5 +802,15 @@ export function kavachHono(kavach: Kavach, options?: { mcp?: McpAuthModule }): H
 		}
 	});
 
+	// ── Plugin Endpoints ────────────────────────────────────────────
+
+	for (const endpoint of kavach.plugins.getEndpoints()) {
+		const method = endpoint.method.toLowerCase() as "get" | "post" | "put" | "patch" | "delete";
+		app[method](endpoint.path, async (c) => {
+			const response = await kavach.plugins.handleRequest(c.req.raw);
+			return c.newResponse(response?.body ?? null, response ?? new Response(null, { status: 404 }));
+		});
+	}
+
 	return app;
 }

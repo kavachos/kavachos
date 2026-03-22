@@ -394,4 +394,172 @@ describe("OrgModule", () => {
 		const res = await mod.handleRequest(req);
 		expect(res?.status).toBe(201);
 	});
+
+	// ── owner protection ───────────────────────────────────────────────────
+
+	it("prevents removing the last owner", async () => {
+		const org = await mod.create({ name: "Acme", slug: "acme", ownerId });
+		await expect(mod.removeMember(org.id, ownerId)).rejects.toThrow(/last owner/);
+	});
+
+	it("allows removing an owner when another owner exists", async () => {
+		const org = await mod.create({ name: "Acme", slug: "acme", ownerId });
+		await mod.addMember(org.id, memberId, "member");
+		await mod.updateMemberRole(org.id, memberId, "owner");
+		// Now there are two owners; removing the original should work
+		await mod.removeMember(org.id, ownerId);
+		const members = await mod.getMembers(org.id);
+		expect(members.find((m) => m.userId === ownerId)).toBeUndefined();
+	});
+
+	it("prevents demoting the last owner", async () => {
+		const org = await mod.create({ name: "Acme", slug: "acme", ownerId });
+		await expect(mod.updateMemberRole(org.id, ownerId, "admin")).rejects.toThrow(/last owner/);
+	});
+
+	it("allows demoting an owner when another owner exists", async () => {
+		const org = await mod.create({ name: "Acme", slug: "acme", ownerId });
+		await mod.addMember(org.id, memberId, "member");
+		await mod.updateMemberRole(org.id, memberId, "owner");
+		// Now two owners; demoting one is fine
+		const updated = await mod.updateMemberRole(org.id, ownerId, "admin");
+		expect(updated.role).toBe("admin");
+	});
+
+	// ── invitation hardening ────────────────────────────────────────────────
+
+	it("rejects duplicate pending invitations for the same email", async () => {
+		const org = await mod.create({ name: "Acme", slug: "acme", ownerId });
+		await mod.invite({
+			orgId: org.id,
+			email: "dup@example.com",
+			role: "member",
+			invitedBy: ownerId,
+		});
+		await expect(
+			mod.invite({ orgId: org.id, email: "dup@example.com", role: "member", invitedBy: ownerId }),
+		).rejects.toThrow(/already exists/);
+	});
+
+	it("allows re-inviting after the first invitation is accepted", async () => {
+		const org = await mod.create({ name: "Acme", slug: "acme", ownerId });
+		const inv = await mod.invite({
+			orgId: org.id,
+			email: "re@example.com",
+			role: "member",
+			invitedBy: ownerId,
+		});
+		await mod.acceptInvitation(inv.id, memberId);
+		// Remove the member, then invite again
+		await mod.removeMember(org.id, memberId);
+		// Should not throw since the first invitation is now "accepted", not "pending"
+		const inv2 = await mod.invite({
+			orgId: org.id,
+			email: "re@example.com",
+			role: "member",
+			invitedBy: ownerId,
+		});
+		expect(inv2.id).toBeTruthy();
+	});
+
+	it("rate limits invitations per org", async () => {
+		const rateLimitedMod = createOrgModule({ maxInvitationsPerHour: 2 }, db);
+		const org = await rateLimitedMod.create({ name: "Rate", slug: "rate-org", ownerId });
+		await rateLimitedMod.invite({
+			orgId: org.id,
+			email: "a@test.com",
+			role: "member",
+			invitedBy: ownerId,
+		});
+		await rateLimitedMod.invite({
+			orgId: org.id,
+			email: "b@test.com",
+			role: "member",
+			invitedBy: ownerId,
+		});
+		await expect(
+			rateLimitedMod.invite({
+				orgId: org.id,
+				email: "c@test.com",
+				role: "member",
+				invitedBy: ownerId,
+			}),
+		).rejects.toThrow(/rate limit/i);
+	});
+
+	// ── cascade deletion ────────────────────────────────────────────────────
+
+	it("cascade deletes members, invitations, and roles when org is removed", async () => {
+		const org = await mod.create({ name: "Cascade", slug: "cascade", ownerId });
+		await mod.addMember(org.id, memberId, "member");
+		await mod.invite({ orgId: org.id, email: "inv@test.com", role: "member", invitedBy: ownerId });
+		await mod.createRole(org.id, { name: "custom", permissions: ["custom:read"] });
+
+		await mod.remove(org.id);
+
+		// Org gone
+		expect(await mod.get(org.id)).toBeNull();
+		// Members gone
+		expect(await mod.getMembers(org.id)).toHaveLength(0);
+		// Invitations gone
+		expect(await mod.listInvitations(org.id)).toHaveLength(0);
+		// Roles gone
+		expect(await mod.getRoles(org.id)).toHaveLength(0);
+	});
+
+	// ── transfer ownership ──────────────────────────────────────────────────
+
+	it("transfers ownership to another member", async () => {
+		const org = await mod.create({ name: "Transfer", slug: "transfer", ownerId });
+		await mod.addMember(org.id, memberId, "admin");
+
+		const updated = await mod.transferOwnership(org.id, ownerId, memberId);
+		expect(updated.ownerId).toBe(memberId);
+
+		// New owner has "owner" role
+		const newOwnerMember = await mod.getMember(org.id, memberId);
+		expect(newOwnerMember?.role).toBe("owner");
+
+		// Old owner demoted to "admin"
+		const oldOwnerMember = await mod.getMember(org.id, ownerId);
+		expect(oldOwnerMember?.role).toBe("admin");
+	});
+
+	it("rejects transfer from a non-owner", async () => {
+		const org = await mod.create({ name: "Transfer", slug: "transfer2", ownerId });
+		await mod.addMember(org.id, memberId, "member");
+		await expect(mod.transferOwnership(org.id, memberId, guestId)).rejects.toThrow(/not the owner/);
+	});
+
+	it("rejects transfer to a non-member", async () => {
+		const org = await mod.create({ name: "Transfer", slug: "transfer3", ownerId });
+		await expect(mod.transferOwnership(org.id, ownerId, guestId)).rejects.toThrow(/not a member/);
+	});
+
+	// ── decline invitation ──────────────────────────────────────────────────
+
+	it("declines a pending invitation", async () => {
+		const org = await mod.create({ name: "Decline", slug: "decline", ownerId });
+		const inv = await mod.invite({
+			orgId: org.id,
+			email: "decline@test.com",
+			role: "member",
+			invitedBy: ownerId,
+		});
+		await mod.declineInvitation(inv.id);
+		const invitations = await mod.listInvitations(org.id);
+		expect(invitations.find((i) => i.id === inv.id)).toBeUndefined();
+	});
+
+	it("rejects declining a non-pending invitation", async () => {
+		const org = await mod.create({ name: "Decline", slug: "decline2", ownerId });
+		const inv = await mod.invite({
+			orgId: org.id,
+			email: "decline2@test.com",
+			role: "member",
+			invitedBy: ownerId,
+		});
+		await mod.acceptInvitation(inv.id, memberId);
+		await expect(mod.declineInvitation(inv.id)).rejects.toThrow(/not pending/);
+	});
 });

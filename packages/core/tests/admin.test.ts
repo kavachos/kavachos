@@ -273,6 +273,132 @@ describe("AdminModule.stopImpersonation", () => {
 	});
 });
 
+describe("AdminModule.banUser agent revocation", () => {
+	let db: Database;
+	let mod: AdminModule;
+
+	beforeEach(async () => {
+		db = await createTestDb();
+		const sessionManager = createSessionManager({ secret: SESSION_SECRET }, db);
+		mod = createAdminModule({ adminUserIds: [ADMIN_USER_ID] }, db, sessionManager);
+		await seedUser(db, TARGET_USER_ID, "target@example.com");
+	});
+
+	it("revokes all agent tokens on ban", async () => {
+		const { agents } = await import("../src/db/schema.js");
+		const { eq } = await import("drizzle-orm");
+		const now = new Date();
+
+		// Create an active agent for the target user
+		await db.insert(agents).values({
+			id: "agent_test_001",
+			ownerId: TARGET_USER_ID,
+			name: "Test Agent",
+			type: "autonomous",
+			status: "active",
+			tokenHash: "fakehash",
+			tokenPrefix: "kos_1234",
+			createdAt: now,
+			updatedAt: now,
+		});
+
+		await mod.banUser(TARGET_USER_ID, "Bad behavior");
+
+		// Agent should be revoked
+		const agentRows = await db.select().from(agents).where(eq(agents.id, "agent_test_001"));
+		expect(agentRows[0]?.status).toBe("revoked");
+	});
+});
+
+describe("AdminModule.audit logging", () => {
+	it("calls onAdminAction callback for ban", async () => {
+		const db = await createTestDb();
+		const sessionManager = createSessionManager({ secret: SESSION_SECRET }, db);
+		const auditLog: Array<{ action: string; targetUserId: string }> = [];
+		const mod = createAdminModule(
+			{
+				adminUserIds: [ADMIN_USER_ID],
+				onAdminAction: (entry) => {
+					auditLog.push({ action: entry.action, targetUserId: entry.targetUserId });
+				},
+			},
+			db,
+			sessionManager,
+		);
+		await seedUser(db, TARGET_USER_ID, "target@example.com");
+
+		await mod.banUser(TARGET_USER_ID, "Spam");
+		expect(auditLog).toHaveLength(1);
+		expect(auditLog[0]?.action).toBe("ban_user");
+		expect(auditLog[0]?.targetUserId).toBe(TARGET_USER_ID);
+	});
+
+	it("calls onAdminAction callback for impersonate", async () => {
+		const db = await createTestDb();
+		const sessionManager = createSessionManager({ secret: SESSION_SECRET }, db);
+		const auditLog: Array<{ action: string; adminUserId: string }> = [];
+		const mod = createAdminModule(
+			{
+				adminUserIds: [ADMIN_USER_ID],
+				allowImpersonation: true,
+				onAdminAction: (entry) => {
+					auditLog.push({ action: entry.action, adminUserId: entry.adminUserId });
+				},
+			},
+			db,
+			sessionManager,
+		);
+		await seedUser(db, ADMIN_USER_ID, "admin@example.com");
+		await seedUser(db, TARGET_USER_ID, "target@example.com");
+
+		await mod.impersonate(ADMIN_USER_ID, TARGET_USER_ID);
+		expect(auditLog).toHaveLength(1);
+		expect(auditLog[0]?.action).toBe("impersonate");
+		expect(auditLog[0]?.adminUserId).toBe(ADMIN_USER_ID);
+	});
+});
+
+describe("AdminModule.impersonation TTL", () => {
+	it("impersonation session metadata includes sessionType", async () => {
+		const db = await createTestDb();
+		const sessionManager = createSessionManager({ secret: SESSION_SECRET }, db);
+		const mod = createAdminModule(
+			{ adminUserIds: [ADMIN_USER_ID], allowImpersonation: true },
+			db,
+			sessionManager,
+		);
+		await seedUser(db, ADMIN_USER_ID, "admin@example.com");
+		await seedUser(db, TARGET_USER_ID, "target@example.com");
+
+		const result = await mod.impersonate(ADMIN_USER_ID, TARGET_USER_ID);
+		const session = await sessionManager.validate(result.session.token);
+		expect(session?.metadata?.sessionType).toBe("impersonation");
+		expect(session?.metadata?.impersonationExpiresAt).toBeTruthy();
+	});
+
+	it("respects custom impersonation TTL", async () => {
+		const db = await createTestDb();
+		const sessionManager = createSessionManager({ secret: SESSION_SECRET }, db);
+		const mod = createAdminModule(
+			{
+				adminUserIds: [ADMIN_USER_ID],
+				allowImpersonation: true,
+				impersonationTtlSeconds: 300, // 5 minutes
+			},
+			db,
+			sessionManager,
+		);
+		await seedUser(db, ADMIN_USER_ID, "admin@example.com");
+		await seedUser(db, TARGET_USER_ID, "target@example.com");
+
+		const result = await mod.impersonate(ADMIN_USER_ID, TARGET_USER_ID);
+		const expiresIn = result.session.expiresAt.getTime() - Date.now();
+		// Should be roughly 5 minutes (300s), not 7 days
+		expect(expiresIn).toBeLessThan(310 * 1000);
+		expect(expiresIn).toBeGreaterThan(290 * 1000);
+	});
+});
+
 describe("AdminModule.handleRequest", () => {
 	let db: Database;
 	let mod: AdminModule;

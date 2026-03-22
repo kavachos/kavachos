@@ -100,17 +100,18 @@
 		0px !important;
 }
 
-/* ===== Sidebar: true black, polished ===== */
+/* ===== Sidebar: custom design (high specificity to override fumadocs) ===== */
+/* Using double ID selector for maximum specificity */
 #nd-docs-layout [data-sidebar] {
 	scrollbar-width: none;
-	padding: 0.5rem 0.625rem;
+	padding: 0.5rem 0.5rem !important;
 }
 
 #nd-docs-layout [data-sidebar]::-webkit-scrollbar {
 	display: none;
 }
 
-/* Dark sidebar: solid black, not glass/grey */
+/* Dark sidebar */
 .dark #nd-docs-layout [data-sidebar] {
 	background: hsl(0 0% 2%) !important;
 	border-right: 1px solid hsl(0 0% 100% / 0.05);
@@ -121,51 +122,108 @@
 	border-right: 1px solid hsl(0 0% 90%);
 }
 
-/* All sidebar interactive items: shared base */
+/* Kill all default fumadocs gaps and spacing */
+#nd-docs-layout [data-sidebar] ul,
+#nd-docs-layout [data-sidebar] [role="group"],
+#nd-docs-layout [data-sidebar] nav,
+#nd-docs-layout [data-sidebar] div {
+	gap: 0 !important;
+	row-gap: 0 !important;
+	column-gap: 0 !important;
+}
+
+#nd-docs-layout [data-sidebar] li {
+	margin: 0 !important;
+	padding: 0 !important;
+}
+
+#nd-docs-layout [data-sidebar] ul {
+	margin: 0 !important;
+	padding: 0 !important;
+}
+
+/* Override any fumadocs flex gap on sidebar nav */
+#nd-docs-layout [data-sidebar] > nav > * {
+	margin-bottom: 0 !important;
+}
+
+/* All sidebar items: tight, clean */
 #nd-docs-layout [data-sidebar] a,
 #nd-docs-layout [data-sidebar] [data-folder] > button {
 	transition: all 0.15s ease;
-	border-radius: 6px;
-	padding: 0.3rem 0.5rem;
-	font-size: 0.8125rem;
-	line-height: 1.4;
+	border-radius: 5px !important;
+	padding: 5px 8px !important;
+	margin: 0 !important;
+	font-size: 13px !important;
+	line-height: 1.35 !important;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+/* Section separator labels */
+#nd-docs-layout [data-sidebar] p {
+	font-size: 10px !important;
+	font-weight: 700 !important;
+	letter-spacing: 0.1em !important;
+	text-transform: uppercase !important;
+	padding: 12px 8px 4px !important;
+	margin: 0 !important;
+	color: hsl(0 0% 50%) !important;
+}
+
+.dark #nd-docs-layout [data-sidebar] p {
+	color: hsl(0 0% 30%) !important;
 }
 
 /* Hover */
-.dark #nd-docs-layout [data-sidebar] a:hover,
-.dark #nd-docs-layout [data-sidebar] [data-folder] > button:hover {
-	background: hsl(0 0% 100% / 0.04);
+#nd-docs-layout [data-sidebar] a:hover,
+#nd-docs-layout [data-sidebar] [data-folder] > button:hover {
+	background: hsl(0 0% 0% / 0.05);
 }
 
-/* Active item: gold left border */
+.dark #nd-docs-layout [data-sidebar] a:hover,
+.dark #nd-docs-layout [data-sidebar] [data-folder] > button:hover {
+	background: hsl(0 0% 100% / 0.06);
+}
+
+/* Active item: gold accent */
+#nd-docs-layout [data-sidebar] a[data-active="true"] {
+	background: hsl(43 50% 50% / 0.08);
+	color: var(--kavach-gold-deep);
+	font-weight: 500;
+}
+
 .dark #nd-docs-layout [data-sidebar] a[data-active="true"] {
 	background: hsl(43 50% 50% / 0.06);
 	color: var(--kavach-gold-primary);
-	box-shadow: inset 2px 0 0 var(--kavach-gold-mid);
 	font-weight: 500;
 }
 
-#nd-docs-layout [data-sidebar] a[data-active="true"] {
-	font-weight: 500;
-}
-
-/* Folder expand */
+/* Nested folder items: subtle left border */
 #nd-docs-layout [data-sidebar] [data-folder] [role="group"] {
+	margin-left: 8px !important;
+	padding-left: 8px !important;
+	border-left: 1px solid hsl(0 0% 88%);
 	animation: sidebar-expand 0.2s ease both;
 }
 
-@keyframes sidebar-expand {
-	from {
-		opacity: 0;
-		transform: translateY(-3px);
-	}
-	to {
-		opacity: 1;
-		transform: translateY(0);
-	}
+.dark #nd-docs-layout [data-sidebar] [data-folder] [role="group"] {
+	border-left-color: hsl(0 0% 12%);
 }
 
-/* Icons: gold on hover/active */
+@keyframes sidebar-expand {
+	from { opacity: 0; transform: translateY(-4px); }
+	to { opacity: 1; transform: translateY(0); }
+}
+
+/* Icons */
+#nd-docs-layout [data-sidebar] svg {
+	flex-shrink: 0;
+	width: 15px;
+	height: 15px;
+}
+
 .dark #nd-docs-layout [data-sidebar] a:hover svg,
 .dark #nd-docs-layout [data-sidebar] [data-folder] > button:hover svg {
 	color: var(--kavach-gold-mid);
@@ -177,7 +235,7 @@
 	opacity: 1;
 }
 
-/* Move sidebar collapse button to bottom footer area */
+/* Footer: collapse button */
 #nd-docs-layout [data-sidebar] > div:last-child {
 	margin-top: auto;
 	padding-top: 0.5rem;
@@ -287,97 +345,131 @@
 	border-bottom: 1px solid hsl(0 0% 100% / 0.06);
 }
 
-/* ===== Code blocks: enhanced ===== */
+/* ===== Code blocks: enhanced (both themes) ===== */
 
-/* Inline code */
-.dark :not(pre) > code {
-	background: hsl(0 0% 100% / 0.06);
-	border: 1px solid hsl(0 0% 100% / 0.04);
-	border-radius: 5px;
+/* Inline code — light */
+:not(pre) > code {
+	background: hsl(0 0% 0% / 0.04);
+	border: 1px solid hsl(0 0% 0% / 0.08);
+	border-radius: 5px !important;
 	padding: 0.15em 0.4em;
 	font-size: 0.85em;
 }
+/* Inline code — dark */
+.dark :not(pre) > code {
+	background: hsl(0 0% 100% / 0.06);
+	border: 1px solid hsl(0 0% 100% / 0.04);
+}
 
-/* Code block figure wrapper (fumadocs uses figure.shiki) */
+/* Code block figure wrapper — light */
+figure.shiki,
+figure[data-rehype-pretty-code-figure] {
+	background: #fafafa !important;
+	border: 1px solid hsl(0 0% 0% / 0.08) !important;
+	box-shadow: 0 1px 4px hsl(0 0% 0% / 0.06);
+	border-radius: 12px;
+	overflow: hidden;
+}
+/* Code block figure wrapper — dark */
 .dark figure.shiki,
 .dark figure[data-rehype-pretty-code-figure] {
 	background: hsl(0 0% 1%) !important;
 	border-color: hsl(0 0% 100% / 0.06) !important;
 	box-shadow: 0 2px 16px hsl(0 0% 0% / 0.5);
-	border-radius: 12px;
 }
 
-/* Code area inside figure */
-.dark figure.shiki > div,
-.dark figure.shiki pre {
-	background: hsl(0 0% 1%) !important;
+/* Code area — light */
+figure.shiki > div,
+figure.shiki pre {
+	background: #fafafa !important;
 	font-size: 0.8125rem;
 	line-height: 1.7;
 }
-
+pre {
+	border-radius: 12px !important;
+}
+pre code {
+	background: transparent !important;
+}
+/* Code area — dark */
+.dark figure.shiki > div,
+.dark figure.shiki pre {
+	background: hsl(0 0% 1%) !important;
+}
 .dark pre {
 	background: hsl(0 0% 1%) !important;
 }
 
-.dark pre code {
-	background: transparent;
-}
-
-/* Title header bar (the div with figcaption inside) */
-.dark figure.shiki > div:has(figcaption) {
-	background: hsl(0 0% 3%) !important;
+/* Title header bar — light */
+figure.shiki > div:has(figcaption) {
+	background: #f0f0f0 !important;
 	font-family: var(--font-mono);
 	font-size: 0.75rem;
 	color: hsl(0 0% 45%);
+	border-bottom: 1px solid hsl(0 0% 0% / 0.06);
 }
-
-.dark figure.shiki figcaption {
+figure.shiki figcaption {
 	font-family: var(--font-mono);
 }
+/* Title header bar — dark */
+.dark figure.shiki > div:has(figcaption) {
+	background: hsl(0 0% 3%) !important;
+	border-bottom-color: hsl(0 0% 100% / 0.06);
+}
 
-/* Language icon in title bar */
-.dark figure.shiki > div:has(figcaption) svg {
+/* Language icon */
+figure.shiki > div:has(figcaption) svg {
 	color: hsl(0 0% 45%);
 }
 
 /* Copy button: hidden until hover */
-.dark figure.shiki button[aria-label="Copy Text"],
-.dark figure.shiki button[aria-label="Copy"] {
+figure.shiki button[aria-label="Copy Text"],
+figure.shiki button[aria-label="Copy"] {
 	opacity: 0;
 	transition: opacity 0.2s ease;
 }
-
-.dark figure.shiki:hover button[aria-label="Copy Text"],
-.dark figure.shiki:hover button[aria-label="Copy"] {
+figure.shiki:hover button[aria-label="Copy Text"],
+figure.shiki:hover button[aria-label="Copy"] {
 	opacity: 0.5;
 }
-
-.dark figure.shiki button:hover {
+figure.shiki button:hover {
 	opacity: 1 !important;
 }
 
-/* Highlighted lines (gold accent) */
-.dark [data-highlighted-line] {
-	background: hsl(43 50% 50% / 0.05) !important;
+/* Highlighted lines — light (gold accent) */
+[data-highlighted-line] {
+	background: hsl(43 60% 90% / 0.6) !important;
 	border-left: 2px solid var(--kavach-gold-mid);
+	padding-left: 14px;
+	margin-left: -16px;
+	display: inline-block;
+	width: calc(100% + 32px);
+	padding-right: 16px;
+}
+/* Highlighted lines — dark */
+.dark [data-highlighted-line] {
+	background: hsl(43 50% 50% / 0.06) !important;
 }
 
-/* Diff lines */
+/* Diff lines — light */
+[data-line-diff-add],
+[data-highlighted-line-id="add"] {
+	background: hsl(142 60% 95%) !important;
+	border-left: 2px solid hsl(142 70% 45%);
+}
+[data-line-diff-remove],
+[data-highlighted-line-id="remove"] {
+	background: hsl(0 60% 95%) !important;
+	border-left: 2px solid hsl(0 70% 50%);
+}
+/* Diff lines — dark */
 .dark [data-line-diff-add],
 .dark [data-highlighted-line-id="add"] {
 	background: hsl(142 50% 50% / 0.06) !important;
-	border-left: 2px solid hsl(142 70% 45%);
 }
-
 .dark [data-line-diff-remove],
 .dark [data-highlighted-line-id="remove"] {
 	background: hsl(0 50% 50% / 0.06) !important;
-	border-left: 2px solid hsl(0 70% 45%);
-}
-
-.dark pre [data-line-diff-remove] {
-	background: hsl(0 50% 50% / 0.08);
-	border-left: 2px solid hsl(0 70% 45%);
 }
 
 /* ===== Callout cards: glass in dark mode ===== */
@@ -561,6 +653,34 @@ h3 {
 	animation: fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
 }
 
+/* ===== Shiki dual-theme (product page code blocks) ===== */
+.shiki-wrapper pre { background: #fafafa !important; }
+.dark .shiki-wrapper pre { background: #09090b !important; }
+
+/* Show light theme spans by default, hide dark */
+.shiki-wrapper .shiki span[style] { color: var(--shiki-light) !important; }
+.dark .shiki-wrapper .shiki span[style] { color: var(--shiki-dark) !important; }
+
+/* Highlighted line */
+.shiki-wrapper .line.highlighted {
+	display: inline-block;
+	width: calc(100% + 32px);
+}
+.shiki-wrapper .line.highlighted {
+	background: rgba(201, 168, 76, 0.06);
+	border-left: 2px solid var(--kavach-gold-primary);
+	padding-left: 14px;
+	margin-left: -16px;
+	padding-right: 16px;
+}
+.dark .shiki-wrapper .line.highlighted {
+	background: rgba(201, 168, 76, 0.08);
+}
+
+/* Code block wrapper: clean shadow */
+.code-block { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04); }
+.dark .code-block { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
+
 .animate-fade-up-delay-3 {
 	animation: fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
 }
@@ -611,6 +731,42 @@ h3 {
 
 .dark .glass-nav {
 	background: rgba(19, 19, 19, 0.7) !important;
+}
+
+/* Lifted heading feel (subtle gold text-shadow) */
+.dark h1,
+.dark h2 {
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Lifted card feel (gold ambient glow on hover) */
+.dark .lifted-card {
+	transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.dark .lifted-card:hover {
+	box-shadow: 0 8px 40px var(--kavach-glow), 0 2px 8px rgba(0, 0, 0, 0.3);
+	transform: translateY(-1px);
+}
+
+/* Section headings with gold underline accent */
+.dark .section-heading {
+	position: relative;
+	display: inline-block;
+}
+.dark .section-heading::after {
+	content: "";
+	position: absolute;
+	bottom: -4px;
+	left: 0;
+	width: 32px;
+	height: 2px;
+	background: linear-gradient(90deg, var(--kavach-gold-primary), transparent);
+	border-radius: 1px;
+}
+
+/* Nav glass lift shadow */
+.dark .glass-nav {
+	box-shadow: 0 1px 0 var(--kavach-border-ghost), 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 /* ===== Nav CTA shine effect ===== */

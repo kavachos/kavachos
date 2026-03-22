@@ -771,5 +771,33 @@ export function kavachExpress(kavach: Kavach, options?: { mcp?: McpAuthModule })
 			});
 	});
 
+	// ── Plugin Endpoints ────────────────────────────────────────────
+
+	for (const endpoint of kavach.plugins.getEndpoints()) {
+		const method = endpoint.method.toLowerCase() as "get" | "post" | "put" | "patch" | "delete";
+		router[method](endpoint.path, (req: Request, res: Response) => {
+			const webReq = buildWebRequest(req);
+			kavach.plugins
+				.handleRequest(webReq)
+				.then((response) => {
+					if (!response) {
+						res.status(404).end();
+						return;
+					}
+					res.status(response.status);
+					response.headers.forEach((value, key) => {
+						res.setHeader(key, value);
+					});
+					return response.text().then((body) => {
+						res.send(body);
+					});
+				})
+				.catch((err: unknown) => {
+					const message = err instanceof Error ? err.message : "Plugin endpoint error";
+					sendInternalError(res, message);
+				});
+		});
+	}
+
 	return router;
 }

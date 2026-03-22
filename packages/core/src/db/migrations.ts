@@ -40,6 +40,7 @@ function buildStatements(provider: DatabaseConfig["provider"]): string[] {
 		`CREATE TABLE ${ifne} kavach_users (
   id                   TEXT        NOT NULL PRIMARY KEY,
   email                TEXT        NOT NULL UNIQUE,
+  username             TEXT        UNIQUE,
   name                 TEXT,
   external_id          TEXT,
   external_provider    TEXT,
@@ -432,6 +433,42 @@ function buildStatements(provider: DatabaseConfig["provider"]): string[] {
   expires_at   ${tsNull},
   last_used_at ${tsNull},
   created_at   ${ts}   NOT NULL
+)`,
+
+		// ------------------------------------------------------------------
+		// kavach_username_accounts  (username + password auth)
+		// ------------------------------------------------------------------
+		`CREATE TABLE ${ifne} kavach_username_accounts (
+  id            TEXT NOT NULL PRIMARY KEY,
+  user_id       TEXT NOT NULL REFERENCES kavach_users(id) ON DELETE CASCADE,
+  username      TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  created_at    ${ts} NOT NULL,
+  updated_at    ${ts} NOT NULL
+)`,
+
+		// ------------------------------------------------------------------
+		// kavach_phone_verifications  (SMS OTP)
+		// ------------------------------------------------------------------
+		`CREATE TABLE ${ifne} kavach_phone_verifications (
+  id           TEXT    NOT NULL PRIMARY KEY,
+  phone_number TEXT    NOT NULL,
+  code_hash    TEXT    NOT NULL,
+  attempts     INTEGER NOT NULL DEFAULT 0,
+  expires_at   ${ts}   NOT NULL,
+  created_at   ${ts}   NOT NULL
+)`,
+
+		// ------------------------------------------------------------------
+		// kavach_trusted_devices  (skip 2FA on trusted devices for a window)
+		// ------------------------------------------------------------------
+		`CREATE TABLE ${ifne} kavach_trusted_devices (
+  id          TEXT NOT NULL PRIMARY KEY,
+  user_id     TEXT NOT NULL REFERENCES kavach_users(id) ON DELETE CASCADE,
+  fingerprint TEXT NOT NULL,
+  label       TEXT NOT NULL,
+  trusted_at  ${ts} NOT NULL,
+  expires_at  ${ts} NOT NULL
 )`,
 
 		// ------------------------------------------------------------------

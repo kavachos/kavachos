@@ -1,5 +1,0 @@
-{
-	"title": "Auth methods",
-	"icon": "Key",
-	"pages": ["email-password", "magic-link", "email-otp", "passkey", "two-factor"]
-}

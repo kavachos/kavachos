@@ -24,6 +24,10 @@ export interface OrgConfig {
 	maxOrgsPerUser?: number;
 	/** Allow custom roles (default: true) */
 	allowCustomRoles?: boolean;
+	/** Invitation expiry in milliseconds (default: 7 days) */
+	invitationExpiryMs?: number;
+	/** Max pending invitations per org per hour (default: 50) */
+	maxInvitationsPerHour?: number;
 }
 
 export interface Organization {
@@ -97,6 +101,13 @@ export interface OrgModule {
 	createRole: (orgId: string, role: OrgRole) => Promise<OrgRole>;
 	removeRole: (orgId: string, roleName: string) => Promise<void>;
 
+	transferOwnership: (
+		orgId: string,
+		currentOwnerId: string,
+		newOwnerId: string,
+	) => Promise<Organization>;
+	declineInvitation: (invitationId: string) => Promise<void>;
+
 	handleRequest: (request: Request) => Promise<Response | null>;
 }
 
@@ -142,6 +153,7 @@ const DEFAULT_ROLES: OrgRole[] = [
 const DEFAULT_MAX_MEMBERS = 100;
 const DEFAULT_MAX_ORGS_PER_USER = 5;
 const INVITATION_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const DEFAULT_MAX_INVITATIONS_PER_HOUR = 50;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -245,6 +257,8 @@ export function createOrgModule(config: OrgConfig, db: Database): OrgModule {
 	const maxOrgsPerUser = config.maxOrgsPerUser ?? DEFAULT_MAX_ORGS_PER_USER;
 	const allowCustomRoles = config.allowCustomRoles ?? true;
 	const defaultRoles = config.defaultRoles ?? DEFAULT_ROLES;
+	const invitationExpiryMs = config.invitationExpiryMs ?? INVITATION_EXPIRY_MS;
+	const maxInvitationsPerHour = config.maxInvitationsPerHour ?? DEFAULT_MAX_INVITATIONS_PER_HOUR;
 
 	// ── org CRUD ─────────────────────────────────────────────────────────────
 
@@ -380,7 +394,11 @@ export function createOrgModule(config: OrgConfig, db: Database): OrgModule {
 	async function remove(orgId: string): Promise<void> {
 		const existing = await get(orgId);
 		if (!existing) throw new Error(`Organization "${orgId}" not found.`);
-		// Cascade deletes members, invitations, roles via FK ON DELETE CASCADE
+		// Explicit cascade: remove members, invitations, and roles before the org
+		// (FK ON DELETE CASCADE may not be enabled in all SQLite configs)
+		await db.delete(orgMembers).where(eq(orgMembers.orgId, orgId));
+		await db.delete(orgInvitations).where(eq(orgInvitations.orgId, orgId));
+		await db.delete(orgRoles).where(eq(orgRoles.orgId, orgId));
 		await db.delete(organizations).where(eq(organizations.id, orgId));
 	}
 
@@ -426,6 +444,20 @@ export function createOrgModule(config: OrgConfig, db: Database): OrgModule {
 	}
 
 	async function removeMember(orgId: string, userId: string): Promise<void> {
+		// Prevent removing the last owner (would lock out the org)
+		const member = await getMember(orgId, userId);
+		if (member?.role === "owner") {
+			const owners = await db
+				.select({ id: orgMembers.id })
+				.from(orgMembers)
+				.where(and(eq(orgMembers.orgId, orgId), eq(orgMembers.role, "owner")));
+			if (owners.length <= 1) {
+				throw new Error(
+					`Cannot remove the last owner of org "${orgId}". Transfer ownership first.`,
+				);
+			}
+		}
+
 		await db
 			.delete(orgMembers)
 			.where(and(eq(orgMembers.orgId, orgId), eq(orgMembers.userId, userId)));
@@ -439,6 +471,22 @@ export function createOrgModule(config: OrgConfig, db: Database): OrgModule {
 			.where(and(eq(orgRoles.orgId, orgId), eq(orgRoles.name, role)))
 			.limit(1);
 		if (roleRows.length === 0) throw new Error(`Role "${role}" does not exist in org "${orgId}".`);
+
+		// Prevent demoting the last owner
+		if (role !== "owner") {
+			const currentMember = await getMember(orgId, userId);
+			if (currentMember?.role === "owner") {
+				const owners = await db
+					.select({ id: orgMembers.id })
+					.from(orgMembers)
+					.where(and(eq(orgMembers.orgId, orgId), eq(orgMembers.role, "owner")));
+				if (owners.length <= 1) {
+					throw new Error(
+						`Cannot demote the last owner of org "${orgId}". Transfer ownership first.`,
+					);
+				}
+			}
+		}
 
 		await db
 			.update(orgMembers)
@@ -487,9 +535,40 @@ export function createOrgModule(config: OrgConfig, db: Database): OrgModule {
 			throw new Error(`Role "${input.role}" does not exist in org "${input.orgId}".`);
 		}
 
+		// Reject duplicate pending invitation for the same email in this org
+		const duplicateInvite = await db
+			.select({ id: orgInvitations.id })
+			.from(orgInvitations)
+			.where(
+				and(
+					eq(orgInvitations.orgId, input.orgId),
+					eq(orgInvitations.email, input.email),
+					eq(orgInvitations.status, "pending"),
+				),
+			)
+			.limit(1);
+		if (duplicateInvite.length > 0) {
+			throw new Error(
+				`A pending invitation for "${input.email}" already exists in org "${input.orgId}".`,
+			);
+		}
+
+		// Rate limit: max invitations per hour per org
+		const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+		const allOrgInvites = await db
+			.select({ id: orgInvitations.id, createdAt: orgInvitations.createdAt })
+			.from(orgInvitations)
+			.where(eq(orgInvitations.orgId, input.orgId));
+		const recentInviteCount = allOrgInvites.filter((inv) => inv.createdAt >= oneHourAgo).length;
+		if (recentInviteCount >= maxInvitationsPerHour) {
+			throw new Error(
+				`Invitation rate limit reached for org "${input.orgId}". Max ${maxInvitationsPerHour} per hour.`,
+			);
+		}
+
 		const id = makeInvId();
 		const now = new Date();
-		const expiresAt = new Date(now.getTime() + INVITATION_EXPIRY_MS);
+		const expiresAt = new Date(now.getTime() + invitationExpiryMs);
 
 		await db.insert(orgInvitations).values({
 			id,
@@ -621,6 +700,67 @@ export function createOrgModule(config: OrgConfig, db: Database): OrgModule {
 
 	async function removeRole(orgId: string, roleName: string): Promise<void> {
 		await db.delete(orgRoles).where(and(eq(orgRoles.orgId, orgId), eq(orgRoles.name, roleName)));
+	}
+
+	// ── ownership transfer ──────────────────────────────────────────────────
+
+	async function transferOwnership(
+		orgId: string,
+		currentOwnerId: string,
+		newOwnerId: string,
+	): Promise<Organization> {
+		const org = await get(orgId);
+		if (!org) throw new Error(`Organization "${orgId}" not found.`);
+
+		if (org.ownerId !== currentOwnerId) {
+			throw new Error(`User "${currentOwnerId}" is not the owner of org "${orgId}".`);
+		}
+
+		// New owner must be a member
+		const newOwnerMember = await getMember(orgId, newOwnerId);
+		if (!newOwnerMember) {
+			throw new Error(`User "${newOwnerId}" is not a member of org "${orgId}".`);
+		}
+
+		// Update org owner
+		const now = new Date();
+		await db
+			.update(organizations)
+			.set({ ownerId: newOwnerId, updatedAt: now })
+			.where(eq(organizations.id, orgId));
+
+		// Promote new owner to "owner" role
+		await db
+			.update(orgMembers)
+			.set({ role: "owner" })
+			.where(and(eq(orgMembers.orgId, orgId), eq(orgMembers.userId, newOwnerId)));
+
+		// Demote current owner to "admin" (they stay as a member)
+		await db
+			.update(orgMembers)
+			.set({ role: "admin" })
+			.where(and(eq(orgMembers.orgId, orgId), eq(orgMembers.userId, currentOwnerId)));
+
+		const updated = await get(orgId);
+		if (!updated) throw new Error(`Organization "${orgId}" disappeared after ownership transfer.`);
+		return updated;
+	}
+
+	// ── decline invitation ──────────────────────────────────────────────────
+
+	async function declineInvitation(invitationId: string): Promise<void> {
+		const rows = await db
+			.select()
+			.from(orgInvitations)
+			.where(eq(orgInvitations.id, invitationId))
+			.limit(1);
+		const inv = rows[0];
+		if (!inv) throw new Error(`Invitation "${invitationId}" not found.`);
+		if (inv.status !== "pending") {
+			throw new Error(`Invitation "${invitationId}" is not pending (status: ${inv.status}).`);
+		}
+		// Delete the invitation (one-time use: no need to keep declined invitations)
+		await db.delete(orgInvitations).where(eq(orgInvitations.id, invitationId));
 	}
 
 	// ── HTTP handler ─────────────────────────────────────────────────────────
@@ -840,6 +980,8 @@ export function createOrgModule(config: OrgConfig, db: Database): OrgModule {
 		getRoles,
 		createRole,
 		removeRole,
+		transferOwnership,
+		declineInvitation,
 		handleRequest: handleRequestWithInviteRoutes,
 	};
 }

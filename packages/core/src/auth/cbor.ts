@@ -2,18 +2,30 @@
  * Minimal CBOR decoder (RFC 7049) for WebAuthn attestation objects.
  *
  * Handles the subset of CBOR used by authenticators:
- *   Major type 0 — unsigned integer
- *   Major type 1 — negative integer
- *   Major type 2 — byte string
- *   Major type 3 — text string
- *   Major type 4 — array
- *   Major type 5 — map
- *   Major type 7 — simple values (true, false, null, float)
+ *   Major type 0 -- unsigned integer
+ *   Major type 1 -- negative integer
+ *   Major type 2 -- byte string
+ *   Major type 3 -- text string
+ *   Major type 4 -- array
+ *   Major type 5 -- map
+ *   Major type 7 -- simple values (true, false, null, float)
+ *
+ * Security limits:
+ *   - Maximum input size: 1 MB
+ *   - Maximum nesting depth: 32
+ *   - Indefinite-length items are rejected
  */
+
+/** Maximum CBOR input size in bytes (1 MB). */
+const MAX_CBOR_INPUT_SIZE = 1_048_576;
+
+/** Maximum nesting depth for arrays/maps. */
+const MAX_CBOR_DEPTH = 32;
 
 interface DecoderState {
 	data: Uint8Array;
 	offset: number;
+	depth: number;
 }
 
 function readByte(state: DecoderState): number {
@@ -24,8 +36,10 @@ function readByte(state: DecoderState): number {
 }
 
 function readBytes(state: DecoderState, length: number): Uint8Array {
+	if (length > state.data.length - state.offset) {
+		throw new Error("CBOR: unexpected end of data");
+	}
 	const end = state.offset + length;
-	if (end > state.data.length) throw new Error("CBOR: unexpected end of data");
 	const slice = state.data.slice(state.offset, end);
 	state.offset = end;
 	return slice;
@@ -43,11 +57,14 @@ function readUint(state: DecoderState, additionalInfo: number): number {
 		return (((b[0] ?? 0) << 24) | ((b[1] ?? 0) << 16) | ((b[2] ?? 0) << 8) | (b[3] ?? 0)) >>> 0;
 	}
 	if (additionalInfo === 27) {
-		// 64-bit — we only handle values that fit in a JS number safely
+		// 64-bit -- we only handle values that fit in a JS number safely
 		const b = readBytes(state, 8);
 		const hi = ((b[0] ?? 0) * 0x1000000 + (b[1] ?? 0)) * 0x10000 + ((b[2] ?? 0) << 8) + (b[3] ?? 0);
 		const lo = ((b[4] ?? 0) * 0x1000000 + (b[5] ?? 0)) * 0x10000 + ((b[6] ?? 0) << 8) + (b[7] ?? 0);
 		return hi * 0x100000000 + lo;
+	}
+	if (additionalInfo === 31) {
+		throw new Error("CBOR: indefinite-length items are not supported");
 	}
 	throw new Error(`CBOR: unsupported additional info ${additionalInfo} for uint`);
 }
@@ -71,12 +88,18 @@ function decodeItem(state: DecoderState): unknown {
 
 		case 2: {
 			// Byte string
+			if (additionalInfo === 31) {
+				throw new Error("CBOR: indefinite-length byte strings are not supported");
+			}
 			const length = readUint(state, additionalInfo);
 			return readBytes(state, length);
 		}
 
 		case 3: {
 			// Text string
+			if (additionalInfo === 31) {
+				throw new Error("CBOR: indefinite-length text strings are not supported");
+			}
 			const length = readUint(state, additionalInfo);
 			const bytes = readBytes(state, length);
 			return new TextDecoder().decode(bytes);
@@ -84,16 +107,31 @@ function decodeItem(state: DecoderState): unknown {
 
 		case 4: {
 			// Array
+			if (additionalInfo === 31) {
+				throw new Error("CBOR: indefinite-length arrays are not supported");
+			}
+			state.depth++;
+			if (state.depth > MAX_CBOR_DEPTH) {
+				throw new Error(`CBOR: nesting depth exceeds maximum of ${MAX_CBOR_DEPTH}`);
+			}
 			const count = readUint(state, additionalInfo);
 			const arr: unknown[] = [];
 			for (let i = 0; i < count; i++) {
 				arr.push(decodeItem(state));
 			}
+			state.depth--;
 			return arr;
 		}
 
 		case 5: {
 			// Map
+			if (additionalInfo === 31) {
+				throw new Error("CBOR: indefinite-length maps are not supported");
+			}
+			state.depth++;
+			if (state.depth > MAX_CBOR_DEPTH) {
+				throw new Error(`CBOR: nesting depth exceeds maximum of ${MAX_CBOR_DEPTH}`);
+			}
 			const count = readUint(state, additionalInfo);
 			const map = new Map<unknown, unknown>();
 			for (let i = 0; i < count; i++) {
@@ -101,6 +139,7 @@ function decodeItem(state: DecoderState): unknown {
 				const value = decodeItem(state);
 				map.set(key, value);
 			}
+			state.depth--;
 			return map;
 		}
 
@@ -149,8 +188,16 @@ function decodeItem(state: DecoderState): unknown {
  *
  * Maps are decoded as `Map<unknown, unknown>` to preserve numeric keys
  * (COSE keys use negative integers).
+ *
+ * Enforces size and depth limits to prevent denial of service.
  */
 export function decodeCbor(data: Uint8Array): unknown {
-	const state: DecoderState = { data, offset: 0 };
+	if (data.length > MAX_CBOR_INPUT_SIZE) {
+		throw new Error(`CBOR: input size ${data.length} exceeds maximum of ${MAX_CBOR_INPUT_SIZE}`);
+	}
+	if (data.length === 0) {
+		throw new Error("CBOR: empty input");
+	}
+	const state: DecoderState = { data, offset: 0, depth: 0 };
 	return decodeItem(state);
 }
