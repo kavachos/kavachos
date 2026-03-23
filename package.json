@@ -7,7 +7,7 @@
     "node": ">=22.0.0"
   },
   "scripts": {
-    "build": "turbo build --filter='./packages/*'",
+    "build": "turbo build --filter='./packages/**'",
     "dev": "turbo dev",
     "clean": "turbo clean && rm -rf node_modules",
     "lint": "biome check .",

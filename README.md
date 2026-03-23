@@ -1,9 +1,8 @@
 # KavachOS
 
-**The Auth OS for AI Agents**
+**Auth OS for AI agents and humans**
 
-Identity, permissions, delegation, and audit for the agentic era.
-Give every AI agent a cryptographic identity, enforce least-privilege access, and maintain an immutable record of every action it takes.
+Identity, permissions, delegation, and audit for the agentic era. Full human auth (email, OAuth, passkeys, SSO) plus agent-first primitives that nothing else ships.
 
 [![npm](https://img.shields.io/npm/v/kavachos)](https://www.npmjs.com/package/kavachos)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
@@ -16,86 +15,98 @@ Give every AI agent a cryptographic identity, enforce least-privilege access, an
 
 ```bash
 npm install kavachos
-# or
-pnpm add kavachos
 ```
-
----
 
 ## Quickstart
 
 ```typescript
 import { createKavach } from 'kavachos';
+import { emailPassword } from 'kavachos/auth';
+import { createHonoAdapter } from '@kavachos/hono';
 
-// 1. Initialize — SQLite for dev, Postgres for prod
 const kavach = createKavach({
   database: { provider: 'sqlite', url: 'kavach.db' },
+  plugins: [emailPassword()],
 });
 
-// 2. Create an agent with scoped permissions
+// Mount on any framework
+const app = new Hono();
+app.route('/api/kavach', createHonoAdapter(kavach));
+
+// Create an AI agent with scoped permissions
 const agent = await kavach.agent.create({
   ownerId: 'user-123',
   name: 'github-reader',
   type: 'autonomous',
   permissions: [
     { resource: 'mcp:github:*', actions: ['read'] },
-    {
-      resource: 'mcp:deploy:production',
-      actions: ['execute'],
-      constraints: { requireApproval: true },  // human-in-the-loop
-    },
+    { resource: 'mcp:deploy:production', actions: ['execute'],
+      constraints: { requireApproval: true } },
   ],
 });
 
-// 3. Authorize an action
+// Authorize and audit
 const result = await kavach.authorize(agent.id, {
   action: 'read',
   resource: 'mcp:github:repos',
 });
 // { allowed: true, auditId: 'aud_...' }
-
-// 4. Query the audit trail
-const logs = await kavach.audit.query({ agentId: agent.id });
 ```
 
 ---
 
-## Features
+## What's included
 
-### Agent Identity
-Create, scope, revoke, and rotate agent credentials. Every agent gets an opaque bearer token (`kv_...`) and a permanent audit identity. Token rotation is instant and atomic.
+### Human auth (12 methods)
 
-### Permission Engine
-Resource-based access control with colon-separated hierarchies and wildcard matching. Permissions carry optional constraints: rate limits, time windows, IP allowlists, and human-in-the-loop approval gates.
+Email + password, magic link, email OTP, phone SMS, passkey/WebAuthn, TOTP 2FA, anonymous, Google One-tap, Sign In With Ethereum, device authorization, username + password, captcha (reCAPTCHA/hCaptcha/Turnstile).
 
-```
-mcp:github:*        — all GitHub MCP tools
-mcp:github:repos    — only the repos tool
-tool:file_write     — a specific local tool
-*                   — everything (use sparingly)
-```
+### OAuth (27+ providers)
 
-### Delegation Chains
-An orchestrator agent can delegate a subset of its permissions to a sub-agent, with configurable depth limits and expiry. Delegation chains are audited and revocable at any point.
+Google, GitHub, Apple, Microsoft, Discord, Slack, GitLab, LinkedIn, Twitter/X, Facebook, Spotify, Twitch, Reddit, Notion, plus a generic OIDC factory that adds any provider in 10 lines.
 
-```typescript
-await kavach.delegate({
-  fromAgent: orchestrator.id,
-  toAgent: subAgent.id,
-  permissions: [{ resource: 'mcp:github:issues', actions: ['read'] }],
-  expiresAt: new Date(Date.now() + 3600_000),
-  maxDepth: 2,
-});
-```
+### Agent identity
 
-### Audit Trail
-Every authorization decision — allowed or denied — is written to an immutable log with the agent ID, user ID, resource, action, result, and duration. Export as JSON or CSV for compliance tooling (EU AI Act Article 12, SOC 2 CC6.1–CC7.2, ISO 42001 Annex A.8).
+Cryptographic bearer tokens, token rotation, wildcard permission matching, delegation chains with depth limits, immutable audit trail, trust scoring, anomaly detection, budget policies, CIBA approval flows.
+
+### Enterprise
+
+Organizations + RBAC, SAML 2.0 + OIDC SSO, admin (ban/impersonate), API key management, SCIM directory sync, multi-tenant isolation, GDPR (export/delete/anonymize), compliance reports (EU AI Act, NIST, SOC 2, ISO 42001).
 
 ### MCP OAuth 2.1
-A spec-compliant authorization server for the Model Context Protocol. Implements OAuth 2.1, PKCE (S256), Protected Resource Metadata (RFC 9728), Resource Indicators (RFC 8707), and Dynamic Client Registration (RFC 7591).
 
-### Framework Adapters
-Drop-in middleware for every major Node.js framework:
+Spec-compliant authorization server for the Model Context Protocol. PKCE S256, RFC 9728/8707/8414/7591.
+
+### OIDC Provider
+
+Act as an OpenID Connect identity provider. Auth code flow, PKCE, refresh token rotation, JWKS endpoint, discovery document.
+
+---
+
+## Packages
+
+### Core
+
+| Package | What |
+|---|---|
+| `kavachos` | Core SDK: agents, permissions, delegation, audit, auth plugins |
+| `@kavachos/client` | Zero-dep TypeScript REST client |
+| `@kavachos/cli` | CLI: init, migrate, dashboard |
+| `@kavachos/dashboard` | Embeddable React admin dashboard (9 pages) |
+
+### Client libraries
+
+| Package | What |
+|---|---|
+| `@kavachos/react` | KavachProvider + 6 hooks |
+| `@kavachos/vue` | Vue 3 plugin + 6 composables |
+| `@kavachos/svelte` | Svelte stores |
+| `@kavachos/ui` | 7 pre-built auth components (SignIn, SignUp, UserButton, OAuthButtons, ForgotPassword, TwoFactorVerify, AuthCard) |
+| `@kavachos/test-utils` | MockKavachProvider, factories, assertions for testing |
+| `@kavachos/expo` | React Native/Expo with SecureStore sessions |
+| `@kavachos/electron` | Electron desktop: safeStorage, OAuth popup, IPC bridge |
+
+### Framework adapters
 
 | Package | Framework |
 |---|---|
@@ -106,41 +117,100 @@ Drop-in middleware for every major Node.js framework:
 | `@kavachos/nuxt` | Nuxt |
 | `@kavachos/sveltekit` | SvelteKit |
 | `@kavachos/astro` | Astro |
-
-### Admin Dashboard
-An embeddable React dashboard for managing agents, reviewing audit logs, and monitoring permission usage. Also available as a standalone server via `npx kavachos dashboard`.
+| `@kavachos/nestjs` | NestJS |
+| `@kavachos/solidstart` | SolidStart |
+| `@kavachos/tanstack` | TanStack Start |
 
 ---
 
-## Why KavachOS?
+## UI components
 
-| | KavachOS | better-auth (agents plugin) | Roll your own |
-|---|---|---|---|
-| Agent-first data model | yes | no (humans first) | depends |
-| Wildcard permission matching | yes | no | depends |
-| Delegation chains with depth limits | yes | no | rarely |
-| MCP OAuth 2.1 compliant | yes | no | no |
-| Immutable compliance-ready audit log | yes | partial | rarely |
-| Token rotation | yes | no | rarely |
-| Framework agnostic core | yes | yes | yes |
+Drop-in auth forms that work out of the box. Override any element's styling with `classNames`, replace any sub-component with `components`, or skip the package entirely and use hooks from `@kavachos/react`.
 
-KavachOS treats AI agents as first-class identities — not plugins on top of human auth. The result is a cleaner data model, richer permission semantics, and audit logs that satisfy real compliance requirements out of the box.
+```tsx
+import { SignIn, OAUTH_PROVIDERS } from '@kavachos/ui';
+
+<SignIn
+  providers={[OAUTH_PROVIDERS.google, OAUTH_PROVIDERS.github]}
+  showMagicLink
+  signUpUrl="/sign-up"
+  forgotPasswordUrl="/forgot-password"
+  onSuccess={() => router.push('/dashboard')}
+/>
+```
+
+---
+
+## Plugins
+
+Auth methods, security features, and integrations are all plugins. Enable what you need:
+
+```typescript
+import { createKavach } from 'kavachos';
+import {
+  emailPassword,
+  magicLink,
+  passkey,
+  totp,
+  organizations,
+  sso,
+  admin,
+  apiKeys,
+  captcha,
+  multiSession,
+  gdpr,
+  webhooks,
+  i18n,
+  jwtSession,
+  openApi,
+  stripe,
+  scim,
+  lastLogin,
+  oneTimeToken,
+} from 'kavachos/auth';
+
+const kavach = createKavach({
+  database: { provider: 'postgres', url: process.env.DATABASE_URL },
+  plugins: [
+    emailPassword(),
+    magicLink({ sendMagicLink: async (email, url) => { /* your email sender */ } }),
+    passkey(),
+    totp(),
+    organizations(),
+    sso(),
+    admin(),
+    apiKeys(),
+    jwtSession({ secret: process.env.JWT_SECRET }),
+    openApi(),
+  ],
+});
+```
+
+---
+
+## Security
+
+- Rate limiting (per-agent and per-IP)
+- HIBP password breach checking (k-anonymity)
+- Trusted device windows (skip 2FA for 30 days)
+- CSRF protection (double-submit cookie)
+- Email enumeration prevention
+- Session cookies (httpOnly, Secure, SameSite)
 
 ---
 
 ## Documentation
 
-Full documentation at [kavachos.com/docs](https://kavachos.com/docs).
+Full docs at [kavachos.com/docs](https://kavachos.com/docs).
 
-- [Getting Started](https://kavachos.com/docs/getting-started)
-- [Agent Lifecycle](https://kavachos.com/docs/agents)
-- [Permission Reference](https://kavachos.com/docs/permissions)
-- [Delegation Guide](https://kavachos.com/docs/delegation)
+- [Getting started](https://kavachos.com/docs/quickstart)
+- [Authentication](https://kavachos.com/docs/auth)
+- [Agent identity](https://kavachos.com/docs/agents)
+- [Permissions](https://kavachos.com/docs/permissions)
+- [Delegation](https://kavachos.com/docs/delegation)
 - [MCP OAuth 2.1](https://kavachos.com/docs/mcp)
-- [Framework Adapters](https://kavachos.com/docs/adapters)
-- [Audit & Compliance](https://kavachos.com/docs/audit)
-
-Source: [github.com/kavachos/kavachos](https://github.com/kavachos/kavachos)
+- [Framework adapters](https://kavachos.com/docs/adapters)
+- [REST API reference](https://kavachos.com/docs/api)
 
 ---
 
@@ -148,8 +218,6 @@ Source: [github.com/kavachos/kavachos](https://github.com/kavachos/kavachos)
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
 
----
-
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT
