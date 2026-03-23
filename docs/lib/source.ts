@@ -76,6 +76,11 @@ import {
 	VKIcon,
 	WeChatIcon,
 	ZoomIcon,
+	Auth0Icon,
+	OktaIcon,
+	YahooIcon,
+	BitbucketIcon,
+	CoinbaseIcon,
 } from "@/components/icons/social";
 
 const iconSize = { className: "size-4 shrink-0 opacity-70" };
@@ -158,6 +163,11 @@ export const source = loader({
 			VK: createElement(VKIcon, iconSize),
 			WeChat: createElement(WeChatIcon, iconSize),
 			Zoom: createElement(ZoomIcon, iconSize),
+			Auth0: createElement(Auth0Icon, iconSize),
+			Okta: createElement(OktaIcon, iconSize),
+			Yahoo: createElement(YahooIcon, iconSize),
+			Bitbucket: createElement(BitbucketIcon, iconSize),
+			Coinbase: createElement(CoinbaseIcon, iconSize),
 		};
 		if (icon && icon in icons) return icons[icon];
 		return undefined;

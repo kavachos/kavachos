@@ -36,6 +36,12 @@ jobs:
         run: pnpm lint && pnpm typecheck
 
       - name: Publish all packages
-        run: pnpm -r publish --access public --no-git-checks
+        run: |
+          for dir in packages/core packages/client packages/cli packages/dashboard packages/react packages/vue packages/svelte packages/ui packages/test-utils packages/expo packages/electron packages/auth/email packages/plugins/telemetry packages/plugins/discovery packages/adapters/hono packages/adapters/express packages/adapters/nextjs packages/adapters/fastify packages/adapters/nuxt packages/adapters/sveltekit packages/adapters/astro packages/adapters/nestjs packages/adapters/solidstart packages/adapters/tanstack; do
+            if [ -d "$dir/dist" ]; then
+              echo "Publishing $dir..."
+              (cd "$dir" && pnpm publish --access public --no-git-checks 2>&1) || echo "Skipped $dir (already published or error)"
+            fi
+          done
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

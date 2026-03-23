@@ -1,0 +1,111 @@
+---
+title: Custom session fields
+description: Attach arbitrary data to sessions at creation time and read it back on validation.
+---
+
+The `customSession` plugin lets you store application-specific data inside every session without adding database columns. Fields live in `session.metadata.custom`.
+
+## Install
+
+The plugin ships inside `kavachos/auth` — no extra packages needed.
+
+## Setup
+
+```typescript
+import { createKavach } from 'kavachos';
+import { customSession } from 'kavachos/auth';
+
+const kavach = await createKavach({
+  database: { provider: 'sqlite', url: 'kavach.db' },
+  auth: {
+    session: { secret: process.env.SESSION_SECRET },
+  },
+  plugins: [
+    customSession({
+      // Merged into every session automatically
+      defaultFields: { theme: 'system', beta: false },
+      // Called once per session creation to compute dynamic fields
+      onSessionCreate: async (userId) => ({
+        createdAt: Date.now(),
+        plan: await fetchUserPlan(userId),
+      }),
+    }),
+  ],
+});
+```
+
+## Reading and writing fields
+
+After setup, access the module through the plugin context:
+
+```typescript
+import type { CustomSessionModule } from 'kavachos/auth';
+
+const mod = kavach.plugins.getContext().customSession as CustomSessionModule;
+
+// Read custom fields
+const fields = await mod.getSessionFields(session.id);
+// => { theme: 'system', beta: false, createdAt: 1234567890, plan: 'pro' }
+
+// Update fields on an existing session
+await mod.updateSessionFields(session.id, { beta: true, lastPage: '/dashboard' });
+```
+
+`updateSessionFields` merges with existing data. Keys not in the update are left untouched.
+
+## Hook behaviour
+
+`onSessionCreate` fires inside the plugin runner's `onSessionCreate` hook — the same lifecycle point used by other plugins. The returned fields are merged into `session.metadata.custom`. If both `defaultFields` and the callback define the same key, the callback wins.
+
+## REST endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/auth/session/fields?sessionId=<id>` | Read custom fields for a session |
+| `PATCH` | `/auth/session/fields` | Update custom fields on a session |
+
+### GET example
+
+```http
+GET /auth/session/fields?sessionId=sess_abc123
+```
+
+```json
+{ "fields": { "theme": "dark", "plan": "pro" } }
+```
+
+### PATCH example
+
+```http
+PATCH /auth/session/fields
+Content-Type: application/json
+
+{
+  "sessionId": "sess_abc123",
+  "fields": { "theme": "light" }
+}
+```
+
+```json
+{ "updated": true }
+```
+
+Returns `404` when the session does not exist.
+
+## Config reference
+
+```typescript
+interface CustomSessionConfig {
+  defaultFields?: Record<string, unknown>;
+  onSessionCreate?: (userId: string, request?: Request) => Promise<Record<string, unknown>>;
+}
+```
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `defaultFields` | `Record<string, unknown>` | Fields merged into every new session. |
+| `onSessionCreate` | `async (userId, request?) => Record` | Async callback; return value is merged over `defaultFields`. |
+
+## Storage
+
+No migrations required. Custom data is stored in the `metadata` JSON column of `kavach_sessions` under the `custom` key. Existing metadata keys (such as those written by other plugins) are not affected.

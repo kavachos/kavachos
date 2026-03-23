@@ -1,6 +1,6 @@
 {
   "name": "@kavachos/expo",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "React Native / Expo client for KavachOS auth",
   "type": "module",
   "main": "dist/index.js",

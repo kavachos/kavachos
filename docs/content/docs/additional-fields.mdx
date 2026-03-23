@@ -1,0 +1,164 @@
+---
+title: Additional fields
+description: Extend the user and session schemas with typed custom fields, stored in existing metadata columns.
+---
+
+The `additionalFields` plugin lets you attach typed custom data to users and sessions without writing migrations. Fields are stored in the `metadata` JSON column of `kavach_users` and `kavach_sessions`.
+
+## Install
+
+Ships inside `kavachos/auth` — no extra packages needed.
+
+## Setup
+
+Define a schema once when creating your KavachOS instance:
+
+```typescript
+import { createKavach } from 'kavachos';
+import { additionalFields } from 'kavachos/auth';
+
+const kavach = await createKavach({
+  database: { provider: 'sqlite', url: 'kavach.db' },
+  plugins: [
+    additionalFields({
+      user: {
+        plan:     { type: 'string',  required: false, defaultValue: 'free' },
+        credits:  { type: 'number',  required: false, defaultValue: 0 },
+        verified: { type: 'boolean', required: false },
+        settings: { type: 'json',    required: false },
+      },
+      session: {
+        ipCountry:  { type: 'string', required: false, defaultValue: 'unknown' },
+        deviceType: { type: 'string', required: false },
+      },
+    }),
+  ],
+});
+```
+
+## Reading and writing user fields
+
+```typescript
+import type { AdditionalFieldsModule } from 'kavachos/auth';
+
+const mod = kavach.plugins.getContext().additionalFields as AdditionalFieldsModule;
+
+// Write
+await mod.setUserFields(userId, { plan: 'pro', credits: 100 });
+
+// Read (missing fields get their defaultValue)
+const fields = await mod.getUserFields(userId);
+// => { plan: 'pro', credits: 100, verified: undefined, settings: undefined }
+```
+
+`setUserFields` merges with existing fields. Previously stored keys not present in the update are preserved.
+
+## Reading and writing session fields
+
+```typescript
+await mod.setSessionFields(session.id, { ipCountry: 'DE', deviceType: 'mobile' });
+
+const sessionFields = await mod.getSessionFields(session.id);
+// => { ipCountry: 'DE', deviceType: 'mobile' }
+```
+
+## Validation
+
+Validate a field map before writing, or in a request handler:
+
+```typescript
+const result = mod.validate({ plan: 42 }, 'user');
+// => { valid: false, errors: ['Field "plan" must be of type string'] }
+
+const ok = mod.validate({ plan: 'pro', credits: 10 }, 'user');
+// => { valid: true }
+```
+
+Rules enforced during `validate()` (and automatically on every `setUserFields` / `setSessionFields` call):
+
+- Required fields must be present.
+- Field values must match the declared type.
+- Fields not in the schema are rejected.
+
+## Field types
+
+| Type | Accepted values |
+|------|----------------|
+| `string` | Any `typeof v === 'string'` |
+| `number` | Any `typeof v === 'number'` |
+| `boolean` | `true` or `false` |
+| `json` | Any non-null value |
+
+## REST endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/auth/users/fields?userId=<id>` | Read additional fields for a user |
+| `PUT` | `/auth/users/fields` | Set additional fields on a user |
+| `POST` | `/auth/fields/validate` | Validate fields against the schema |
+
+### GET example
+
+```http
+GET /auth/users/fields?userId=usr_abc
+```
+
+```json
+{ "fields": { "plan": "pro", "credits": 100 } }
+```
+
+### PUT example
+
+```http
+PUT /auth/users/fields
+Content-Type: application/json
+
+{
+  "userId": "usr_abc",
+  "fields": { "plan": "enterprise" }
+}
+```
+
+```json
+{ "updated": true }
+```
+
+Returns `422` when validation fails. Returns `404` when the user does not exist.
+
+### Validate example
+
+```http
+POST /auth/fields/validate
+Content-Type: application/json
+
+{
+  "schema": "user",
+  "fields": { "plan": 42 }
+}
+```
+
+```json
+{
+  "valid": false,
+  "errors": ["Field \"plan\" must be of type string"]
+}
+```
+
+## Schema reference
+
+```typescript
+interface FieldDefinition {
+  type: 'string' | 'number' | 'boolean' | 'json';
+  required?: boolean;
+  defaultValue?: unknown;
+}
+
+interface AdditionalFieldsConfig {
+  user?:    Record<string, FieldDefinition>;
+  session?: Record<string, FieldDefinition>;
+}
+```
+
+## Storage
+
+No database migrations are needed. User fields are stored under `user.metadata.additionalFields` and session fields under `session.metadata.additionalFields`. Other metadata keys written by the core system or other plugins are not modified.

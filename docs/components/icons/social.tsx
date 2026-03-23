@@ -322,3 +322,12 @@ export function ZoomIcon(props: SVGProps<SVGSVGElement>) {
 		</svg>
 	);
 }
+export function Auth0Icon(props: SVGProps<SVGSVGElement>) { return (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" {...p} {...props}><path d="M18.75 0H5.25L0 15h7.5L12 24l4.5-9H24L18.75 0zM12 19.5L8.25 12h7.5L12 19.5zM5.25 3h13.5l3 9H2.25l3-9z"/></svg>); }
+
+export function OktaIcon(props: SVGProps<SVGSVGElement>) { return (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" {...p} {...props}><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 18a6 6 0 110-12 6 6 0 010 12z"/></svg>); }
+
+export function YahooIcon(props: SVGProps<SVGSVGElement>) { return (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" {...p} {...props}><path d="M12.327 13.564l4.673-9.564h-3.5l-2.826 6.155L7.913 4H4.5l4.5 9.564V20h3.327v-6.436zM17.5 15a2.5 2.5 0 100 5 2.5 2.5 0 000-5z"/></svg>); }
+
+export function BitbucketIcon(props: SVGProps<SVGSVGElement>) { return (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" {...p} {...props}><path d="M.778 1.212a.768.768 0 00-.768.892l3.263 19.81c.084.5.515.868 1.022.876H19.95a.772.772 0 00.77-.646L24.012 2.104a.768.768 0 00-.768-.892H.778zM14.52 15.53H9.522L8.17 8.466h7.561l-1.211 7.064z"/></svg>); }
+
+export function CoinbaseIcon(props: SVGProps<SVGSVGElement>) { return (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" {...p} {...props}><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm-1.5 15.5a3.5 3.5 0 110-7h3v2h-3a1.5 1.5 0 000 3h3v2h-3z"/></svg>); }

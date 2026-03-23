@@ -10,6 +10,8 @@
 		"fastify",
 		"nuxt",
 		"sveltekit",
+		"solidstart",
+		"tanstack",
 		"astro"
 	]
 }

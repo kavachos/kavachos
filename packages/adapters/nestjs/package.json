@@ -1,6 +1,6 @@
 {
   "name": "@kavachos/nestjs",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "NestJS adapter for KavachOS",
   "type": "module",
   "main": "dist/index.js",
