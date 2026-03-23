@@ -651,3 +651,20 @@ export const oidcRefreshTokens = sqliteTable("kavach_oidc_refresh_tokens", {
 	expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
 	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 });
+
+// ============================================================
+// JWT Session Refresh Tokens (general-purpose session plugin)
+// ============================================================
+export const jwtRefreshTokens = sqliteTable("kavach_jwt_refresh_tokens", {
+	id: text("id").primaryKey(),
+	/** SHA-256 hex of the raw refresh token. The raw token is never stored. */
+	tokenHash: text("token_hash").notNull().unique(),
+	/** The user who owns this session. */
+	userId: text("user_id")
+		.notNull()
+		.references(() => users.id, { onDelete: "cascade" }),
+	/** True once the token has been used in a refresh or explicit revocation. */
+	used: integer("used", { mode: "boolean" }).notNull().default(false),
+	expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
+	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+});

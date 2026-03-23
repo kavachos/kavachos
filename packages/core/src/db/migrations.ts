@@ -561,6 +561,20 @@ function buildStatements(provider: DatabaseConfig["provider"]): string[] {
 )`,
 
 		// ------------------------------------------------------------------
+		// kavach_jwt_refresh_tokens  (JWT session plugin — general purpose)
+		// ------------------------------------------------------------------
+		`CREATE TABLE ${ifne} kavach_jwt_refresh_tokens (
+  id          TEXT    NOT NULL PRIMARY KEY,
+  token_hash  TEXT    NOT NULL UNIQUE,
+  user_id     TEXT    NOT NULL REFERENCES kavach_users(id) ON DELETE CASCADE,
+  used        ${bool} NOT NULL DEFAULT ${isPostgres ? "FALSE" : "0"},
+  expires_at  ${ts}   NOT NULL,
+  created_at  ${ts}   NOT NULL
+)`,
+		`CREATE INDEX ${ifne} kavach_jwt_refresh_tokens_user_id
+  ON kavach_jwt_refresh_tokens (user_id)`,
+
+		// ------------------------------------------------------------------
 		// kavach_users ban columns  (ALTER TABLE IF NOT EXISTS — safe no-ops)
 		// These are appended as separate ALTER statements for existing DBs.
 		// For SQLite we use a separate migration path since SQLite ALTER is limited.

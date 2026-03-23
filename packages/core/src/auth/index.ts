@@ -26,6 +26,14 @@ export { bearerAuth } from "./adapters/bearer.js";
 export { customAuth } from "./adapters/custom.js";
 export type { HeaderAuthOptions } from "./adapters/header.js";
 export { headerAuth } from "./adapters/header.js";
+// Additional user/session fields plugin
+export type {
+	AdditionalFieldsConfig,
+	AdditionalFieldsModule,
+	FieldDefinition,
+	ValidationResult,
+} from "./additional-fields.js";
+export { additionalFields, createAdditionalFieldsModule } from "./additional-fields.js";
 // Admin module
 export type { AdminConfig, AdminModule, AdminUser } from "./admin.js";
 export { createAdminModule } from "./admin.js";
@@ -44,6 +52,9 @@ export { apiKeys } from "./api-key-plugin.js";
 // Captcha integration (reCAPTCHA, hCaptcha, Turnstile)
 export type { CaptchaConfig, CaptchaModule, CaptchaVerifyResult } from "./captcha.js";
 export { createCaptchaModule } from "./captcha.js";
+// Custom session fields plugin
+export type { CustomSessionConfig, CustomSessionModule } from "./custom-session.js";
+export { createCustomSessionModule, customSession } from "./custom-session.js";
 // OAuth Device Authorization Grant (RFC 8628)
 export type {
 	DeviceAuthConfig,
@@ -65,6 +76,15 @@ export { gdpr } from "./gdpr-plugin.js";
 // Have I Been Pwned password checking
 export type { HibpConfig, HibpModule } from "./hibp.js";
 export { createHibpModule, HibpApiError, HibpBreachedError } from "./hibp.js";
+// JWT session plugin (general-purpose access + refresh token sessions)
+export type {
+	JwtSessionConfig,
+	JwtSessionModule,
+	SessionTokens,
+	SessionUser,
+	VerifiedSession,
+} from "./jwt-session.js";
+export { createJwtSessionModule } from "./jwt-session.js";
 // Last login method tracking
 export type {
 	LastLoginConfig,
@@ -116,6 +136,26 @@ export type {
 	ValidateTokenResult,
 } from "./one-time-token.js";
 export { createOneTimeTokenModule } from "./one-time-token.js";
+// OpenAPI spec generation
+export type {
+	EndpointGroup,
+	OpenApiComponents,
+	OpenApiConfig,
+	OpenApiDocument,
+	OpenApiInfo,
+	OpenApiMediaType,
+	OpenApiModule,
+	OpenApiOperation,
+	OpenApiParameter,
+	OpenApiPathItem,
+	OpenApiRequestBody,
+	OpenApiResponse,
+	OpenApiSchema,
+	OpenApiSecurityRequirement,
+	OpenApiSecurityScheme,
+	OpenApiServer,
+} from "./openapi.js";
+export { createOpenApiModule } from "./openapi.js";
 // Organizations + RBAC
 export type {
 	Organization,
