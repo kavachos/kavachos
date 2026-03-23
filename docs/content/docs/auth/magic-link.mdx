@@ -30,7 +30,7 @@ pnpm add kavachos
 
 ```typescript title="lib/kavach.ts"
 import { createKavach } from 'kavachos';
-import { magicLink } from 'kavachos/plugins/magic-link'; // [!code highlight]
+import { magicLink } from 'kavachos/auth'; // [!code highlight]
 
 const kavach = await createKavach({
   database: { provider: 'postgres', url: process.env.DATABASE_URL! },

@@ -16,6 +16,24 @@ export const users = sqliteTable("kavach_users", {
 	banReason: text("ban_reason"),
 	banExpiresAt: integer("ban_expires_at", { mode: "timestamp" }),
 	forcePasswordReset: integer("force_password_reset").notNull().default(0),
+	// Stripe integration fields (populated by kavach-stripe plugin)
+	stripeCustomerId: text("stripe_customer_id").unique(),
+	stripeSubscriptionId: text("stripe_subscription_id"),
+	stripeSubscriptionStatus: text("stripe_subscription_status"),
+	stripePriceId: text("stripe_price_id"),
+	stripeCurrentPeriodEnd: integer("stripe_current_period_end", { mode: "timestamp" }),
+	stripeCancelAtPeriodEnd: integer("stripe_cancel_at_period_end", { mode: "boolean" })
+		.notNull()
+		.default(false),
+	// Polar integration fields (populated by kavach-polar plugin)
+	polarCustomerId: text("polar_customer_id").unique(),
+	polarSubscriptionId: text("polar_subscription_id"),
+	polarSubscriptionStatus: text("polar_subscription_status"),
+	polarProductId: text("polar_product_id"),
+	polarCurrentPeriodEnd: integer("polar_current_period_end", { mode: "timestamp" }),
+	polarCancelAtPeriodEnd: integer("polar_cancel_at_period_end", { mode: "boolean" })
+		.notNull()
+		.default(false),
 	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 	updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
 });
@@ -540,6 +558,36 @@ export const trustedDevices = sqliteTable("kavach_trusted_devices", {
 });
 
 // ============================================================
+// One-Time Tokens (email verify, password reset, invitation, custom)
+// ============================================================
+export const oneTimeTokens = sqliteTable("kavach_one_time_tokens", {
+	id: text("id").primaryKey(),
+	tokenHash: text("token_hash").notNull().unique(), // SHA-256 hex of the raw token
+	purpose: text("purpose", {
+		enum: ["email-verify", "password-reset", "invitation", "custom"],
+	}).notNull(),
+	identifier: text("identifier").notNull(), // email, userId, or any caller-supplied key
+	metadata: text("metadata", { mode: "json" }).$type<Record<string, unknown>>(),
+	used: integer("used", { mode: "boolean" }).notNull().default(false),
+	expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
+	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+});
+
+// ============================================================
+// Login History (last login method tracking per user)
+// ============================================================
+export const loginHistory = sqliteTable("kavach_login_history", {
+	id: text("id").primaryKey(),
+	userId: text("user_id")
+		.notNull()
+		.references(() => users.id, { onDelete: "cascade" }),
+	method: text("method").notNull(), // LoginMethod — kept as text to support oauth:{provider} variants
+	ip: text("ip"),
+	userAgent: text("user_agent"),
+	timestamp: integer("timestamp", { mode: "timestamp_ms" }).notNull(),
+});
+
+// ============================================================
 // Agent DIDs (W3C Decentralized Identifiers per agent)
 // ============================================================
 export const agentDids = sqliteTable("kavach_agent_dids", {
@@ -550,5 +598,56 @@ export const agentDids = sqliteTable("kavach_agent_dids", {
 	method: text("method", { enum: ["key", "web"] }).notNull(),
 	publicKeyJwk: text("public_key_jwk").notNull(), // JSON-serialised JWK (public key only)
 	didDocument: text("did_document").notNull(), // JSON-serialised DID Document
+	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+});
+
+// ============================================================
+// OIDC Provider — Clients (apps authenticating against KavachOS IdP)
+// ============================================================
+export const oidcClients = sqliteTable("kavach_oidc_clients", {
+	id: text("id").primaryKey(),
+	clientId: text("client_id").notNull().unique(),
+	clientSecretHash: text("client_secret_hash").notNull(), // SHA-256 hex of the raw secret
+	clientName: text("client_name").notNull(),
+	redirectUris: text("redirect_uris", { mode: "json" }).notNull().$type<string[]>(),
+	grantTypes: text("grant_types", { mode: "json" }).notNull().$type<string[]>(),
+	responseTypes: text("response_types", { mode: "json" }).notNull().$type<string[]>(),
+	scopes: text("scopes", { mode: "json" }).notNull().$type<string[]>(),
+	tokenEndpointAuthMethod: text("token_endpoint_auth_method")
+		.notNull()
+		.default("client_secret_post"),
+	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+	updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+});
+
+// ============================================================
+// OIDC Provider — Authorization Codes
+// ============================================================
+export const oidcAuthCodes = sqliteTable("kavach_oidc_auth_codes", {
+	id: text("id").primaryKey(),
+	codeHash: text("code_hash").notNull().unique(), // SHA-256 hex of the raw code
+	clientId: text("client_id").notNull(),
+	userId: text("user_id").notNull(),
+	redirectUri: text("redirect_uri").notNull(),
+	scopes: text("scopes").notNull(), // space-separated
+	nonce: text("nonce"),
+	codeChallenge: text("code_challenge"), // PKCE S256
+	codeChallengeMethod: text("code_challenge_method"),
+	used: integer("used", { mode: "boolean" }).notNull().default(false),
+	expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
+	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+});
+
+// ============================================================
+// OIDC Provider — Refresh Tokens
+// ============================================================
+export const oidcRefreshTokens = sqliteTable("kavach_oidc_refresh_tokens", {
+	id: text("id").primaryKey(),
+	tokenHash: text("token_hash").notNull().unique(), // SHA-256 hex of the raw token
+	clientId: text("client_id").notNull(),
+	userId: text("user_id").notNull(),
+	scopes: text("scopes").notNull(), // space-separated
+	revoked: integer("revoked", { mode: "boolean" }).notNull().default(false),
+	expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
 	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 });

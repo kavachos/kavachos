@@ -26,7 +26,7 @@ The `oauth()` plugin adds social sign-in to KavachOS using OAuth 2.0 authorizati
 
 ```typescript title="lib/kavach.ts"
 import { createKavach } from 'kavachos';
-import { oauth } from 'kavachos/plugins/oauth'; // [!code highlight]
+import { oauth } from 'kavachos/auth'; // [!code highlight]
 
 const kavach = await createKavach({
   database: { provider: 'postgres', url: process.env.DATABASE_URL! },

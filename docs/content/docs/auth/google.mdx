@@ -54,7 +54,7 @@ Under **OAuth consent screen**, set the app name, support email, and authorized 
 
 ```typescript title="lib/kavach.ts"
 import { createKavach } from 'kavachos';
-import { oauth } from 'kavachos/plugins/oauth';
+import { oauth } from 'kavachos/auth';
 
 const kavach = await createKavach({
   database: { provider: 'postgres', url: process.env.DATABASE_URL! },

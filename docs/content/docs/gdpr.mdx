@@ -14,7 +14,7 @@ KavachOS includes built-in tools for the three GDPR obligations that most common
 
 ```typescript title="lib/kavach.ts"
 import { createKavach } from 'kavachos';
-import { gdpr } from 'kavachos/plugins/gdpr'; // [!code highlight]
+import { gdpr } from 'kavachos/auth'; // [!code highlight]
 
 const kavach = await createKavach({
   database: { provider: 'postgres', url: process.env.DATABASE_URL! },

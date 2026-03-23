@@ -1,0 +1,38 @@
+{
+  "name": "@kavachos/expo",
+  "version": "0.0.2",
+  "description": "React Native / Expo client for KavachOS auth",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit"
+  },
+  "license": "MIT",
+  "author": "KavachOS <hello@kavachos.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kavachos/kavachos.git",
+    "directory": "packages/expo"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-native": ">=0.72.0"
+  },
+  "devDependencies": {
+    "react": "^19.0.0",
+    "@types/react": "^19.0.0",
+    "tsup": "^8.4.0",
+    "typescript": "^5.8.0"
+  }
+}

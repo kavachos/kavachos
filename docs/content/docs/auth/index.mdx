@@ -42,8 +42,8 @@ Pass plugins to `createKavach()`. Each plugin registers its own routes, database
 
 ```typescript title="lib/kavach.ts"
 import { createKavach } from 'kavachos';
-import { emailPassword } from 'kavachos/plugins/email-password';
-import { oauth } from 'kavachos/plugins/oauth';
+import { emailPassword } from 'kavachos/auth';
+import { oauth } from 'kavachos/auth';
 
 const kavach = await createKavach({
   database: { provider: 'postgres', url: process.env.DATABASE_URL! },

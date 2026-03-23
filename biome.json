@@ -6,6 +6,11 @@
     "indentStyle": "tab",
     "lineWidth": 100
   },
+  "javascript": {
+    "parser": {
+      "unsafeParameterDecoratorsEnabled": true
+    }
+  },
   "css": {
     "parser": {
       "tailwindDirectives": true
@@ -89,7 +94,8 @@
             "noConsole": "off"
           },
           "style": {
-            "noRestrictedTypes": "off"
+            "noRestrictedTypes": "off",
+            "noNonNullAssertion": "off"
           }
         }
       }

@@ -42,7 +42,7 @@ After saving, copy the **Application ID** and **Secret**.
   <Tab value="gitlab.com">
     ```typescript title="lib/kavach.ts"
     import { createKavach } from 'kavachos';
-    import { oauth } from 'kavachos/plugins/oauth';
+    import { oauth } from 'kavachos/auth';
 
     const kavach = await createKavach({
       database: { provider: 'postgres', url: process.env.DATABASE_URL! },

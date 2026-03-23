@@ -10,7 +10,7 @@ KavachOS integrates with the [HaveIBeenPwned Pwned Passwords API](https://haveib
 
 ```typescript title="lib/kavach.ts"
 import { createKavach } from 'kavachos';
-import { emailPassword } from 'kavachos/plugins/email-password';
+import { emailPassword } from 'kavachos/auth';
 import { createHibpModule } from 'kavachos/modules/hibp'; // [!code highlight]
 
 const hibp = createHibpModule(); // [!code highlight]

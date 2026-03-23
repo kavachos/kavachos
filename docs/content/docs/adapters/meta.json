@@ -6,6 +6,7 @@
 		"hono",
 		"express",
 		"nextjs",
+		"nestjs",
 		"fastify",
 		"nuxt",
 		"sveltekit",

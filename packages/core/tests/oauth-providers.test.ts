@@ -10,16 +10,31 @@ import {
 	atlassianProvider,
 	auth0Provider,
 	bitbucketProvider,
+	cognitoProvider,
 	coinbaseProvider,
 	dropboxProvider,
 	facebookProvider,
 	figmaProvider,
+	huggingfaceProvider,
+	kakaoProvider,
+	kickProvider,
+	linearProvider,
 	lineProvider,
+	naverProvider,
 	notionProvider,
 	oktaProvider,
+	paypalProvider,
+	polarProvider,
+	railwayProvider,
 	redditProvider,
+	robloxProvider,
+	salesforceProvider,
 	spotifyProvider,
+	tiktokProvider,
 	twitchProvider,
+	vercelProvider,
+	vkProvider,
+	wechatProvider,
 	yahooProvider,
 	zoomProvider,
 } from "../src/auth/oauth/providers/presets.js";
@@ -311,6 +326,132 @@ describe("coinbaseProvider", () => {
 	});
 });
 
+describe("tiktokProvider", () => {
+	it("returns a valid provider config", () => {
+		const p = tiktokProvider(DUMMY_ID, DUMMY_SECRET);
+		assertValidProvider(p, "tiktok");
+		assertUrlShape(p.authorizationUrl);
+		expect(p.authorizationUrl).toContain("tiktok.com");
+	});
+});
+
+describe("paypalProvider", () => {
+	it("returns a valid provider config", () => {
+		const p = paypalProvider(DUMMY_ID, DUMMY_SECRET);
+		assertValidProvider(p, "paypal");
+		assertUrlShape(p.authorizationUrl);
+		expect(p.authorizationUrl).toContain("paypal.com");
+	});
+});
+
+describe("salesforceProvider", () => {
+	it("returns a valid provider config", () => {
+		const p = salesforceProvider(DUMMY_ID, DUMMY_SECRET);
+		assertValidProvider(p, "salesforce");
+		assertUrlShape(p.authorizationUrl);
+		expect(p.authorizationUrl).toContain("salesforce.com");
+	});
+});
+
+describe("vkProvider", () => {
+	it("returns a valid provider config", () => {
+		const p = vkProvider(DUMMY_ID, DUMMY_SECRET);
+		assertValidProvider(p, "vk");
+		assertUrlShape(p.authorizationUrl);
+		expect(p.authorizationUrl).toContain("vk.com");
+	});
+});
+
+describe("kakaoProvider", () => {
+	it("returns a valid provider config", () => {
+		const p = kakaoProvider(DUMMY_ID, DUMMY_SECRET);
+		assertValidProvider(p, "kakao");
+		assertUrlShape(p.authorizationUrl);
+		expect(p.authorizationUrl).toContain("kakao.com");
+	});
+});
+
+describe("naverProvider", () => {
+	it("returns a valid provider config", () => {
+		const p = naverProvider(DUMMY_ID, DUMMY_SECRET);
+		assertValidProvider(p, "naver");
+		assertUrlShape(p.authorizationUrl);
+		expect(p.authorizationUrl).toContain("naver.com");
+	});
+});
+
+describe("huggingfaceProvider", () => {
+	it("returns a valid provider config", () => {
+		const p = huggingfaceProvider(DUMMY_ID, DUMMY_SECRET);
+		assertValidProvider(p, "huggingface");
+		assertUrlShape(p.authorizationUrl);
+		expect(p.authorizationUrl).toContain("huggingface.co");
+	});
+});
+
+describe("robloxProvider", () => {
+	it("returns a valid provider config", () => {
+		const p = robloxProvider(DUMMY_ID, DUMMY_SECRET);
+		assertValidProvider(p, "roblox");
+		assertUrlShape(p.authorizationUrl);
+		expect(p.authorizationUrl).toContain("roblox.com");
+	});
+});
+
+describe("vercelProvider", () => {
+	it("returns a valid provider config", () => {
+		const p = vercelProvider(DUMMY_ID, DUMMY_SECRET);
+		assertValidProvider(p, "vercel");
+		assertUrlShape(p.authorizationUrl);
+		expect(p.authorizationUrl).toContain("vercel.com");
+	});
+});
+
+describe("linearProvider", () => {
+	it("returns a valid provider config", () => {
+		const p = linearProvider(DUMMY_ID, DUMMY_SECRET);
+		assertValidProvider(p, "linear");
+		assertUrlShape(p.authorizationUrl);
+		expect(p.authorizationUrl).toContain("linear.app");
+	});
+});
+
+describe("railwayProvider", () => {
+	it("returns a valid provider config", () => {
+		const p = railwayProvider(DUMMY_ID, DUMMY_SECRET);
+		assertValidProvider(p, "railway");
+		assertUrlShape(p.authorizationUrl);
+		expect(p.authorizationUrl).toContain("railway.com");
+	});
+});
+
+describe("kickProvider", () => {
+	it("returns a valid provider config", () => {
+		const p = kickProvider(DUMMY_ID, DUMMY_SECRET);
+		assertValidProvider(p, "kick");
+		assertUrlShape(p.authorizationUrl);
+		expect(p.authorizationUrl).toContain("kick.com");
+	});
+});
+
+describe("wechatProvider", () => {
+	it("returns a valid provider config", () => {
+		const p = wechatProvider(DUMMY_ID, DUMMY_SECRET);
+		assertValidProvider(p, "wechat");
+		assertUrlShape(p.authorizationUrl);
+		expect(p.authorizationUrl).toContain("weixin.qq.com");
+	});
+});
+
+describe("polarProvider", () => {
+	it("returns a valid provider config", () => {
+		const p = polarProvider(DUMMY_ID, DUMMY_SECRET);
+		assertValidProvider(p, "polar");
+		assertUrlShape(p.authorizationUrl);
+		expect(p.authorizationUrl).toContain("polar.sh");
+	});
+});
+
 // ---------------------------------------------------------------------------
 // OIDC-discovery presets
 // ---------------------------------------------------------------------------
@@ -355,6 +496,39 @@ describe("oktaProvider", () => {
 	});
 });
 
+describe("cognitoProvider", () => {
+	it("returns a valid provider config with endpoints derived from domain", () => {
+		const p = cognitoProvider("my-app.auth.us-east-1.amazoncognito.com", DUMMY_ID, DUMMY_SECRET);
+		assertValidProvider(p, "cognito");
+		expect(p.name).toBe("AWS Cognito");
+		expect(p.authorizationUrl).toContain("amazoncognito.com");
+	});
+
+	it("strips leading https:// from domain if provided", () => {
+		const p = cognitoProvider(
+			"https://my-app.auth.us-east-1.amazoncognito.com",
+			DUMMY_ID,
+			DUMMY_SECRET,
+		);
+		expect(p.authorizationUrl).not.toContain("https://https://");
+	});
+
+	it("builds authorization URL from the provided domain", () => {
+		const p = cognitoProvider("my-app.auth.us-east-1.amazoncognito.com", DUMMY_ID, DUMMY_SECRET);
+		expect(p.authorizationUrl).toBe(
+			"https://my-app.auth.us-east-1.amazoncognito.com/oauth2/authorize",
+		);
+	});
+
+	it("accepts custom scopes", () => {
+		const p = cognitoProvider("my-app.auth.us-east-1.amazoncognito.com", DUMMY_ID, DUMMY_SECRET, [
+			"openid",
+			"phone",
+		]);
+		expect(p.scopes).toContain("phone");
+	});
+});
+
 // ---------------------------------------------------------------------------
 // All presets share required shape — table-driven sweep
 // ---------------------------------------------------------------------------
@@ -376,6 +550,22 @@ describe("all presets have required fields", () => {
 		["coinbase", coinbaseProvider(DUMMY_ID, DUMMY_SECRET)],
 		["auth0", auth0Provider("tenant.auth0.com", DUMMY_ID, DUMMY_SECRET)],
 		["okta", oktaProvider("dev.okta.com", DUMMY_ID, DUMMY_SECRET)],
+		// New providers
+		["tiktok", tiktokProvider(DUMMY_ID, DUMMY_SECRET)],
+		["paypal", paypalProvider(DUMMY_ID, DUMMY_SECRET)],
+		["salesforce", salesforceProvider(DUMMY_ID, DUMMY_SECRET)],
+		["vk", vkProvider(DUMMY_ID, DUMMY_SECRET)],
+		["kakao", kakaoProvider(DUMMY_ID, DUMMY_SECRET)],
+		["naver", naverProvider(DUMMY_ID, DUMMY_SECRET)],
+		["huggingface", huggingfaceProvider(DUMMY_ID, DUMMY_SECRET)],
+		["roblox", robloxProvider(DUMMY_ID, DUMMY_SECRET)],
+		["vercel", vercelProvider(DUMMY_ID, DUMMY_SECRET)],
+		["linear", linearProvider(DUMMY_ID, DUMMY_SECRET)],
+		["railway", railwayProvider(DUMMY_ID, DUMMY_SECRET)],
+		["kick", kickProvider(DUMMY_ID, DUMMY_SECRET)],
+		["wechat", wechatProvider(DUMMY_ID, DUMMY_SECRET)],
+		["polar", polarProvider(DUMMY_ID, DUMMY_SECRET)],
+		["cognito", cognitoProvider("my-app.auth.us-east-1.amazoncognito.com", DUMMY_ID, DUMMY_SECRET)],
 	];
 
 	for (const [id, provider] of providers) {

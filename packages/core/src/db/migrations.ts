@@ -48,9 +48,21 @@ function buildStatements(provider: DatabaseConfig["provider"]): string[] {
   banned               ${bool}     NOT NULL DEFAULT ${isPostgres ? "FALSE" : "0"},
   ban_reason           TEXT,
   ban_expires_at       ${tsNull},
-  force_password_reset ${bool}     NOT NULL DEFAULT ${isPostgres ? "FALSE" : "0"},
-  created_at           ${ts}       NOT NULL,
-  updated_at           ${ts}       NOT NULL
+  force_password_reset         ${bool}     NOT NULL DEFAULT ${isPostgres ? "FALSE" : "0"},
+  stripe_customer_id           TEXT        UNIQUE,
+  stripe_subscription_id       TEXT,
+  stripe_subscription_status   TEXT,
+  stripe_price_id              TEXT,
+  stripe_current_period_end    ${tsNull},
+  stripe_cancel_at_period_end  ${bool}     NOT NULL DEFAULT ${isPostgres ? "FALSE" : "0"},
+  polar_customer_id            TEXT        UNIQUE,
+  polar_subscription_id        TEXT,
+  polar_subscription_status    TEXT,
+  polar_product_id             TEXT,
+  polar_current_period_end     ${tsNull},
+  polar_cancel_at_period_end   ${bool}     NOT NULL DEFAULT ${isPostgres ? "FALSE" : "0"},
+  created_at                   ${ts}       NOT NULL,
+  updated_at                   ${ts}       NOT NULL
 )`,
 
 		// ------------------------------------------------------------------
@@ -360,6 +372,20 @@ function buildStatements(provider: DatabaseConfig["provider"]): string[] {
 )`,
 
 		// ------------------------------------------------------------------
+		// kavach_one_time_tokens  (email verify, password reset, invitation)
+		// ------------------------------------------------------------------
+		`CREATE TABLE ${ifne} kavach_one_time_tokens (
+  id          TEXT    NOT NULL PRIMARY KEY,
+  token_hash  TEXT    NOT NULL UNIQUE,
+  purpose     TEXT    NOT NULL,
+  identifier  TEXT    NOT NULL,
+  metadata    ${json},
+  used        ${bool} NOT NULL DEFAULT ${isPostgres ? "FALSE" : "0"},
+  expires_at  ${ts}   NOT NULL,
+  created_at  ${ts}   NOT NULL
+)`,
+
+		// ------------------------------------------------------------------
 		// kavach_agent_dids  (W3C Decentralized Identifiers per agent)
 		// ------------------------------------------------------------------
 		`CREATE TABLE ${ifne} kavach_agent_dids (
@@ -469,6 +495,69 @@ function buildStatements(provider: DatabaseConfig["provider"]): string[] {
   label       TEXT NOT NULL,
   trusted_at  ${ts} NOT NULL,
   expires_at  ${ts} NOT NULL
+)`,
+
+		// ------------------------------------------------------------------
+		// kavach_login_history  (last-login method tracking per user)
+		// ------------------------------------------------------------------
+		`CREATE TABLE ${ifne} kavach_login_history (
+  id         TEXT NOT NULL PRIMARY KEY,
+  user_id    TEXT NOT NULL REFERENCES kavach_users(id) ON DELETE CASCADE,
+  method     TEXT NOT NULL,
+  ip         TEXT,
+  user_agent TEXT,
+  timestamp  ${ts} NOT NULL
+)`,
+		`CREATE INDEX ${ifne} kavach_login_history_user_ts
+  ON kavach_login_history (user_id, timestamp DESC)`,
+
+		// ------------------------------------------------------------------
+		// kavach_oidc_clients  (OIDC Provider — registered relying parties)
+		// ------------------------------------------------------------------
+		`CREATE TABLE ${ifne} kavach_oidc_clients (
+  id                          TEXT    NOT NULL PRIMARY KEY,
+  client_id                   TEXT    NOT NULL UNIQUE,
+  client_secret_hash          TEXT    NOT NULL,
+  client_name                 TEXT    NOT NULL,
+  redirect_uris               ${json} NOT NULL,
+  grant_types                 ${json} NOT NULL,
+  response_types              ${json} NOT NULL,
+  scopes                      ${json} NOT NULL,
+  token_endpoint_auth_method  TEXT    NOT NULL DEFAULT 'client_secret_post',
+  created_at                  ${ts}   NOT NULL,
+  updated_at                  ${ts}   NOT NULL
+)`,
+
+		// ------------------------------------------------------------------
+		// kavach_oidc_auth_codes  (OIDC Provider — authorization codes)
+		// ------------------------------------------------------------------
+		`CREATE TABLE ${ifne} kavach_oidc_auth_codes (
+  id                     TEXT    NOT NULL PRIMARY KEY,
+  code_hash              TEXT    NOT NULL UNIQUE,
+  client_id              TEXT    NOT NULL,
+  user_id                TEXT    NOT NULL,
+  redirect_uri           TEXT    NOT NULL,
+  scopes                 TEXT    NOT NULL,
+  nonce                  TEXT,
+  code_challenge         TEXT,
+  code_challenge_method  TEXT,
+  used                   ${bool} NOT NULL DEFAULT ${isPostgres ? "FALSE" : "0"},
+  expires_at             ${ts}   NOT NULL,
+  created_at             ${ts}   NOT NULL
+)`,
+
+		// ------------------------------------------------------------------
+		// kavach_oidc_refresh_tokens  (OIDC Provider — refresh tokens)
+		// ------------------------------------------------------------------
+		`CREATE TABLE ${ifne} kavach_oidc_refresh_tokens (
+  id          TEXT    NOT NULL PRIMARY KEY,
+  token_hash  TEXT    NOT NULL UNIQUE,
+  client_id   TEXT    NOT NULL,
+  user_id     TEXT    NOT NULL,
+  scopes      TEXT    NOT NULL,
+  revoked     ${bool} NOT NULL DEFAULT ${isPostgres ? "FALSE" : "0"},
+  expires_at  ${ts}   NOT NULL,
+  created_at  ${ts}   NOT NULL
 )`,
 
 		// ------------------------------------------------------------------

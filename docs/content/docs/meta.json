@@ -7,8 +7,10 @@
 		"configuration",
 		"database",
 		"sessions",
+		"one-time-tokens",
 		"---Auth---",
 		"auth",
+		"last-login",
 		"---Agents---",
 		"agents",
 		"permissions",
@@ -32,6 +34,8 @@
 		"react",
 		"vue",
 		"svelte",
+		"expo",
+		"ui-components",
 		"---More---",
 		"hooks",
 		"webhooks",
@@ -42,6 +46,7 @@
 		"budget-policies",
 		"---Reference---",
 		"api",
-		"errors"
+		"errors",
+		"test-utils"
 	]
 }

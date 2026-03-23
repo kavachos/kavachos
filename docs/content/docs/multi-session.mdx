@@ -10,7 +10,7 @@ By default, KavachOS allows unlimited concurrent sessions per user. The multi-se
 
 ```typescript title="lib/kavach.ts"
 import { createKavach } from 'kavachos';
-import { multiSession } from 'kavachos/plugins/multi-session'; // [!code highlight]
+import { multiSession } from 'kavachos/auth'; // [!code highlight]
 
 const kavach = await createKavach({
   database: { provider: 'postgres', url: process.env.DATABASE_URL! },

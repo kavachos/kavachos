@@ -47,7 +47,7 @@ Under **Basic Information**, copy the **OAuth client ID** and generate an **OAut
 
 ```typescript title="lib/kavach.ts"
 import { createKavach } from 'kavachos';
-import { oauth } from 'kavachos/plugins/oauth';
+import { oauth } from 'kavachos/auth';
 
 const kavach = await createKavach({
   database: { provider: 'postgres', url: process.env.DATABASE_URL! },

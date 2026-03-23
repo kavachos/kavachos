@@ -65,11 +65,57 @@ export { gdpr } from "./gdpr-plugin.js";
 // Have I Been Pwned password checking
 export type { HibpConfig, HibpModule } from "./hibp.js";
 export { createHibpModule, HibpApiError, HibpBreachedError } from "./hibp.js";
+// Last login method tracking
+export type {
+	LastLoginConfig,
+	LastLoginModule,
+	LoginEvent,
+	LoginMethod,
+	RecordLoginInput,
+} from "./last-login.js";
+export { createLastLoginModule } from "./last-login.js";
 // Magic link (passwordless email)
 export type { MagicLinkConfig, MagicLinkModule } from "./magic-link.js";
 export { createMagicLinkModule } from "./magic-link.js";
 // Magic link plugin (KavachPlugin wrapper)
 export { magicLink } from "./magic-link-plugin.js";
+// OAuth proxy (server-side OAuth for mobile apps)
+export type { OAuthProxyConfig, OAuthProxyModule, ProxyTokens } from "./oauth-proxy.js";
+export { createOAuthProxyModule, OAuthProxyError } from "./oauth-proxy.js";
+// OAuth proxy plugin (KavachPlugin wrapper)
+export type { OAuthProxyPluginConfig } from "./oauth-proxy-plugin.js";
+export { oauthProxy } from "./oauth-proxy-plugin.js";
+// OIDC Provider (KavachOS as an identity provider)
+export type {
+	AccessTokenClaims,
+	AuthorizeParams,
+	GetUserClaimsFn,
+	JsonWebKeySet,
+	OidcClient,
+	OidcDiscoveryDocument,
+	OidcProviderConfig,
+	OidcProviderModule,
+	RegisterClientInput,
+	TokenParams,
+	TokenResponse,
+	UserInfoClaims,
+} from "./oidc-provider.js";
+export { createOidcProviderModule } from "./oidc-provider.js";
+// Google One Tap
+export type { GoogleUser, OneTapConfig, OneTapModule } from "./one-tap.js";
+export { createOneTapModule, OneTapVerifyError } from "./one-tap.js";
+// Google One Tap plugin (KavachPlugin wrapper)
+export { oneTap } from "./one-tap-plugin.js";
+// One-time tokens (email verify, password reset, invitation, custom)
+export type {
+	CreateTokenInput,
+	OneTimeTokenConfig,
+	OneTimeTokenModule,
+	OneTimeTokenPurpose,
+	RevokeTokensResult,
+	ValidateTokenResult,
+} from "./one-time-token.js";
+export { createOneTimeTokenModule } from "./one-time-token.js";
 // Organizations + RBAC
 export type {
 	Organization,
@@ -90,11 +136,21 @@ export { passkey } from "./passkey-plugin.js";
 // Phone number (SMS OTP) authentication
 export type { PhoneAuthConfig, PhoneAuthModule } from "./phone.js";
 export { createPhoneAuthModule } from "./phone.js";
+// Polar payment integration
+export type { PolarConfig, PolarModule, PolarSubscription } from "./polar.js";
+export { createPolarModule } from "./polar.js";
+// Polar plugin (KavachPlugin wrapper)
+export { polar } from "./polar-plugin.js";
 export type { RateLimitMiddlewareOptions } from "./rate-limit-middleware.js";
 export { withRateLimit } from "./rate-limit-middleware.js";
 // Rate limiting for auth endpoints
 export type { RateLimitConfig, RateLimiter, RateLimitResult } from "./rate-limiter.js";
 export { createRateLimiter } from "./rate-limiter.js";
+// SCIM 2.0 directory sync (RFC 7644)
+export type { ScimConfig, ScimGroup, ScimModule, ScimUser } from "./scim.js";
+export { createScimModule } from "./scim.js";
+// SCIM plugin (KavachPlugin wrapper)
+export { scim } from "./scim-plugin.js";
 // Sign In With Ethereum (EIP-4361)
 export type { SiweConfig, SiweModule, SiweVerifyResult } from "./siwe.js";
 export { createSiweModule, siwe } from "./siwe.js";
@@ -108,6 +164,16 @@ export type {
 	SsoModule,
 } from "./sso.js";
 export { createSsoModule, SSO_ERROR, SsoError } from "./sso.js";
+// Stripe payment integration
+export type {
+	CheckoutOptions,
+	StripeConfig,
+	StripeModule,
+	SubscriptionInfo,
+} from "./stripe.js";
+export { createStripeModule } from "./stripe.js";
+// Stripe plugin (KavachPlugin wrapper)
+export { stripe } from "./stripe-plugin.js";
 // TOTP two-factor authentication
 export type { TotpConfig, TotpModule, TotpSetup } from "./totp.js";
 export { createTotpModule } from "./totp.js";

@@ -44,7 +44,7 @@ After creating the app, copy the **Client ID**. Click **Generate a new client se
   <Tab value="Basic">
     ```typescript title="lib/kavach.ts"
     import { createKavach } from 'kavachos';
-    import { oauth } from 'kavachos/plugins/oauth';
+    import { oauth } from 'kavachos/auth';
 
     const kavach = await createKavach({
       database: { provider: 'postgres', url: process.env.DATABASE_URL! },

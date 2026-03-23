@@ -39,7 +39,7 @@ After saving, click **Manage** on the app. Copy the **Client ID**. Click **New S
 
 ```typescript title="lib/kavach.ts"
 import { createKavach } from 'kavachos';
-import { oauth } from 'kavachos/plugins/oauth';
+import { oauth } from 'kavachos/auth';
 
 const kavach = await createKavach({
   database: { provider: 'postgres', url: process.env.DATABASE_URL! },

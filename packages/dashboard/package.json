@@ -34,7 +34,9 @@
     "build:app": "tsc --noEmit && vite build --mode app",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.94.5",
@@ -43,6 +45,7 @@
     "react-dom": "^19.2.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.52.0",
     "@tailwindcss/vite": "^4.0.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

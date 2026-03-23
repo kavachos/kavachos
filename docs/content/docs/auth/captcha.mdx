@@ -19,7 +19,7 @@ The `captcha` plugin adds bot protection to any KavachOS endpoint. It validates 
 
 ```typescript title="lib/kavach.ts"
 import { createKavach } from 'kavachos';
-import { captcha } from 'kavachos/plugins/captcha'; // [!code highlight]
+import { captcha } from 'kavachos/auth'; // [!code highlight]
 
 const kavach = await createKavach({
   database: { provider: 'postgres', url: process.env.DATABASE_URL! },
