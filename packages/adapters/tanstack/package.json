@@ -1,0 +1,46 @@
+{
+  "name": "@kavachos/tanstack",
+  "version": "0.0.2",
+  "description": "TanStack Start adapter for KavachOS",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "kavachos",
+    "tanstack",
+    "tanstack-start",
+    "auth",
+    "agent",
+    "mcp"
+  ],
+  "author": "KavachOS <hello@kavachos.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kavachos/kavachos.git",
+    "directory": "packages/adapters/tanstack"
+  },
+  "peerDependencies": {
+    "kavachos": "workspace:*",
+    "zod": ">=3.0.0"
+  },
+  "devDependencies": {
+    "kavachos": "workspace:*",
+    "tsup": "^8.4.0",
+    "typescript": "^5.8.0",
+    "zod": "^3.24.0"
+  }
+}
