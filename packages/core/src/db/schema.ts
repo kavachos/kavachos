@@ -653,6 +653,48 @@ export const oidcRefreshTokens = sqliteTable("kavach_oidc_refresh_tokens", {
 });
 
 // ============================================================
+// Cost Events (per-agent cost attribution and observability)
+// ============================================================
+export const costEvents = sqliteTable("kavach_cost_events", {
+	id: text("id").primaryKey(),
+	agentId: text("agent_id")
+		.notNull()
+		.references(() => agents.id, { onDelete: "cascade" }),
+	tool: text("tool").notNull(), // e.g. 'openai:gpt-4o', 'anthropic:claude-3-5-sonnet', 'mcp:github'
+	inputTokens: integer("input_tokens"),
+	outputTokens: integer("output_tokens"),
+	/** Cost stored as integer microdollars (costUsd × 1_000_000) to avoid float drift */
+	costMicros: integer("cost_micros").notNull(),
+	currency: text("currency").notNull().default("USD"),
+	metadata: text("metadata", { mode: "json" }).$type<Record<string, unknown>>(),
+	delegationChainId: text("delegation_chain_id"), // null when not part of a chain
+	recordedAt: integer("recorded_at", { mode: "timestamp" }).notNull(),
+});
+
+// ============================================================
+// Ephemeral Sessions (short-lived agent credentials for single-task use)
+// ============================================================
+export const ephemeralSessions = sqliteTable("kavach_ephemeral_sessions", {
+	id: text("id").primaryKey(),
+	agentId: text("agent_id")
+		.notNull()
+		.references(() => agents.id, { onDelete: "cascade" }),
+	ownerId: text("owner_id")
+		.notNull()
+		.references(() => users.id),
+	tokenHash: text("token_hash").notNull().unique(),
+	expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
+	maxActions: integer("max_actions"), // null = unlimited
+	actionsUsed: integer("actions_used").notNull().default(0),
+	status: text("status", { enum: ["active", "expired", "exhausted", "revoked"] })
+		.notNull()
+		.default("active"),
+	auditGroupId: text("audit_group_id").notNull(),
+	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+	updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+});
+
+// ============================================================
 // JWT Session Refresh Tokens (general-purpose session plugin)
 // ============================================================
 export const jwtRefreshTokens = sqliteTable("kavach_jwt_refresh_tokens", {

@@ -110,7 +110,10 @@
       "!**/.turbo",
       "!**/.cache",
       "!**/docs-local/repo-ref",
-      "!docs"
+      "!docs",
+      "!**/.next",
+      "!sdks/python",
+      "!examples/nextjs-demo"
     ]
   }
 }

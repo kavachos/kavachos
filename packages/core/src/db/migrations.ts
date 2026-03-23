@@ -561,6 +561,47 @@ function buildStatements(provider: DatabaseConfig["provider"]): string[] {
 )`,
 
 		// ------------------------------------------------------------------
+		// kavach_cost_events  (per-agent cost attribution)
+		// ------------------------------------------------------------------
+		`CREATE TABLE ${ifne} kavach_cost_events (
+  id                  TEXT    NOT NULL PRIMARY KEY,
+  agent_id            TEXT    NOT NULL REFERENCES kavach_agents(id) ON DELETE CASCADE,
+  tool                TEXT    NOT NULL,
+  input_tokens        INTEGER,
+  output_tokens       INTEGER,
+  cost_micros         INTEGER NOT NULL,
+  currency            TEXT    NOT NULL DEFAULT 'USD',
+  metadata            ${json},
+  delegation_chain_id TEXT,
+  recorded_at         ${ts}   NOT NULL
+)`,
+		`CREATE INDEX ${ifne} kavach_cost_events_agent_recorded
+  ON kavach_cost_events (agent_id, recorded_at DESC)`,
+		`CREATE INDEX ${ifne} kavach_cost_events_chain_id
+  ON kavach_cost_events (delegation_chain_id)`,
+
+		// ------------------------------------------------------------------
+		// kavach_ephemeral_sessions  (short-lived agent credentials)
+		// ------------------------------------------------------------------
+		`CREATE TABLE ${ifne} kavach_ephemeral_sessions (
+  id             TEXT    NOT NULL PRIMARY KEY,
+  agent_id       TEXT    NOT NULL REFERENCES kavach_agents(id) ON DELETE CASCADE,
+  owner_id       TEXT    NOT NULL REFERENCES kavach_users(id),
+  token_hash     TEXT    NOT NULL UNIQUE,
+  expires_at     ${ts}   NOT NULL,
+  max_actions    INTEGER,
+  actions_used   INTEGER NOT NULL DEFAULT 0,
+  status         TEXT    NOT NULL DEFAULT 'active',
+  audit_group_id TEXT    NOT NULL,
+  created_at     ${ts}   NOT NULL,
+  updated_at     ${ts}   NOT NULL
+)`,
+		`CREATE INDEX ${ifne} kavach_ephemeral_sessions_owner_status
+  ON kavach_ephemeral_sessions (owner_id, status)`,
+		`CREATE INDEX ${ifne} kavach_ephemeral_sessions_expires_at
+  ON kavach_ephemeral_sessions (expires_at)`,
+
+		// ------------------------------------------------------------------
 		// kavach_jwt_refresh_tokens  (JWT session plugin — general purpose)
 		// ------------------------------------------------------------------
 		`CREATE TABLE ${ifne} kavach_jwt_refresh_tokens (

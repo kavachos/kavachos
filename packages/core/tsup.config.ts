@@ -8,6 +8,7 @@ export default defineConfig({
 		"mcp/index": "src/mcp/index.ts",
 		"permission/index": "src/permission/index.ts",
 		"audit/index": "src/audit/index.ts",
+		"a2a/index": "src/a2a/index.ts",
 	},
 	format: ["esm"],
 	dts: true,

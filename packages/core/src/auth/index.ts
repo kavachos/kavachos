@@ -52,6 +52,16 @@ export { apiKeys } from "./api-key-plugin.js";
 // Captcha integration (reCAPTCHA, hCaptcha, Turnstile)
 export type { CaptchaConfig, CaptchaModule, CaptchaVerifyResult } from "./captcha.js";
 export { createCaptchaModule } from "./captcha.js";
+// Cost attribution and observability
+export type {
+	BudgetCheckResult,
+	CostAlert,
+	CostAttributionConfig,
+	CostAttributionModule,
+	CostReport,
+	RecordCostInput,
+} from "./cost-attribution.js";
+export { createCostAttributionModule } from "./cost-attribution.js";
 // Custom session fields plugin
 export type { CustomSessionConfig, CustomSessionModule } from "./custom-session.js";
 export { createCustomSessionModule, customSession } from "./custom-session.js";
@@ -68,6 +78,15 @@ export type { EmailOtpConfig, EmailOtpModule } from "./email-otp.js";
 export { createEmailOtpModule } from "./email-otp.js";
 // Email OTP plugin (KavachPlugin wrapper)
 export { emailOtp } from "./email-otp-plugin.js";
+// Ephemeral sessions (short-lived agent credentials for computer-use agents)
+export type {
+	CreateEphemeralSessionInput,
+	EphemeralSession,
+	EphemeralSessionConfig,
+	EphemeralSessionModule,
+	EphemeralSessionValidateResult,
+} from "./ephemeral-sessions.js";
+export { createEphemeralSessionModule } from "./ephemeral-sessions.js";
 // GDPR module (right to erasure + right to portability)
 export type { DeleteOptions, DeleteResult, GdprModule, UserDataExport } from "./gdpr.js";
 export { createGdprModule } from "./gdpr.js";
