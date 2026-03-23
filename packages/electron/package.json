@@ -1,6 +1,6 @@
 {
   "name": "@kavachos/electron",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "KavachOS auth client for Electron desktop apps",
   "type": "module",
   "main": "dist/index.js",

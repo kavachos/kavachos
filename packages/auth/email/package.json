@@ -1,6 +1,6 @@
 {
   "name": "@kavachos/auth-email",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "Email and password authentication for KavachOS",
   "type": "module",
   "main": "dist/index.js",

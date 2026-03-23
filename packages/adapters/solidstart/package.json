@@ -1,6 +1,6 @@
 {
   "name": "@kavachos/solidstart",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "SolidStart adapter for KavachOS",
   "type": "module",
   "main": "dist/index.js",
