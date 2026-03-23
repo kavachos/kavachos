@@ -36,9 +36,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://kavachos.dev"
+Homepage = "https://kavachos.com"
 Repository = "https://github.com/kavachos/kavachos"
-Documentation = "https://kavachos.dev/docs"
+Documentation = "https://kavachos.com/docs"
+Issues = "https://github.com/kavachos/kavachos/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["kavachos"]
