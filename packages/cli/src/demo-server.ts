@@ -222,10 +222,8 @@ export async function startDemoServer(options: DemoServerOptions): Promise<void>
 
 		let activeDelegations = 0;
 		try {
-			const delegations = await kavach.delegation.list();
-			activeDelegations = Array.isArray(delegations)
-				? delegations.filter((d: { status: string }) => d.status === "active").length
-				: 0;
+			const delegations = await kavach.delegation.listChains("");
+			activeDelegations = Array.isArray(delegations) ? delegations.length : 0;
 		} catch {
 			// delegation.list may not exist or may throw
 		}
@@ -256,7 +254,7 @@ export async function startDemoServer(options: DemoServerOptions): Promise<void>
 		const paged = entries.slice(offset, offset + limit);
 
 		return c.json({
-			entries: paged.map((e: Record<string, unknown>) => ({
+			entries: paged.map((e) => ({
 				...e,
 				agentName: "agent",
 				durationMs: 0,
@@ -272,7 +270,7 @@ export async function startDemoServer(options: DemoServerOptions): Promise<void>
 	app.get("/api/agents", async (c) => {
 		const agents = await kavach.agent.list({});
 		return c.json(
-			agents.map((a: Record<string, unknown>) => ({
+			agents.map((a) => ({
 				...a,
 				permissionsCount: 0,
 				lastActiveAt: null,
@@ -292,7 +290,7 @@ export async function startDemoServer(options: DemoServerOptions): Promise<void>
 					for (const chain of chains) {
 						allChains.push({
 							...chain,
-							fromAgentName: (agent as Record<string, unknown>).name ?? "unknown",
+							fromAgentName: agent.name ?? "unknown",
 							toAgentName: "agent",
 						});
 					}
