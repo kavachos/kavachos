@@ -616,6 +616,88 @@ function buildStatements(provider: DatabaseConfig["provider"]): string[] {
   ON kavach_jwt_refresh_tokens (user_id)`,
 
 		// ------------------------------------------------------------------
+		// kavach_stream_events  (persisted SSE events for replay)
+		// ------------------------------------------------------------------
+		`CREATE TABLE ${ifne} kavach_stream_events (
+  id        TEXT    NOT NULL PRIMARY KEY,
+  type      TEXT    NOT NULL,
+  timestamp ${ts}   NOT NULL,
+  data      ${json} NOT NULL,
+  agent_id  TEXT,
+  user_id   TEXT
+)`,
+		`CREATE INDEX ${ifne} kavach_stream_events_timestamp
+  ON kavach_stream_events (timestamp DESC)`,
+		`CREATE INDEX ${ifne} kavach_stream_events_type_timestamp
+  ON kavach_stream_events (type, timestamp DESC)`,
+
+		// ------------------------------------------------------------------
+		// kavach_rebac_resources  (ReBAC resource hierarchy)
+		// ------------------------------------------------------------------
+		`CREATE TABLE ${ifne} kavach_rebac_resources (
+  id          TEXT NOT NULL PRIMARY KEY,
+  type        TEXT NOT NULL,
+  parent_id   TEXT,
+  parent_type TEXT,
+  created_at  ${ts} NOT NULL
+)`,
+		`CREATE INDEX ${ifne} kavach_rebac_resources_parent
+  ON kavach_rebac_resources (parent_id, parent_type)`,
+
+		// ------------------------------------------------------------------
+		// kavach_rebac_relationships  (Zanzibar-style subject-relation-object tuples)
+		// ------------------------------------------------------------------
+		`CREATE TABLE ${ifne} kavach_rebac_relationships (
+  id           TEXT NOT NULL PRIMARY KEY,
+  subject_type TEXT NOT NULL,
+  subject_id   TEXT NOT NULL,
+  relation     TEXT NOT NULL,
+  object_type  TEXT NOT NULL,
+  object_id    TEXT NOT NULL,
+  created_at   ${ts} NOT NULL
+)`,
+		`CREATE INDEX ${ifne} kavach_rebac_relationships_subject
+  ON kavach_rebac_relationships (subject_type, subject_id)`,
+		`CREATE INDEX ${ifne} kavach_rebac_relationships_object
+  ON kavach_rebac_relationships (object_type, object_id)`,
+		`CREATE UNIQUE INDEX ${ifne} kavach_rebac_relationships_tuple
+  ON kavach_rebac_relationships (subject_type, subject_id, relation, object_type, object_id)`,
+
+		// ------------------------------------------------------------------
+		// kavach_federation_instances  (trusted remote KavachOS instances)
+		// ------------------------------------------------------------------
+		`CREATE TABLE ${ifne} kavach_federation_instances (
+  id            TEXT NOT NULL PRIMARY KEY,
+  instance_id   TEXT NOT NULL UNIQUE,
+  instance_url  TEXT NOT NULL,
+  public_key_jwk TEXT,
+  trust_level   TEXT NOT NULL DEFAULT 'verify-only',
+  discovered_at ${tsNull},
+  created_at    ${ts} NOT NULL,
+  updated_at    ${ts} NOT NULL
+)`,
+
+		// ------------------------------------------------------------------
+		// kavach_federation_tokens  (issued/received federation tokens)
+		// ------------------------------------------------------------------
+		`CREATE TABLE ${ifne} kavach_federation_tokens (
+  id                  TEXT    NOT NULL PRIMARY KEY,
+  token_jti           TEXT    NOT NULL UNIQUE,
+  agent_id            TEXT    NOT NULL,
+  source_instance_id  TEXT    NOT NULL,
+  target_instance_id  TEXT,
+  direction           TEXT    NOT NULL,
+  permissions         ${json} NOT NULL,
+  trust_score         INTEGER,
+  expires_at          ${ts}   NOT NULL,
+  created_at          ${ts}   NOT NULL
+)`,
+		`CREATE INDEX ${ifne} kavach_federation_tokens_agent
+  ON kavach_federation_tokens (agent_id)`,
+		`CREATE INDEX ${ifne} kavach_federation_tokens_source
+  ON kavach_federation_tokens (source_instance_id)`,
+
+		// ------------------------------------------------------------------
 		// kavach_users ban columns  (ALTER TABLE IF NOT EXISTS — safe no-ops)
 		// These are appended as separate ALTER statements for existing DBs.
 		// For SQLite we use a separate migration path since SQLite ALTER is limited.

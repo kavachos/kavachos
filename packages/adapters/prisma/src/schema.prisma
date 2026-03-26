@@ -1,0 +1,619 @@
+// KavachOS reference Prisma schema
+// Copy this into your prisma/schema.prisma or merge it with your existing schema.
+//
+// Relationships are intentionally not declared here so the models compose
+// cleanly into any existing Prisma schema without forcing cascade rules on
+// your application tables. Add relations and onDelete rules as required.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql" // or "sqlite", "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Users ────────────────────────────────────────────────────────────────────
+
+model KavachUser {
+  id                       String    @id
+  email                    String    @unique
+  name                     String?
+  username                 String?   @unique
+  externalId               String?   @map("external_id")
+  externalProvider         String?   @map("external_provider")
+  metadata                 Json?
+  banned                   Boolean   @default(false)
+  banReason                String?   @map("ban_reason")
+  banExpiresAt             DateTime? @map("ban_expires_at")
+  forcePasswordReset       Boolean   @default(false) @map("force_password_reset")
+  stripeCustomerId         String?   @unique @map("stripe_customer_id")
+  stripeSubscriptionId     String?   @map("stripe_subscription_id")
+  stripeSubscriptionStatus String?   @map("stripe_subscription_status")
+  stripePriceId            String?   @map("stripe_price_id")
+  stripeCurrentPeriodEnd   DateTime? @map("stripe_current_period_end")
+  stripeCancelAtPeriodEnd  Boolean   @default(false) @map("stripe_cancel_at_period_end")
+  polarCustomerId          String?   @unique @map("polar_customer_id")
+  polarSubscriptionId      String?   @map("polar_subscription_id")
+  polarSubscriptionStatus  String?   @map("polar_subscription_status")
+  polarProductId           String?   @map("polar_product_id")
+  polarCurrentPeriodEnd    DateTime? @map("polar_current_period_end")
+  polarCancelAtPeriodEnd   Boolean   @default(false) @map("polar_cancel_at_period_end")
+  createdAt                DateTime  @map("created_at")
+  updatedAt                DateTime  @map("updated_at")
+
+  @@map("kavach_users")
+}
+
+// ─── Tenants ──────────────────────────────────────────────────────────────────
+
+model KavachTenant {
+  id        String   @id
+  name      String
+  slug      String   @unique
+  settings  Json?
+  status    String   @default("active")
+  createdAt DateTime @map("created_at")
+  updatedAt DateTime @map("updated_at")
+
+  @@map("kavach_tenants")
+}
+
+// ─── Agents ───────────────────────────────────────────────────────────────────
+
+model KavachAgent {
+  id           String    @id
+  ownerId      String    @map("owner_id")
+  tenantId     String?   @map("tenant_id")
+  name         String
+  type         String
+  status       String    @default("active")
+  tokenHash    String    @map("token_hash")
+  tokenPrefix  String    @map("token_prefix")
+  expiresAt    DateTime? @map("expires_at")
+  lastActiveAt DateTime? @map("last_active_at")
+  metadata     Json?
+  createdAt    DateTime  @map("created_at")
+  updatedAt    DateTime  @map("updated_at")
+
+  @@map("kavach_agents")
+}
+
+// ─── Permissions ──────────────────────────────────────────────────────────────
+
+model KavachPermission {
+  id          String   @id
+  agentId     String   @map("agent_id")
+  resource    String
+  actions     Json
+  constraints Json?
+  createdAt   DateTime @map("created_at")
+
+  @@map("kavach_permissions")
+}
+
+// ─── Delegation Chains ────────────────────────────────────────────────────────
+
+model KavachDelegationChain {
+  id          String   @id
+  fromAgentId String   @map("from_agent_id")
+  toAgentId   String   @map("to_agent_id")
+  permissions Json
+  depth       Int      @default(1)
+  maxDepth    Int      @default(3) @map("max_depth")
+  status      String   @default("active")
+  expiresAt   DateTime @map("expires_at")
+  createdAt   DateTime @map("created_at")
+
+  @@map("kavach_delegation_chains")
+}
+
+// ─── Audit Logs ───────────────────────────────────────────────────────────────
+
+model KavachAuditLog {
+  id         String   @id
+  agentId    String   @map("agent_id")
+  userId     String   @map("user_id")
+  action     String
+  resource   String
+  parameters Json?
+  result     String
+  reason     String?
+  durationMs Int      @map("duration_ms")
+  tokensCost Int?     @map("tokens_cost")
+  ip         String?
+  userAgent  String?  @map("user_agent")
+  timestamp  DateTime
+
+  @@index([agentId], map: "kavach_audit_logs_agent_id_idx")
+  @@index([userId], map: "kavach_audit_logs_user_id_idx")
+  @@index([timestamp], map: "kavach_audit_logs_timestamp_idx")
+  @@map("kavach_audit_logs")
+}
+
+// ─── Rate Limits ──────────────────────────────────────────────────────────────
+
+model KavachRateLimit {
+  id          String   @id
+  agentId     String   @map("agent_id")
+  resource    String
+  windowStart DateTime @map("window_start")
+  count       Int      @default(0)
+
+  @@map("kavach_rate_limits")
+}
+
+// ─── MCP Servers ──────────────────────────────────────────────────────────────
+
+model KavachMcpServer {
+  id            String   @id
+  name          String
+  endpoint      String   @unique
+  tools         Json
+  authRequired  Boolean  @default(true) @map("auth_required")
+  rateLimitRpm  Int?     @map("rate_limit_rpm")
+  status        String   @default("active")
+  createdAt     DateTime @map("created_at")
+  updatedAt     DateTime @map("updated_at")
+
+  @@map("kavach_mcp_servers")
+}
+
+// ─── Sessions ─────────────────────────────────────────────────────────────────
+
+model KavachSession {
+  id        String   @id
+  userId    String   @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  metadata  Json?
+  createdAt DateTime @map("created_at")
+
+  @@map("kavach_sessions")
+}
+
+// ─── OAuth Clients ────────────────────────────────────────────────────────────
+
+model KavachOAuthClient {
+  id                     String   @id
+  clientId               String   @unique @map("client_id")
+  clientSecret           String?  @map("client_secret")
+  clientName             String?  @map("client_name")
+  clientUri              String?  @map("client_uri")
+  redirectUris           Json     @map("redirect_uris")
+  grantTypes             Json     @map("grant_types")
+  responseTypes          Json     @map("response_types")
+  tokenEndpointAuthMethod String  @default("client_secret_basic") @map("token_endpoint_auth_method")
+  type                   String   @default("confidential")
+  disabled               Boolean  @default(false)
+  metadata               Json?
+  createdAt              DateTime @map("created_at")
+  updatedAt              DateTime @map("updated_at")
+
+  @@map("kavach_oauth_clients")
+}
+
+// ─── OAuth Access Tokens ──────────────────────────────────────────────────────
+
+model KavachOAuthAccessToken {
+  id                    String    @id
+  accessToken           String    @unique @map("access_token")
+  refreshToken          String?   @unique @map("refresh_token")
+  clientId              String    @map("client_id")
+  userId                String    @map("user_id")
+  scopes                String
+  resource              String?
+  accessTokenExpiresAt  DateTime  @map("access_token_expires_at")
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at")
+  createdAt             DateTime  @map("created_at")
+
+  @@map("kavach_oauth_access_tokens")
+}
+
+// ─── OAuth Authorization Codes ────────────────────────────────────────────────
+
+model KavachOAuthAuthorizationCode {
+  id                  String   @id
+  code                String   @unique
+  clientId            String   @map("client_id")
+  userId              String   @map("user_id")
+  redirectUri         String   @map("redirect_uri")
+  scopes              String
+  codeChallenge       String?  @map("code_challenge")
+  codeChallengeMethod String?  @map("code_challenge_method")
+  resource            String?
+  expiresAt           DateTime @map("expires_at")
+  createdAt           DateTime @map("created_at")
+
+  @@map("kavach_oauth_authorization_codes")
+}
+
+// ─── Budget Policies ──────────────────────────────────────────────────────────
+
+model KavachBudgetPolicy {
+  id           String   @id
+  agentId      String?  @map("agent_id")
+  userId       String?  @map("user_id")
+  tenantId     String?  @map("tenant_id")
+  limits       Json
+  currentUsage Json     @map("current_usage")
+  action       String   @default("warn")
+  status       String   @default("active")
+  createdAt    DateTime @map("created_at")
+
+  @@map("kavach_budget_policies")
+}
+
+// ─── Agent Cards ──────────────────────────────────────────────────────────────
+
+model KavachAgentCard {
+  id               String   @id
+  agentId          String   @map("agent_id")
+  name             String
+  description      String?
+  version          String
+  protocols        Json
+  capabilities     Json
+  authRequirements Json     @map("auth_requirements")
+  endpoint         String?
+  metadata         Json?
+  createdAt        DateTime @map("created_at")
+  updatedAt        DateTime @map("updated_at")
+
+  @@map("kavach_agent_cards")
+}
+
+// ─── Approval Requests ────────────────────────────────────────────────────────
+
+model KavachApprovalRequest {
+  id          String    @id
+  agentId     String    @map("agent_id")
+  userId      String    @map("user_id")
+  action      String
+  resource    String
+  arguments   Json?
+  status      String    @default("pending")
+  expiresAt   DateTime  @map("expires_at")
+  respondedAt DateTime? @map("responded_at")
+  respondedBy String?   @map("responded_by")
+  createdAt   DateTime  @map("created_at")
+
+  @@map("kavach_approval_requests")
+}
+
+// ─── Trust Scores ─────────────────────────────────────────────────────────────
+
+model KavachTrustScore {
+  agentId    String   @id @map("agent_id")
+  score      Int
+  level      String
+  factors    Json
+  computedAt DateTime @map("computed_at")
+
+  @@map("kavach_trust_scores")
+}
+
+// ─── Magic Links ──────────────────────────────────────────────────────────────
+
+model KavachMagicLink {
+  id        String   @id
+  email     String
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  used      Boolean  @default(false)
+  createdAt DateTime @map("created_at")
+
+  @@map("kavach_magic_links")
+}
+
+// ─── Email OTPs ───────────────────────────────────────────────────────────────
+
+model KavachEmailOtp {
+  id        String   @id
+  email     String
+  codeHash  String   @map("code_hash")
+  expiresAt DateTime @map("expires_at")
+  attempts  Int      @default(0)
+  createdAt DateTime @map("created_at")
+
+  @@map("kavach_email_otps")
+}
+
+// ─── TOTP ─────────────────────────────────────────────────────────────────────
+
+model KavachTotp {
+  userId      String   @id @map("user_id")
+  secret      String
+  enabled     Boolean  @default(false)
+  backupCodes Json     @map("backup_codes")
+  createdAt   DateTime @map("created_at")
+  updatedAt   DateTime @map("updated_at")
+
+  @@map("kavach_totp")
+}
+
+// ─── Organizations ────────────────────────────────────────────────────────────
+
+model KavachOrganization {
+  id        String   @id
+  name      String
+  slug      String   @unique
+  ownerId   String   @map("owner_id")
+  metadata  Json?
+  createdAt DateTime @map("created_at")
+  updatedAt DateTime @map("updated_at")
+
+  @@map("kavach_organizations")
+}
+
+model KavachOrgMember {
+  id       String   @id
+  orgId    String   @map("org_id")
+  userId   String   @map("user_id")
+  role     String   @default("member")
+  joinedAt DateTime @map("joined_at")
+
+  @@map("kavach_org_members")
+}
+
+model KavachOrgInvitation {
+  id        String   @id
+  orgId     String   @map("org_id")
+  email     String
+  role      String   @default("member")
+  invitedBy String   @map("invited_by")
+  status    String   @default("pending")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @map("created_at")
+
+  @@map("kavach_org_invitations")
+}
+
+model KavachOrgRole {
+  id          String @id
+  orgId       String @map("org_id")
+  name        String
+  permissions Json
+
+  @@map("kavach_org_roles")
+}
+
+// ─── Passkey Credentials ──────────────────────────────────────────────────────
+
+model KavachPasskeyCredential {
+  id           String   @id
+  userId       String   @map("user_id")
+  credentialId String   @unique @map("credential_id")
+  publicKey    String   @map("public_key")
+  counter      Int      @default(0)
+  deviceName   String?  @map("device_name")
+  transports   String?
+  createdAt    DateTime @map("created_at")
+  lastUsedAt   DateTime @map("last_used_at")
+
+  @@map("kavach_passkey_credentials")
+}
+
+// ─── SSO Connections ──────────────────────────────────────────────────────────
+
+model KavachSsoConnection {
+  id         String   @id
+  orgId      String   @map("org_id")
+  providerId String   @map("provider_id")
+  type       String
+  domain     String   @unique
+  enabled    Boolean  @default(true)
+  createdAt  DateTime @map("created_at")
+
+  @@map("kavach_sso_connections")
+}
+
+// ─── API Keys ─────────────────────────────────────────────────────────────────
+
+model KavachApiKey {
+  id          String    @id
+  userId      String    @map("user_id")
+  name        String
+  keyHash     String    @map("key_hash")
+  keyPrefix   String    @map("key_prefix")
+  permissions Json
+  expiresAt   DateTime? @map("expires_at")
+  lastUsedAt  DateTime? @map("last_used_at")
+  createdAt   DateTime  @map("created_at")
+
+  @@map("kavach_api_keys")
+}
+
+// ─── Passkey Challenges ───────────────────────────────────────────────────────
+
+model KavachPasskeyChallenge {
+  id        String   @id
+  challenge String   @unique
+  userId    String?  @map("user_id")
+  type      String
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @map("created_at")
+
+  @@map("kavach_passkey_challenges")
+}
+
+// ─── Username Accounts ────────────────────────────────────────────────────────
+
+model KavachUsernameAccount {
+  id           String   @id
+  userId       String   @map("user_id")
+  username     String   @unique
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @map("created_at")
+  updatedAt    DateTime @map("updated_at")
+
+  @@map("kavach_username_accounts")
+}
+
+// ─── Phone Verifications ──────────────────────────────────────────────────────
+
+model KavachPhoneVerification {
+  id          String   @id
+  phoneNumber String   @map("phone_number")
+  codeHash    String   @map("code_hash")
+  attempts    Int      @default(0)
+  expiresAt   DateTime @map("expires_at")
+  createdAt   DateTime @map("created_at")
+
+  @@map("kavach_phone_verifications")
+}
+
+// ─── Trusted Devices ──────────────────────────────────────────────────────────
+
+model KavachTrustedDevice {
+  id          String   @id
+  userId      String   @map("user_id")
+  fingerprint String
+  label       String
+  trustedAt   DateTime @map("trusted_at")
+  expiresAt   DateTime @map("expires_at")
+
+  @@map("kavach_trusted_devices")
+}
+
+// ─── One-Time Tokens ──────────────────────────────────────────────────────────
+
+model KavachOneTimeToken {
+  id         String   @id
+  tokenHash  String   @unique @map("token_hash")
+  purpose    String
+  identifier String
+  metadata   Json?
+  used       Boolean  @default(false)
+  expiresAt  DateTime @map("expires_at")
+  createdAt  DateTime @map("created_at")
+
+  @@map("kavach_one_time_tokens")
+}
+
+// ─── Login History ────────────────────────────────────────────────────────────
+
+model KavachLoginHistory {
+  id        String   @id
+  userId    String   @map("user_id")
+  method    String
+  ip        String?
+  userAgent String?  @map("user_agent")
+  timestamp DateTime
+
+  @@index([userId], map: "kavach_login_history_user_id_idx")
+  @@map("kavach_login_history")
+}
+
+// ─── Agent DIDs ───────────────────────────────────────────────────────────────
+
+model KavachAgentDid {
+  agentId      String   @id @map("agent_id")
+  did          String   @unique
+  method       String
+  publicKeyJwk String   @map("public_key_jwk")
+  didDocument  String   @map("did_document")
+  createdAt    DateTime @map("created_at")
+
+  @@map("kavach_agent_dids")
+}
+
+// ─── OIDC Clients ─────────────────────────────────────────────────────────────
+
+model KavachOidcClient {
+  id                     String   @id
+  clientId               String   @unique @map("client_id")
+  clientSecretHash       String   @map("client_secret_hash")
+  clientName             String   @map("client_name")
+  redirectUris           Json     @map("redirect_uris")
+  grantTypes             Json     @map("grant_types")
+  responseTypes          Json     @map("response_types")
+  scopes                 Json
+  tokenEndpointAuthMethod String  @default("client_secret_post") @map("token_endpoint_auth_method")
+  createdAt              DateTime @map("created_at")
+  updatedAt              DateTime @map("updated_at")
+
+  @@map("kavach_oidc_clients")
+}
+
+// ─── OIDC Auth Codes ──────────────────────────────────────────────────────────
+
+model KavachOidcAuthCode {
+  id                  String   @id
+  codeHash            String   @unique @map("code_hash")
+  clientId            String   @map("client_id")
+  userId              String   @map("user_id")
+  redirectUri         String   @map("redirect_uri")
+  scopes              String
+  nonce               String?
+  codeChallenge       String?  @map("code_challenge")
+  codeChallengeMethod String?  @map("code_challenge_method")
+  used                Boolean  @default(false)
+  expiresAt           DateTime @map("expires_at")
+  createdAt           DateTime @map("created_at")
+
+  @@map("kavach_oidc_auth_codes")
+}
+
+// ─── OIDC Refresh Tokens ──────────────────────────────────────────────────────
+
+model KavachOidcRefreshToken {
+  id        String   @id
+  tokenHash String   @unique @map("token_hash")
+  clientId  String   @map("client_id")
+  userId    String   @map("user_id")
+  scopes    String
+  revoked   Boolean  @default(false)
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @map("created_at")
+
+  @@map("kavach_oidc_refresh_tokens")
+}
+
+// ─── Cost Events ──────────────────────────────────────────────────────────────
+
+model KavachCostEvent {
+  id               String   @id
+  agentId          String   @map("agent_id")
+  tool             String
+  inputTokens      Int?     @map("input_tokens")
+  outputTokens     Int?     @map("output_tokens")
+  costMicros       Int      @map("cost_micros")
+  currency         String   @default("USD")
+  metadata         Json?
+  delegationChainId String? @map("delegation_chain_id")
+  recordedAt       DateTime @map("recorded_at")
+
+  @@map("kavach_cost_events")
+}
+
+// ─── Ephemeral Sessions ───────────────────────────────────────────────────────
+
+model KavachEphemeralSession {
+  id           String   @id
+  agentId      String   @map("agent_id")
+  ownerId      String   @map("owner_id")
+  tokenHash    String   @unique @map("token_hash")
+  expiresAt    DateTime @map("expires_at")
+  maxActions   Int?     @map("max_actions")
+  actionsUsed  Int      @default(0) @map("actions_used")
+  status       String   @default("active")
+  auditGroupId String   @map("audit_group_id")
+  createdAt    DateTime @map("created_at")
+  updatedAt    DateTime @map("updated_at")
+
+  @@map("kavach_ephemeral_sessions")
+}
+
+// ─── JWT Refresh Tokens ───────────────────────────────────────────────────────
+
+model KavachJwtRefreshToken {
+  id        String   @id
+  tokenHash String   @unique @map("token_hash")
+  userId    String   @map("user_id")
+  used      Boolean  @default(false)
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @map("created_at")
+
+  @@map("kavach_jwt_refresh_tokens")
+}

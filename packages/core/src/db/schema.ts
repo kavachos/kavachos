@@ -695,6 +695,18 @@ export const ephemeralSessions = sqliteTable("kavach_ephemeral_sessions", {
 });
 
 // ============================================================
+// Stream Events (persisted SSE events for replay)
+// ============================================================
+export const streamEvents = sqliteTable("kavach_stream_events", {
+	id: text("id").primaryKey(),
+	type: text("type").notNull(),
+	timestamp: integer("timestamp", { mode: "timestamp" }).notNull(),
+	data: text("data", { mode: "json" }).notNull().$type<Record<string, unknown>>(),
+	agentId: text("agent_id"),
+	userId: text("user_id"),
+});
+
+// ============================================================
 // JWT Session Refresh Tokens (general-purpose session plugin)
 // ============================================================
 export const jwtRefreshTokens = sqliteTable("kavach_jwt_refresh_tokens", {
@@ -707,6 +719,62 @@ export const jwtRefreshTokens = sqliteTable("kavach_jwt_refresh_tokens", {
 		.references(() => users.id, { onDelete: "cascade" }),
 	/** True once the token has been used in a refresh or explicit revocation. */
 	used: integer("used", { mode: "boolean" }).notNull().default(false),
+	expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
+	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+});
+
+// ============================================================
+// ReBAC Resources (relationship-based access control — resource hierarchy)
+// ============================================================
+export const rebacResources = sqliteTable("kavach_rebac_resources", {
+	id: text("id").notNull().primaryKey(),
+	type: text("type").notNull(), // 'org', 'workspace', 'project', 'document', etc.
+	parentId: text("parent_id"),
+	parentType: text("parent_type"),
+	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+});
+
+// ============================================================
+// ReBAC Relationships (subject-relation-object tuples, Zanzibar style)
+// ============================================================
+export const rebacRelationships = sqliteTable("kavach_rebac_relationships", {
+	id: text("id").primaryKey(),
+	subjectType: text("subject_type").notNull(), // 'user', 'agent', 'team', 'role'
+	subjectId: text("subject_id").notNull(),
+	relation: text("relation").notNull(), // 'owner', 'editor', 'viewer', 'member', 'parent'
+	objectType: text("object_type").notNull(),
+	objectId: text("object_id").notNull(),
+	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+});
+
+// ============================================================
+// Federation Instances (trusted remote KavachOS instances)
+// ============================================================
+export const federationInstances = sqliteTable("kavach_federation_instances", {
+	id: text("id").primaryKey(),
+	instanceId: text("instance_id").notNull().unique(),
+	instanceUrl: text("instance_url").notNull(),
+	publicKeyJwk: text("public_key_jwk"), // JSON-serialised JWK (public key only)
+	trustLevel: text("trust_level", { enum: ["full", "limited", "verify-only"] })
+		.notNull()
+		.default("verify-only"),
+	discoveredAt: integer("discovered_at", { mode: "timestamp" }),
+	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+	updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+});
+
+// ============================================================
+// Federation Tokens (issued/received federation tokens for audit)
+// ============================================================
+export const federationTokens = sqliteTable("kavach_federation_tokens", {
+	id: text("id").primaryKey(),
+	tokenJti: text("token_jti").notNull().unique(), // JWT ID for dedup
+	agentId: text("agent_id").notNull(),
+	sourceInstanceId: text("source_instance_id").notNull(),
+	targetInstanceId: text("target_instance_id"),
+	direction: text("direction", { enum: ["issued", "received"] }).notNull(),
+	permissions: text("permissions", { mode: "json" }).notNull().$type<string[]>(),
+	trustScore: integer("trust_score"), // stored as integer 0-100
 	expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
 	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 });

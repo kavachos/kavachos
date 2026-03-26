@@ -9,6 +9,7 @@ export default defineConfig({
 		"permission/index": "src/permission/index.ts",
 		"audit/index": "src/audit/index.ts",
 		"a2a/index": "src/a2a/index.ts",
+		"vc/index": "src/vc/index.ts",
 	},
 	format: ["esm"],
 	dts: true,

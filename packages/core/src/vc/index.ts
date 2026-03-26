@@ -1,0 +1,38 @@
+export type {
+	DelegationLink,
+	IssueAgentCredentialInput,
+	IssueDelegationCredentialInput,
+	IssuePermissionCredentialInput,
+	VCIssuer,
+} from "./issuer.js";
+export { createVCIssuer } from "./issuer.js";
+export type {
+	CredentialFormat,
+	CredentialStatus,
+	CredentialSubject,
+	ExtractedPermissions,
+	Proof,
+	VCIssuerConfig,
+	VCJwtPayload,
+	VCVerifierConfig,
+	VerifiableCredential,
+	VerifiablePresentation,
+	VerifiedCredential,
+	VerifiedPresentation,
+} from "./types.js";
+export {
+	CredentialStatusSchema,
+	CredentialSubjectSchema,
+	KAVACH_AGENT_CREDENTIAL,
+	KAVACH_DELEGATION_CREDENTIAL,
+	KAVACH_PERMISSION_CREDENTIAL,
+	ProofSchema,
+	VC_CONTEXT_V1,
+	VC_CONTEXT_V2,
+	VC_TYPE_CREDENTIAL,
+	VC_TYPE_PRESENTATION,
+	VerifiableCredentialSchema,
+	VerifiablePresentationSchema,
+} from "./types.js";
+export type { VCVerifier } from "./verifier.js";
+export { createVCVerifier } from "./verifier.js";

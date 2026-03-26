@@ -1,0 +1,247 @@
+---
+title: Relationship-based access control
+description: Zanzibar-inspired ReBAC engine for hierarchical resources, relationship graphs, and permission inheritance.
+icon: Network
+---
+
+## Why ReBAC
+
+Traditional RBAC assigns roles to users globally or per-org. That works until you need finer-grained questions like "can agent X view this specific document because it belongs to a project in a workspace where X is an editor?" RBAC flattens that into a single role check and loses the context.
+
+ReBAC models authorization as a graph. Subjects (users, agents, teams) connect to objects (orgs, workspaces, projects, documents) through typed relationships. Permission checks walk the graph, following direct relationships and parent-child inheritance. This is the same approach Google uses internally (Zanzibar) and what WorkOS FGA, Ory Keto, and SpiceDB implement.
+
+KavachOS ships a built-in ReBAC engine that works with agents as first-class subjects.
+
+## Quick start
+
+```typescript
+import { createReBACModule } from 'kavachos/auth';
+import { createDatabase } from 'kavachos/db';
+import { createTables } from 'kavachos/db/migrations';
+
+const db = await createDatabase({ provider: 'sqlite', url: 'kavach.db' });
+await createTables(db, 'sqlite');
+
+const rebac = createReBACModule({}, db);
+
+// Build a resource hierarchy
+await rebac.createResource({ id: 'acme', type: 'org' });
+await rebac.createResource({ id: 'eng', type: 'workspace', parentId: 'acme', parentType: 'org' });
+await rebac.createResource({ id: 'api', type: 'project', parentId: 'eng', parentType: 'workspace' });
+await rebac.createResource({ id: 'spec', type: 'document', parentId: 'api', parentType: 'project' });
+
+// Grant a relationship
+await rebac.addRelationship({
+  subjectType: 'user',
+  subjectId: 'alice',
+  relation: 'editor',
+  objectType: 'workspace',
+  objectId: 'eng',
+});
+
+// Check: can Alice view the spec document?
+const result = await rebac.check({
+  subjectType: 'user',
+  subjectId: 'alice',
+  permission: 'viewer',
+  objectType: 'document',
+  objectId: 'spec',
+});
+// result.data.allowed === true (editor on workspace inherits viewer on child documents)
+```
+
+## Resource hierarchy
+
+Resources form a tree. Each resource has a `type` and a globally unique `id`. A resource can optionally point to a parent.
+
+```
+org:acme
+  workspace:eng
+    project:api
+      document:spec
+      document:changelog
+    project:web
+  workspace:design
+```
+
+You register resources with `createResource`. The engine validates that the parent exists before accepting a child.
+
+```typescript
+await rebac.createResource({ id: 'acme', type: 'org' });
+await rebac.createResource({
+  id: 'eng',
+  type: 'workspace',
+  parentId: 'acme',
+  parentType: 'org',
+});
+```
+
+Deleting a resource cascades: all child resources and their relationships are removed.
+
+## Relationships
+
+A relationship is a tuple: `(subjectType, subjectId, relation, objectType, objectId)`. Subjects can be users, agents, teams, or any string type you define.
+
+```typescript
+// Alice is an owner of the org
+await rebac.addRelationship({
+  subjectType: 'user',
+  subjectId: 'alice',
+  relation: 'owner',
+  objectType: 'org',
+  objectId: 'acme',
+});
+
+// An agent has viewer access to a project
+await rebac.addRelationship({
+  subjectType: 'agent',
+  subjectId: 'agent_summarizer',
+  relation: 'viewer',
+  objectType: 'project',
+  objectId: 'api',
+});
+```
+
+## Permission checks
+
+`check` answers "does this subject have this permission on this object?" It returns `{ allowed: boolean, path?: string[] }` where `path` shows the traversal steps when access is granted.
+
+The engine resolves permissions in two ways:
+
+### Implied relations
+
+For each resource type, some relations imply others. The built-in rules:
+
+| Resource type | owner implies | editor implies | member implies |
+|---|---|---|---|
+| org | admin, editor, viewer, member | viewer | viewer |
+| workspace | admin, editor, viewer, member | viewer | viewer |
+| project | admin, editor, viewer, member | viewer | viewer |
+| document | editor, viewer | viewer | - |
+
+So if you're an `editor` on a document, a check for `viewer` succeeds. If you're an `owner`, both `editor` and `viewer` checks succeed.
+
+### Parent inheritance
+
+When a resource type has `inheritFromParent` enabled, the engine walks up the tree. If Alice is a `viewer` on workspace `eng`, she's also a `viewer` on project `api` (a child of `eng`) and document `spec` (a grandchild).
+
+This combines with implied relations. Alice as `editor` on workspace `eng` gets `viewer` access to everything underneath.
+
+## Custom permission rules
+
+Override the defaults by passing `permissionRules` to the config:
+
+```typescript
+const rebac = createReBACModule({
+  permissionRules: {
+    wiki: {
+      implies: {
+        admin: ['editor', 'viewer', 'commenter'],
+        editor: ['viewer', 'commenter'],
+        commenter: ['viewer'],
+      },
+      inheritFromParent: true,
+    },
+    secret: {
+      implies: { owner: ['viewer'] },
+      // no inheritFromParent - secrets don't inherit from parent
+    },
+  },
+}, db);
+```
+
+You can also limit which permissions inherit by passing an array:
+
+```typescript
+permissionRules: {
+  file: {
+    implies: { owner: ['editor', 'viewer'], editor: ['viewer'] },
+    inheritFromParent: ['viewer'], // only viewer inherits, not editor
+  },
+}
+```
+
+## Listing and expansion
+
+### List objects
+
+Find all objects of a type that a subject can access:
+
+```typescript
+const projects = await rebac.listObjects({
+  subjectType: 'user',
+  subjectId: 'alice',
+  permission: 'viewer',
+  objectType: 'project',
+});
+// projects.data = ['api', 'web']
+```
+
+### List subjects
+
+Find all subjects that have a permission on an object:
+
+```typescript
+const editors = await rebac.listSubjects({
+  objectType: 'project',
+  objectId: 'api',
+  permission: 'editor',
+  subjectType: 'user',
+});
+// editors.data = ['alice', 'bob']
+```
+
+### Expand
+
+Get all relationships for an entity (as both subject and object):
+
+```typescript
+const rels = await rebac.expand({ type: 'user', id: 'alice' });
+// rels.data = [{ relation: 'owner', objectType: 'org', objectId: 'acme', ... }, ...]
+```
+
+## Agent integration
+
+Agents are first-class subjects. Use `subjectType: 'agent'` with the agent's ID:
+
+```typescript
+await rebac.addRelationship({
+  subjectType: 'agent',
+  subjectId: agentId,
+  relation: 'viewer',
+  objectType: 'project',
+  objectId: 'api',
+});
+
+const allowed = await rebac.check({
+  subjectType: 'agent',
+  subjectId: agentId,
+  permission: 'viewer',
+  objectType: 'document',
+  objectId: 'spec',
+});
+```
+
+This works with the existing KavachOS permission system. Use ReBAC for resource-level authorization and the existing `kavach_permissions` table for tool/action-level authorization.
+
+## Depth limiting
+
+The `maxDepth` config caps how many parent hops the engine will traverse. Default is 10. Set it lower if your hierarchy is shallow and you want faster checks:
+
+```typescript
+const rebac = createReBACModule({ maxDepth: 5 }, db);
+```
+
+## Comparison with alternatives
+
+| Feature | KavachOS ReBAC | Google Zanzibar | SpiceDB | WorkOS FGA |
+|---|---|---|---|---|
+| Relationship tuples | Yes | Yes | Yes | Yes |
+| Resource hierarchy | Built-in | Userland | Userland | Userland |
+| Permission derivation | Config-driven | Schema DSL | Schema DSL | JSON model |
+| Agent-first | Yes | No | No | No |
+| Self-hosted | Yes | No | Yes | No |
+| Depth limiting | Configurable | Internal | Internal | Internal |
+| Database | SQLite/Postgres/MySQL | Spanner | CockroachDB/Postgres | Managed |
+
+KavachOS ReBAC is opinionated toward the common hierarchy pattern (org > workspace > project > resource) with sensible defaults. Zanzibar and SpiceDB are more general but require you to write a schema DSL. WorkOS FGA is SaaS-only.

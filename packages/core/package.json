@@ -33,6 +33,10 @@
     "./a2a": {
       "types": "./dist/a2a/index.d.ts",
       "import": "./dist/a2a/index.js"
+    },
+    "./vc": {
+      "types": "./dist/vc/index.d.ts",
+      "import": "./dist/vc/index.js"
     }
   },
   "files": [

@@ -1,0 +1,51 @@
+{
+  "name": "@kavachos/prisma",
+  "version": "0.0.4",
+  "description": "Prisma database adapter for KavachOS - use PrismaClient as your KavachOS database backend",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src/schema.prisma"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "clean": "rm -rf dist .turbo"
+  },
+  "keywords": [
+    "kavachos",
+    "prisma",
+    "auth",
+    "agent",
+    "database",
+    "adapter"
+  ],
+  "author": "KavachOS <hello@kavachos.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kavachos/kavachos.git",
+    "directory": "packages/adapters/prisma"
+  },
+  "peerDependencies": {
+    "kavachos": "workspace:*",
+    "@prisma/client": ">=5.0.0"
+  },
+  "devDependencies": {
+    "kavachos": "workspace:*",
+    "@types/node": "^22.0.0",
+    "tsup": "^8.4.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.0.0"
+  }
+}

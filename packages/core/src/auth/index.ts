@@ -87,6 +87,27 @@ export type {
 	EphemeralSessionValidateResult,
 } from "./ephemeral-sessions.js";
 export { createEphemeralSessionModule } from "./ephemeral-sessions.js";
+// SSE event streaming
+export type {
+	EventStreamConfig,
+	EventStreamModule,
+	EventType,
+	StreamEvent,
+} from "./event-stream.js";
+export { createEventStreamModule, EVENT_TYPES } from "./event-stream.js";
+// Agent identity federation (cross-instance auth)
+export type {
+	FederatedAgent,
+	FederationConfig,
+	FederationModule,
+	FederationToken,
+	FederationWellKnown,
+	InstanceIdentity,
+	IssueFederationTokenInput,
+	TrustedInstance,
+	TrustLevel,
+} from "./federation.js";
+export { createFederationModule } from "./federation.js";
 // GDPR module (right to erasure + right to portability)
 export type { DeleteOptions, DeleteResult, GdprModule, UserDataExport } from "./gdpr.js";
 export { createGdprModule } from "./gdpr.js";
@@ -205,6 +226,20 @@ export { withRateLimit } from "./rate-limit-middleware.js";
 // Rate limiting for auth endpoints
 export type { RateLimitConfig, RateLimiter, RateLimitResult } from "./rate-limiter.js";
 export { createRateLimiter } from "./rate-limiter.js";
+// Relationship-Based Access Control (ReBAC) — Zanzibar-inspired
+export type {
+	CheckParams,
+	CheckResult,
+	ExpandParams,
+	ListObjectsParams,
+	ListSubjectsParams,
+	PermissionRuleSet,
+	ReBACConfig,
+	ReBACModule,
+	Relationship,
+	ResourceNode,
+} from "./rebac.js";
+export { createReBACModule } from "./rebac.js";
 // SCIM 2.0 directory sync (RFC 7644)
 export type { ScimConfig, ScimGroup, ScimModule, ScimUser } from "./scim.js";
 export { createScimModule } from "./scim.js";
