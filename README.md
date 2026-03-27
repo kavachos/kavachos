@@ -107,7 +107,7 @@ Spec-compliant authorization server for the Model Context Protocol. PKCE S256, R
 
 ### Edge compatible
 
-Runs on Cloudflare Workers, Deno, and Bun with no code changes. Use Cloudflare D1 as the database — just pass the binding instead of a connection URL.
+Runs on Cloudflare Workers, Deno, and Bun with no code changes. Use Cloudflare D1 as the database. Just pass the binding instead of a connection URL.
 
 ### OIDC Provider
 

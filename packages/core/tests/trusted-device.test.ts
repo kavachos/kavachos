@@ -92,20 +92,20 @@ describe("createTrustedDeviceModule", () => {
 	// ── generateFingerprint ────────────────────────────────────────────────
 
 	describe("generateFingerprint()", () => {
-		it("returns a hex string", () => {
-			const fp = mod.generateFingerprint(makeRequest());
+		it("returns a hex string", async () => {
+			const fp = await mod.generateFingerprint(makeRequest());
 			expect(fp).toMatch(/^[0-9a-f]{64}$/);
 		});
 
-		it("returns the same fingerprint for identical headers", () => {
+		it("returns the same fingerprint for identical headers", async () => {
 			const req1 = makeRequest("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0)");
 			const req2 = makeRequest("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0)");
-			expect(mod.generateFingerprint(req1)).toBe(mod.generateFingerprint(req2));
+			expect(await mod.generateFingerprint(req1)).toBe(await mod.generateFingerprint(req2));
 		});
 
-		it("returns different fingerprints for different user-agents", () => {
-			const mac = mod.generateFingerprint(makeRequest("Mozilla/5.0 (Macintosh)"));
-			const windows = mod.generateFingerprint(makeRequest("Mozilla/5.0 (Windows NT 10.0)"));
+		it("returns different fingerprints for different user-agents", async () => {
+			const mac = await mod.generateFingerprint(makeRequest("Mozilla/5.0 (Macintosh)"));
+			const windows = await mod.generateFingerprint(makeRequest("Mozilla/5.0 (Windows NT 10.0)"));
 			expect(mac).not.toBe(windows);
 		});
 

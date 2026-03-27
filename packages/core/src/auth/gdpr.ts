@@ -118,8 +118,8 @@ async function anonymizedUserId(userId: string): Promise<string> {
 	return `[deleted-${await stableHash(userId)}]`;
 }
 
-function anonymizedEmail(userId: string): string {
-	return `deleted-${stableHash(userId)}@anon.invalid`;
+async function anonymizedEmail(userId: string): Promise<string> {
+	return `deleted-${await stableHash(userId)}@anon.invalid`;
 }
 
 // ---------------------------------------------------------------------------
@@ -438,7 +438,7 @@ export function createGdprModule(db: Database): GdprModule {
 	}
 
 	async function anonymizeUser(userId: string): Promise<void> {
-		const anonEmail = anonymizedEmail(userId);
+		const anonEmail = await anonymizedEmail(userId);
 
 		await db
 			.update(users)
