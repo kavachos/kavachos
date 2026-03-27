@@ -278,11 +278,13 @@ describe("VC verification – JWT format", () => {
 		expect(issueResult.success).toBe(true);
 		if (!issueResult.success) return;
 
-		// Tamper with the JWT by changing a character in the signature
+		// Tamper with the JWT by flipping bits in the middle of the signature
 		const jwt = issueResult.data.jwt as string;
 		const parts = jwt.split(".");
 		const sig = parts[2] as string;
-		const tampered = `${parts[0]}.${parts[1]}.${sig.slice(0, -1)}${sig.endsWith("A") ? "B" : "A"}`;
+		const mid = Math.floor(sig.length / 2);
+		const flipped = sig[mid] === "X" ? "Y" : "X";
+		const tampered = `${parts[0]}.${parts[1]}.${sig.slice(0, mid)}${flipped}${sig.slice(mid + 1)}`;
 
 		const verifier = createVCVerifier();
 		const verifyResult = await verifier.verifyCredential(tampered, keyPair.publicKeyJwk);
