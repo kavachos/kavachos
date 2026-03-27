@@ -1,4 +1,4 @@
-import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
+import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core";
 import * as schema from "./schema.js";
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -41,7 +41,7 @@ interface D1ExecResult {
  * defined in schema.ts. Full multi-dialect Drizzle schema support is
  * planned for v0.2.0.
  */
-export type Database = BetterSQLite3Database<typeof schema>;
+export type Database = BaseSQLiteDatabase<"sync" | "async", Record<string, unknown>, typeof schema>;
 
 /**
  * A wider union used internally when the provider is postgres or mysql.
@@ -109,7 +109,7 @@ export async function createDatabase(config: DatabaseConfig): Promise<Database> 
 		const sqlite = new BetterSqlite3(config.url);
 		sqlite.pragma("journal_mode = WAL");
 		sqlite.pragma("foreign_keys = ON");
-		return drizzleSqlite(sqlite, { schema });
+		return drizzleSqlite(sqlite, { schema }) as unknown as Database;
 	}
 
 	if (config.provider === "postgres") {
@@ -181,5 +181,5 @@ export function createDatabaseSync(config: DatabaseConfig): Database {
 	const sqlite = new BetterSqlite3Mod(config.url);
 	sqlite.pragma("journal_mode = WAL");
 	sqlite.pragma("foreign_keys = ON");
-	return drizzleSqliteMod(sqlite, { schema });
+	return drizzleSqliteMod(sqlite, { schema }) as unknown as Database;
 }

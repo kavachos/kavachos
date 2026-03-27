@@ -17,5 +17,6 @@ export default defineConfig({
 	sourcemap: true,
 	splitting: true,
 	treeshake: true,
-	target: "node22",
+	target: "es2022",
+	external: ["better-sqlite3", "pg", "mysql2", "mysql2/promise", "@libsql/client"],
 });
