@@ -1,6 +1,4 @@
-import BetterSqlite3 from "better-sqlite3";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
-import { drizzle as drizzleSqlite } from "drizzle-orm/better-sqlite3";
 import * as schema from "./schema.js";
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -98,6 +96,16 @@ export type DatabaseConfig =
  */
 export async function createDatabase(config: DatabaseConfig): Promise<Database> {
 	if (config.provider === "sqlite") {
+		const BetterSqlite3 = (
+			await import("better-sqlite3").catch(() => {
+				throw new Error(
+					'KavachOS: provider "sqlite" requires the "better-sqlite3" package. ' +
+						"Install it with: npm install better-sqlite3",
+				);
+			})
+		).default;
+		const { drizzle: drizzleSqlite } = await import("drizzle-orm/better-sqlite3");
+
 		const sqlite = new BetterSqlite3(config.url);
 		sqlite.pragma("journal_mode = WAL");
 		sqlite.pragma("foreign_keys = ON");
@@ -162,9 +170,16 @@ export function createDatabaseSync(config: DatabaseConfig): Database {
 				`Use the async createDatabase() for provider "${config.provider}".`,
 		);
 	}
-	// After the provider check, TypeScript narrows config to the sqlite variant (url: string).
-	const sqlite = new BetterSqlite3(config.url);
+	// Sync path: use createRequire for Node.js-only sync loading.
+	// This function is deprecated; prefer the async createDatabase().
+	// biome-ignore lint/suspicious/noExplicitAny: sync require bridge for deprecated API
+	const { createRequire } = require("node:module") as any;
+	const req = createRequire(import.meta.url);
+	const BetterSqlite3Mod = req("better-sqlite3");
+	const { drizzle: drizzleSqliteMod } = req("drizzle-orm/better-sqlite3");
+
+	const sqlite = new BetterSqlite3Mod(config.url);
 	sqlite.pragma("journal_mode = WAL");
 	sqlite.pragma("foreign_keys = ON");
-	return drizzleSqlite(sqlite, { schema });
+	return drizzleSqliteMod(sqlite, { schema });
 }
