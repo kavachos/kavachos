@@ -251,3 +251,51 @@ describe("UsernameAuthModule.handleRequest", () => {
 		expect(res).toBeNull();
 	});
 });
+
+describe("UsernameAuthModule.signIn — forcePasswordReset", () => {
+	let db: Database;
+	let mod: UsernameAuthModule;
+	let userId: string;
+
+	beforeEach(async () => {
+		db = await createTestDb();
+		mod = makeModule(db);
+		const result = await mod.signUp({ username: "resetuser", password: "CorrectPass1!" });
+		userId = result.user.id;
+	});
+
+	it("throws 'Password reset required' when forcePasswordReset=1", async () => {
+		const { eq } = await import("drizzle-orm");
+		const { users } = await import("../src/db/schema.js");
+		await db.update(users).set({ forcePasswordReset: 1 }).where(eq(users.id, userId));
+
+		await expect(mod.signIn({ username: "resetuser", password: "CorrectPass1!" })).rejects.toThrow(
+			"Password reset required",
+		);
+	});
+
+	it("signs in normally when forcePasswordReset=0", async () => {
+		const { eq } = await import("drizzle-orm");
+		const { users } = await import("../src/db/schema.js");
+		await db.update(users).set({ forcePasswordReset: 0 }).where(eq(users.id, userId));
+
+		const result = await mod.signIn({ username: "resetuser", password: "CorrectPass1!" });
+		expect(result.session.token).toBeTruthy();
+	});
+
+	it("handleRequest returns 403 with PASSWORD_RESET_REQUIRED when forcePasswordReset=1", async () => {
+		const { eq } = await import("drizzle-orm");
+		const { users } = await import("../src/db/schema.js");
+		await db.update(users).set({ forcePasswordReset: 1 }).where(eq(users.id, userId));
+
+		const req = new Request("https://app.example.com/auth/username/sign-in", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ username: "resetuser", password: "CorrectPass1!" }),
+		});
+		const res = await mod.handleRequest(req);
+		expect(res?.status).toBe(403);
+		const body = await res?.json();
+		expect(body.error.code).toBe("PASSWORD_RESET_REQUIRED");
+	});
+});

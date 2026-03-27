@@ -78,6 +78,9 @@ export type { EmailOtpConfig, EmailOtpModule } from "./email-otp.js";
 export { createEmailOtpModule } from "./email-otp.js";
 // Email OTP plugin (KavachPlugin wrapper)
 export { emailOtp } from "./email-otp-plugin.js";
+// Email verification
+export type { EmailVerificationConfig, EmailVerificationModule } from "./email-verification.js";
+export { createEmailVerificationModule } from "./email-verification.js";
 // Ephemeral sessions (short-lived agent credentials for computer-use agents)
 export type {
 	CreateEphemeralSessionInput,

@@ -4,6 +4,7 @@ import type { AdminConfig } from "./auth/admin.js";
 import type { ApiKeyManagerConfig } from "./auth/api-key-manager.js";
 import type { CaptchaConfig } from "./auth/captcha.js";
 import type { EmailOtpConfig } from "./auth/email-otp.js";
+import type { EmailVerificationConfig } from "./auth/email-verification.js";
 import type { MagicLinkConfig } from "./auth/magic-link.js";
 import type { OrgConfig } from "./auth/organization.js";
 import type { PasskeyConfig } from "./auth/passkey.js";
@@ -20,6 +21,7 @@ import type { KavachHooks } from "./hooks/lifecycle.js";
 import type { McpConfig } from "./mcp/types.js";
 import type { KavachPlugin } from "./plugin/types.js";
 import type { RedirectConfig } from "./redirect/chain.js";
+import type { SessionFreshnessConfig } from "./session/freshness.js";
 import type { SessionConfig } from "./session/session.js";
 
 export type { DatabaseConfig };
@@ -95,6 +97,16 @@ export interface KavachConfig {
 	 * configured so that sessions can be issued on successful verification.
 	 */
 	emailOtp?: EmailOtpConfig;
+
+	/**
+	 * Email verification flow.
+	 *
+	 * When provided, `kavach.emailVerification` is available with
+	 * `sendVerification`, `verify`, `isVerified`, and `handleRequest`.
+	 * The caller provides a `sendVerificationEmail` callback to deliver the
+	 * link.
+	 */
+	emailVerification?: EmailVerificationConfig;
 
 	/**
 	 * TOTP two-factor authentication.
@@ -198,6 +210,14 @@ export interface KavachConfig {
 	 * with support for intermediate steps (onboarding, email verification, etc.).
 	 */
 	redirects?: RedirectConfig;
+
+	/**
+	 * Session freshness configuration.
+	 *
+	 * Controls the maximum session age (in seconds) for sensitive operations.
+	 * When omitted, defaults to 300 seconds (5 minutes).
+	 */
+	sessionFreshness?: SessionFreshnessConfig;
 }
 
 /**

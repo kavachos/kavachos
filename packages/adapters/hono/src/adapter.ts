@@ -802,6 +802,82 @@ export function kavachHono(kavach: Kavach, options?: { mcp?: McpAuthModule }): H
 		}
 	});
 
+	// ── Password Reset ──────────────────────────────────────────────
+
+	// POST /auth/forgot-password - request a reset link
+	app.post("/auth/forgot-password", async (c) => {
+		if (!kavach.passwordReset) {
+			const res = notFound("Password reset not configured");
+			return c.newResponse(res.body, res);
+		}
+		try {
+			const response = await kavach.passwordReset.handleRequest(c.req.raw);
+			if (response) return c.newResponse(response.body, response);
+			const res = notFound("Not found");
+			return c.newResponse(res.body, res);
+		} catch (err) {
+			const message = err instanceof Error ? err.message : "Password reset request failed";
+			const res = internalError(message);
+			return c.newResponse(res.body, res);
+		}
+	});
+
+	// POST /auth/reset-password - confirm a reset with token + new password
+	app.post("/auth/reset-password", async (c) => {
+		if (!kavach.passwordReset) {
+			const res = notFound("Password reset not configured");
+			return c.newResponse(res.body, res);
+		}
+		try {
+			const response = await kavach.passwordReset.handleRequest(c.req.raw);
+			if (response) return c.newResponse(response.body, response);
+			const res = notFound("Not found");
+			return c.newResponse(res.body, res);
+		} catch (err) {
+			const message = err instanceof Error ? err.message : "Password reset failed";
+			const res = internalError(message);
+			return c.newResponse(res.body, res);
+		}
+	});
+
+	// ── Email Verification ──────────────────────────────────────────
+
+	// POST /auth/verify-email/send - send a verification email
+	app.post("/auth/verify-email/send", async (c) => {
+		if (!kavach.emailVerification) {
+			const res = notFound("Email verification not configured");
+			return c.newResponse(res.body, res);
+		}
+		try {
+			const response = await kavach.emailVerification.handleRequest(c.req.raw);
+			if (response) return c.newResponse(response.body, response);
+			const res = notFound("Not found");
+			return c.newResponse(res.body, res);
+		} catch (err) {
+			const message = err instanceof Error ? err.message : "Email verification send failed";
+			const res = internalError(message);
+			return c.newResponse(res.body, res);
+		}
+	});
+
+	// POST /auth/verify-email/confirm - confirm with token
+	app.post("/auth/verify-email/confirm", async (c) => {
+		if (!kavach.emailVerification) {
+			const res = notFound("Email verification not configured");
+			return c.newResponse(res.body, res);
+		}
+		try {
+			const response = await kavach.emailVerification.handleRequest(c.req.raw);
+			if (response) return c.newResponse(response.body, response);
+			const res = notFound("Not found");
+			return c.newResponse(res.body, res);
+		} catch (err) {
+			const message = err instanceof Error ? err.message : "Email verification confirm failed";
+			const res = internalError(message);
+			return c.newResponse(res.body, res);
+		}
+	});
+
 	// ── Plugin Endpoints ────────────────────────────────────────────
 
 	for (const endpoint of kavach.plugins.getEndpoints()) {

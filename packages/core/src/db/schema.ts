@@ -16,6 +16,7 @@ export const users = sqliteTable("kavach_users", {
 	banReason: text("ban_reason"),
 	banExpiresAt: integer("ban_expires_at", { mode: "timestamp" }),
 	forcePasswordReset: integer("force_password_reset").notNull().default(0),
+	emailVerified: integer("email_verified").notNull().default(0),
 	// Stripe integration fields (populated by kavach-stripe plugin)
 	stripeCustomerId: text("stripe_customer_id").unique(),
 	stripeSubscriptionId: text("stripe_subscription_id"),

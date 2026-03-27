@@ -49,6 +49,7 @@ function buildStatements(provider: DatabaseConfig["provider"]): string[] {
   ban_reason           TEXT,
   ban_expires_at       ${tsNull},
   force_password_reset         ${bool}     NOT NULL DEFAULT ${isPostgres ? "FALSE" : "0"},
+  email_verified               ${bool}     NOT NULL DEFAULT ${isPostgres ? "FALSE" : "0"},
   stripe_customer_id           TEXT        UNIQUE,
   stripe_subscription_id       TEXT,
   stripe_subscription_status   TEXT,

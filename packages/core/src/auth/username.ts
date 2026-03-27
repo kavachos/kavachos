@@ -204,6 +204,15 @@ export function createUsernameAuthModule(
 		const valid = await verifyPassword(account.passwordHash, input.password);
 		if (!valid) throw new Error("Invalid username or password");
 
+		const userRows = await db
+			.select({ forcePasswordReset: users.forcePasswordReset })
+			.from(users)
+			.where(eq(users.id, account.userId));
+
+		if (userRows[0]?.forcePasswordReset === 1) {
+			throw new Error("Password reset required");
+		}
+
 		const { token, session } = await sessionManager.create(account.userId);
 
 		return {
@@ -313,7 +322,18 @@ export function createUsernameAuthModule(
 			try {
 				const result = await signIn({ username: b.username, password: b.password });
 				return jsonResponse(result);
-			} catch {
+			} catch (err) {
+				if (err instanceof Error && err.message === "Password reset required") {
+					return jsonResponse(
+						{
+							error: {
+								code: "PASSWORD_RESET_REQUIRED",
+								message: "You must reset your password before signing in",
+							},
+						},
+						403,
+					);
+				}
 				return jsonResponse({ error: "Invalid username or password" }, 401);
 			}
 		}

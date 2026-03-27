@@ -11,6 +11,8 @@ import type { CaptchaModule } from "./auth/captcha.js";
 import { createCaptchaModule } from "./auth/captcha.js";
 import type { EmailOtpModule } from "./auth/email-otp.js";
 import { createEmailOtpModule } from "./auth/email-otp.js";
+import type { EmailVerificationModule } from "./auth/email-verification.js";
+import { createEmailVerificationModule } from "./auth/email-verification.js";
 import type { MagicLinkModule } from "./auth/magic-link.js";
 import { createMagicLinkModule } from "./auth/magic-link.js";
 import { createOneTimeTokenModule } from "./auth/one-time-token.js";
@@ -45,6 +47,8 @@ import type { EndpointContext } from "./plugin/types.js";
 import { createPolicyModule } from "./policies/budget.js";
 import type { RedirectChainManager } from "./redirect/chain.js";
 import { createRedirectChain } from "./redirect/chain.js";
+import type { SessionFreshnessModule } from "./session/freshness.js";
+import { createSessionFreshnessModule } from "./session/freshness.js";
 import type { SessionManager } from "./session/session.js";
 import { createSessionManager } from "./session/session.js";
 import { createTenantModule } from "./tenant/tenant.js";
@@ -212,6 +216,11 @@ export async function createKavach(config: KavachConfig) {
 		config.passwordReset && sessionManager
 			? createPasswordResetModule(config.passwordReset, db, sessionManager, oneTimeTokenModule)
 			: null;
+
+	// Email verification — only created when caller provides config.emailVerification.
+	const emailVerificationModule: EmailVerificationModule | null = config.emailVerification
+		? createEmailVerificationModule(config.emailVerification, db, oneTimeTokenModule)
+		: null;
 
 	// Phone auth — only created when the caller provides config.phone.
 	const phoneModule: PhoneAuthModule | null =
@@ -740,12 +749,46 @@ export async function createKavach(config: KavachConfig) {
 		 */
 		passwordReset: passwordResetModule,
 		/**
+		 * Email address verification.
+		 *
+		 * Null when `emailVerification` config was not provided.
+		 *
+		 * @example
+		 * ```typescript
+		 * // Send a verification email after sign-up
+		 * await kavach.emailVerification?.sendVerification(userId, email);
+		 *
+		 * // Confirm from the link in the email
+		 * const result = await kavach.emailVerification?.verify(token);
+		 *
+		 * // Check status
+		 * const verified = await kavach.emailVerification?.isVerified(userId);
+		 * ```
+		 */
+		emailVerification: emailVerificationModule,
+		/**
 		 * One-time tokens (email verify, password reset, invitations, custom).
 		 *
 		 * Always available. Used internally by password reset but exposed for
 		 * custom flows (email verification, invitation links, etc.).
 		 */
 		oneTimeTokens: oneTimeTokenModule,
+		/**
+		 * Session freshness enforcement for sensitive operations.
+		 *
+		 * Use as middleware before password changes, passkey registration,
+		 * billing updates, or any action that requires a recently-authenticated
+		 * session rather than an auto-refreshed one.
+		 *
+		 * @example
+		 * ```typescript
+		 * const stale = kavach.sessionFreshness.guard(session);
+		 * if (stale) return stale; // 403 SESSION_NOT_FRESH
+		 * ```
+		 */
+		sessionFreshness: createSessionFreshnessModule(
+			config.sessionFreshness,
+		) as SessionFreshnessModule,
 		/**
 		 * Phone number (SMS OTP) authentication.
 		 *

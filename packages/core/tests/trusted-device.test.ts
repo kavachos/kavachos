@@ -109,10 +109,10 @@ describe("createTrustedDeviceModule", () => {
 			expect(mac).not.toBe(windows);
 		});
 
-		it("is HMAC-protected (same headers, different secret → different fingerprint)", () => {
+		it("is HMAC-protected (same headers, different secret → different fingerprint)", async () => {
 			const req = makeRequest();
 			const mod2 = createTrustedDeviceModule({ secret: "different-secret" }, db);
-			expect(mod.generateFingerprint(req)).not.toBe(mod2.generateFingerprint(req));
+			expect(await mod.generateFingerprint(req)).not.toBe(await mod2.generateFingerprint(req));
 		});
 	});
 
@@ -120,13 +120,13 @@ describe("createTrustedDeviceModule", () => {
 
 	describe("trustDevice() / isTrusted()", () => {
 		it("marks a device as trusted and verifies it", async () => {
-			const fp = mod.generateFingerprint(makeRequest());
+			const fp = await mod.generateFingerprint(makeRequest());
 			await mod.trustDevice(USER_A, fp);
 			expect(await mod.isTrusted(USER_A, fp)).toBe(true);
 		});
 
 		it("returns a non-empty trust token (record id)", async () => {
-			const fp = mod.generateFingerprint(makeRequest());
+			const fp = await mod.generateFingerprint(makeRequest());
 			const token = await mod.trustDevice(USER_A, fp);
 			expect(typeof token).toBe("string");
 			expect(token.length).toBeGreaterThan(0);
@@ -138,13 +138,13 @@ describe("createTrustedDeviceModule", () => {
 		});
 
 		it("trust is user-scoped — USER_B cannot use USER_A's fingerprint", async () => {
-			const fp = mod.generateFingerprint(makeRequest());
+			const fp = await mod.generateFingerprint(makeRequest());
 			await mod.trustDevice(USER_A, fp);
 			expect(await mod.isTrusted(USER_B, fp)).toBe(false);
 		});
 
 		it("re-trusting an existing fingerprint refreshes the record (no duplicates)", async () => {
-			const fp = mod.generateFingerprint(makeRequest());
+			const fp = await mod.generateFingerprint(makeRequest());
 			const token1 = await mod.trustDevice(USER_A, fp);
 			const token2 = await mod.trustDevice(USER_A, fp);
 
@@ -161,7 +161,7 @@ describe("createTrustedDeviceModule", () => {
 		it("expired trust is rejected by isTrusted", async () => {
 			// Use a very short trust window
 			const shortMod = makeModule(db, { trustDurationSeconds: 1 });
-			const fp = shortMod.generateFingerprint(makeRequest());
+			const fp = await shortMod.generateFingerprint(makeRequest());
 			await shortMod.trustDevice(USER_A, fp);
 
 			// Advance time by 2 seconds
@@ -175,7 +175,7 @@ describe("createTrustedDeviceModule", () => {
 
 		it("expired devices are excluded from listDevices", async () => {
 			const shortMod = makeModule(db, { trustDurationSeconds: 1 });
-			const fp = shortMod.generateFingerprint(makeRequest());
+			const fp = await shortMod.generateFingerprint(makeRequest());
 			await shortMod.trustDevice(USER_A, fp);
 
 			vi.setSystemTime(Date.now() + 2000);
@@ -191,7 +191,7 @@ describe("createTrustedDeviceModule", () => {
 
 	describe("revokeDevice()", () => {
 		it("revokes trust for a specific device", async () => {
-			const fp = mod.generateFingerprint(makeRequest());
+			const fp = await mod.generateFingerprint(makeRequest());
 			await mod.trustDevice(USER_A, fp);
 
 			await mod.revokeDevice(USER_A, fp);
@@ -200,8 +200,8 @@ describe("createTrustedDeviceModule", () => {
 		});
 
 		it("only revokes the target device, not others", async () => {
-			const fp1 = mod.generateFingerprint(makeRequest("Agent/1.0"));
-			const fp2 = mod.generateFingerprint(makeRequest("Agent/2.0"));
+			const fp1 = await mod.generateFingerprint(makeRequest("Agent/1.0"));
+			const fp2 = await mod.generateFingerprint(makeRequest("Agent/2.0"));
 
 			await mod.trustDevice(USER_A, fp1);
 			await mod.trustDevice(USER_A, fp2);
@@ -217,8 +217,8 @@ describe("createTrustedDeviceModule", () => {
 
 	describe("revokeAllDevices()", () => {
 		it("revokes all devices for a user", async () => {
-			const fp1 = mod.generateFingerprint(makeRequest("Agent/1.0"));
-			const fp2 = mod.generateFingerprint(makeRequest("Agent/2.0"));
+			const fp1 = await mod.generateFingerprint(makeRequest("Agent/1.0"));
+			const fp2 = await mod.generateFingerprint(makeRequest("Agent/2.0"));
 
 			await mod.trustDevice(USER_A, fp1);
 			await mod.trustDevice(USER_A, fp2);
@@ -230,7 +230,7 @@ describe("createTrustedDeviceModule", () => {
 		});
 
 		it("does not affect devices belonging to other users", async () => {
-			const fp = mod.generateFingerprint(makeRequest());
+			const fp = await mod.generateFingerprint(makeRequest());
 
 			await mod.trustDevice(USER_A, fp);
 			await mod.trustDevice(USER_B, fp);
@@ -248,10 +248,10 @@ describe("createTrustedDeviceModule", () => {
 		it("evicts the oldest device when the limit is reached", async () => {
 			const limitMod = makeModule(db, { maxDevices: 3 });
 
-			const fp1 = limitMod.generateFingerprint(makeRequest("Agent/1.0"));
-			const fp2 = limitMod.generateFingerprint(makeRequest("Agent/2.0"));
-			const fp3 = limitMod.generateFingerprint(makeRequest("Agent/3.0"));
-			const fp4 = limitMod.generateFingerprint(makeRequest("Agent/4.0"));
+			const fp1 = await limitMod.generateFingerprint(makeRequest("Agent/1.0"));
+			const fp2 = await limitMod.generateFingerprint(makeRequest("Agent/2.0"));
+			const fp3 = await limitMod.generateFingerprint(makeRequest("Agent/3.0"));
+			const fp4 = await limitMod.generateFingerprint(makeRequest("Agent/4.0"));
 
 			await limitMod.trustDevice(USER_A, fp1);
 			await limitMod.trustDevice(USER_A, fp2);
@@ -274,8 +274,8 @@ describe("createTrustedDeviceModule", () => {
 
 	describe("listDevices()", () => {
 		it("lists all active trusted devices with metadata", async () => {
-			const fp1 = mod.generateFingerprint(makeRequest("Agent/1.0"));
-			const fp2 = mod.generateFingerprint(makeRequest("Agent/2.0"));
+			const fp1 = await mod.generateFingerprint(makeRequest("Agent/1.0"));
+			const fp2 = await mod.generateFingerprint(makeRequest("Agent/2.0"));
 
 			await mod.trustDevice(USER_A, fp1);
 			await mod.trustDevice(USER_A, fp2);
