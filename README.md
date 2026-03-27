@@ -53,13 +53,41 @@ const result = await kavach.authorize(agent.id, {
 // { allowed: true, auditId: 'aud_...' }
 ```
 
+**Cloudflare Workers with D1:**
+
+```typescript
+import { createKavach } from 'kavachos';
+import { Hono } from 'hono';
+
+type Env = { KAVACH_DB: D1Database };
+
+const app = new Hono<{ Bindings: Env }>();
+
+app.get('/health', async (c) => {
+  const kavach = await createKavach({
+    database: { provider: 'd1', binding: c.env.KAVACH_DB },
+  });
+
+  const agent = await kavach.agent.create({
+    ownerId: 'user-1',
+    name: 'my-agent',
+    type: 'autonomous',
+    permissions: [{ resource: 'mcp:github:*', actions: ['read'] }],
+  });
+
+  return c.json({ agent });
+});
+
+export default app;
+```
+
 ---
 
 ## What's included
 
-### Human auth (12 methods)
+### Human auth (14 methods)
 
-Email + password, magic link, email OTP, phone SMS, passkey/WebAuthn, TOTP 2FA, anonymous, Google One-tap, Sign In With Ethereum, device authorization, username + password, captcha (reCAPTCHA/hCaptcha/Turnstile).
+Email + password, magic link, email OTP, phone SMS, passkey/WebAuthn, TOTP 2FA, anonymous, Google One-tap, Sign In With Ethereum, device authorization, username + password, captcha (reCAPTCHA/hCaptcha/Turnstile), password reset, session freshness enforcement.
 
 ### OAuth (27+ providers)
 
@@ -76,6 +104,10 @@ Organizations + RBAC, SAML 2.0 + OIDC SSO, admin (ban/impersonate), API key mana
 ### MCP OAuth 2.1
 
 Spec-compliant authorization server for the Model Context Protocol. PKCE S256, RFC 9728/8707/8414/7591.
+
+### Edge compatible
+
+Runs on Cloudflare Workers, Deno, and Bun with no code changes. Use Cloudflare D1 as the database — just pass the binding instead of a connection URL.
 
 ### OIDC Provider
 
@@ -172,7 +204,9 @@ import {
 const kavach = createKavach({
   database: { provider: 'postgres', url: process.env.DATABASE_URL },
   plugins: [
-    emailPassword(),
+    emailPassword({
+      passwordReset: { sendResetEmail: async (email, url) => { /* your email sender */ } },
+    }),
     magicLink({ sendMagicLink: async (email, url) => { /* your email sender */ } }),
     passkey(),
     totp(),
@@ -192,6 +226,8 @@ const kavach = createKavach({
 
 - Rate limiting (per-agent and per-IP)
 - HIBP password breach checking (k-anonymity)
+- Password reset with signed, expiring tokens
+- Session freshness enforcement (re-authenticate before sensitive actions)
 - Trusted device windows (skip 2FA for 30 days)
 - CSRF protection (double-submit cookie)
 - Email enumeration prevention

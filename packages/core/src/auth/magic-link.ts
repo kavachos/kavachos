@@ -25,8 +25,8 @@
  * ```
  */
 
-import { randomBytes, randomUUID } from "node:crypto";
 import { and, eq, gt } from "drizzle-orm";
+import { generateId, randomBytesHex } from "../crypto/web-crypto.js";
 import type { Database } from "../db/database.js";
 import { magicLinks, users } from "../db/schema.js";
 import type { SessionManager } from "../session/session.js";
@@ -99,7 +99,7 @@ export function createMagicLinkModule(
 
 		if (existing[0]) return { id: existing[0].id, email: existing[0].email };
 
-		const id = randomUUID();
+		const id = generateId();
 		const now = new Date();
 		await db.insert(users).values({
 			id,
@@ -114,7 +114,7 @@ export function createMagicLinkModule(
 	// ── public API ───────────────────────────────────────────────────────────
 
 	async function sendLink(email: string): Promise<{ sent: boolean }> {
-		const token = randomBytes(32).toString("hex");
+		const token = randomBytesHex(32);
 		const now = new Date();
 		const expiresAt = new Date(now.getTime() + tokenExpiry * 1000);
 
@@ -122,7 +122,7 @@ export function createMagicLinkModule(
 		await findOrCreateUser(email);
 
 		await db.insert(magicLinks).values({
-			id: randomUUID(),
+			id: generateId(),
 			email,
 			token,
 			expiresAt,

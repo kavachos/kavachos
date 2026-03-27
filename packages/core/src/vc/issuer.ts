@@ -7,8 +7,8 @@
  * a network call back to KavachOS.
  */
 
-import { randomUUID } from "node:crypto";
 import { importJWK, SignJWT } from "jose";
+import { generateId } from "../crypto/web-crypto.js";
 import type { KavachError, Result } from "../mcp/types.js";
 import type {
 	CredentialFormat,
@@ -217,7 +217,7 @@ export function createVCIssuer(config: VCIssuerConfig): VCIssuer {
 	): VerifiableCredential {
 		return {
 			"@context": [VC_CONTEXT_V2],
-			id: `urn:uuid:${randomUUID()}`,
+			id: `urn:uuid:${generateId()}`,
 			type: [VC_TYPE_CREDENTIAL, ...types],
 			issuer: issuerDid,
 			issuanceDate: nowISO(),

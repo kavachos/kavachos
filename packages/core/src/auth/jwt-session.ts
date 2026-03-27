@@ -37,11 +37,11 @@
  * ```
  */
 
-import { createHash, randomBytes } from "node:crypto";
 import { and, eq, gt } from "drizzle-orm";
 import type { JWTPayload, JWTVerifyOptions } from "jose";
 import { importJWK, jwtVerify, SignJWT } from "jose";
 import { z } from "zod";
+import { generateId, randomBytesHex, sha256 } from "../crypto/web-crypto.js";
 import type { Database } from "../db/database.js";
 import { jwtRefreshTokens } from "../db/schema.js";
 import type { KavachError, Result } from "../mcp/types.js";
@@ -159,12 +159,12 @@ function makeError(code: string, message: string, details?: Record<string, unkno
 	return { code, message, ...(details !== undefined ? { details } : {}) };
 }
 
-function hashToken(raw: string): string {
-	return createHash("sha256").update(raw, "utf8").digest("hex");
+async function hashToken(raw: string): Promise<string> {
+	return sha256(raw);
 }
 
 function generateRefreshToken(): string {
-	return randomBytes(REFRESH_TOKEN_BYTES).toString("hex");
+	return randomBytesHex(REFRESH_TOKEN_BYTES);
 }
 
 /**
@@ -290,11 +290,11 @@ export function createJwtSessionModule(config: JwtSessionConfig, db: Database): 
 
 			// Build refresh token and persist hash
 			const rawRefresh = generateRefreshToken();
-			const refreshHash = hashToken(rawRefresh);
+			const refreshHash = await hashToken(rawRefresh);
 			const expiresAt = new Date((now + refreshTtl) * 1000);
 
 			await db.insert(jwtRefreshTokens).values({
-				id: crypto.randomUUID(),
+				id: generateId(),
 				tokenHash: refreshHash,
 				userId: user.id,
 				used: false,
@@ -408,7 +408,7 @@ export function createJwtSessionModule(config: JwtSessionConfig, db: Database): 
 			};
 		}
 
-		const tokenHash = hashToken(refreshToken);
+		const tokenHash = await hashToken(refreshToken);
 		const now = new Date();
 
 		try {
@@ -469,7 +469,7 @@ export function createJwtSessionModule(config: JwtSessionConfig, db: Database): 
 			};
 		}
 
-		const tokenHash = hashToken(refreshToken);
+		const tokenHash = await hashToken(refreshToken);
 
 		try {
 			const rows = await db

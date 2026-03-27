@@ -1,5 +1,5 @@
-import { randomUUID } from "node:crypto";
 import { and, asc, desc, eq, gte, lte, sql } from "drizzle-orm";
+import { generateId } from "../crypto/web-crypto.js";
 import type { Database } from "../db/database.js";
 import { agents, budgetPolicies, costEvents } from "../db/schema.js";
 import type { KavachError, Result } from "../mcp/types.js";
@@ -129,7 +129,7 @@ export function createCostAttributionModule(
 
 	async function recordCost(input: RecordCostInput): Promise<Result<void>> {
 		try {
-			const id = `ce_${randomUUID().replace(/-/g, "")}`;
+			const id = `ce_${generateId().replace(/-/g, "")}`;
 			const now = new Date();
 			const costMicros = Math.round(input.costUsd * 1_000_000);
 

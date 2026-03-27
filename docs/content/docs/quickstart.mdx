@@ -58,6 +58,10 @@ const kavach = createKavach({
 For in-memory storage (useful in tests), pass `url: ':memory:'` instead.
 </Callout>
 
+<Callout type="info">
+Set `requireVerification: false` during development so you can sign in without verifying email. Remove this in production.
+</Callout>
+
 </Step>
 
 <Step>
@@ -258,6 +262,77 @@ console.log(perms);
 // Export the full audit trail
 const csv = await kavach.audit.export({ format: 'csv' });
 ```
+
+## Cloudflare Workers
+
+KavachOS runs on Workers with no changes. Pass a D1 binding as the database and use the Hono adapter.
+
+```typescript
+import { createKavach } from 'kavachos';
+import { Hono } from 'hono';
+
+type Env = { KAVACH_DB: D1Database };
+
+const app = new Hono<{ Bindings: Env }>();
+
+app.get('/health', async (c) => {
+  const kavach = await createKavach({
+    database: { provider: 'd1', binding: c.env.KAVACH_DB },
+  });
+
+  const agent = await kavach.agent.create({
+    ownerId: 'user-1',
+    name: 'my-agent',
+    type: 'autonomous',
+    permissions: [{ resource: 'mcp:github:*', actions: ['read'] }],
+  });
+
+  return c.json({ agent });
+});
+
+export default app;
+```
+
+Bind a D1 database in your `wrangler.toml`:
+
+```toml
+[[d1_databases]]
+binding = "KAVACH_DB"
+database_name = "kavach"
+database_id = "<your-database-id>"
+```
+
+Run `npx wrangler d1 execute kavach --file=./kavach-schema.sql` to apply the schema, or set `skipMigrations: false` to let KavachOS run migrations on first boot.
+
+<Callout type="info">
+`createKavach` is async when using D1. Workers and Deno both support top-level await, so you can also initialize outside the handler if you use a module worker.
+</Callout>
+
+## Troubleshooting
+
+### "Invalid email or password" after sign-up
+
+Sign-in requires email verification by default. Either:
+1. Verify the email using the token from the sign-up response
+2. Set `requireVerification: false` in the `emailPassword()` config
+
+### "FOREIGN KEY constraint failed" when creating agents
+
+You need a user in the `kavach_users` table before creating agents. Sign up via the email auth plugin, or seed a user manually:
+
+```typescript
+kavach.db.insert(users).values({
+  id: 'user-1',
+  email: 'test@example.com',
+  name: 'Test',
+  createdAt: new Date(),
+  updatedAt: new Date(),
+}).run();
+```
+
+### Session not persisting after page reload
+
+The React hooks store sessions in `localStorage`. Make sure your app is wrapped in `<KavachProvider>`. If using SSR (Next.js), wrap the provider in a `"use client"` component.
 
 ## Next steps
 

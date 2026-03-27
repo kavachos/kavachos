@@ -15,8 +15,8 @@
  * - Graph traversal is depth-limited to prevent runaway queries.
  */
 
-import { randomUUID } from "node:crypto";
 import { and, eq, or } from "drizzle-orm";
+import { generateId } from "../crypto/web-crypto.js";
 import type { Database } from "../db/database.js";
 import { rebacRelationships, rebacResources } from "../db/schema.js";
 import type { Result } from "../mcp/types.js";
@@ -439,7 +439,7 @@ export function createReBACModule(config: ReBACConfig, db: Database): ReBACModul
 			);
 		}
 
-		const id = `rel_${randomUUID()}`;
+		const id = `rel_${generateId()}`;
 		const now = new Date();
 		await db.insert(rebacRelationships).values({
 			id,

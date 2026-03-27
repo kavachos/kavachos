@@ -34,9 +34,9 @@
  * ```
  */
 
-import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { createRemoteJWKSet, jwtVerify } from "jose";
+import { generateId } from "../crypto/web-crypto.js";
 import type { Database } from "../db/database.js";
 import { users } from "../db/schema.js";
 import type { SessionManager } from "../session/session.js";
@@ -201,7 +201,7 @@ export function createOneTapModule(
 			throw new OneTapVerifyError(`No account found for ${googleUser.email}`, "USER_NOT_FOUND");
 		}
 
-		const id = randomUUID();
+		const id = generateId();
 		const now = new Date();
 
 		await db.insert(users).values({

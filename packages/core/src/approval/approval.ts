@@ -1,5 +1,5 @@
-import { randomUUID } from "node:crypto";
 import { and, eq, lt } from "drizzle-orm";
+import { generateId } from "../crypto/web-crypto.js";
 import type { Database } from "../db/database.js";
 import { approvalRequests } from "../db/schema.js";
 
@@ -87,7 +87,7 @@ export function createApprovalModule(config: ApprovalConfig, db: Database) {
 		arguments?: Record<string, unknown>;
 	}): Promise<ApprovalRequest> {
 		const now = new Date();
-		const id = `apr_${randomUUID()}`;
+		const id = `apr_${generateId()}`;
 		const expiresAt = new Date(now.getTime() + ttlSeconds * 1000);
 
 		await db.insert(approvalRequests).values({

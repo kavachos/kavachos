@@ -6,8 +6,8 @@
  * using the A2A protocol format.
  */
 
-import { randomUUID } from "node:crypto";
 import * as jose from "jose";
+import { generateId } from "../crypto/web-crypto.js";
 import type { AgentIdentity } from "../types.js";
 import type {
 	A2AAgentCapabilities,
@@ -136,7 +136,7 @@ export async function signAgentCard(options: SignAgentCardOptions): Promise<Resu
 				? await jose.importJWK(privateKey as jose.JWK, algorithm)
 				: privateKey;
 
-		const kid = keyId ?? randomUUID();
+		const kid = keyId ?? generateId();
 
 		const jws = await new jose.CompactSign(payload)
 			.setProtectedHeader({ alg: algorithm, kid })

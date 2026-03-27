@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { generateId } from "../crypto/web-crypto.js";
 import type { McpAuthContext, McpClient, McpClientRegistrationResponse, Result } from "./types.js";
 import { McpClientRegistrationSchema } from "./types.js";
 import { generateSecureToken } from "./utils.js";
@@ -137,7 +137,7 @@ export async function registerClient(
 	}
 
 	// ── Generate credentials ────────────────────────────────────────
-	const clientId = randomUUID();
+	const clientId = generateId();
 	const isPublic = authMethod === "none";
 	const clientSecret = isPublic ? null : generateSecureToken(48);
 

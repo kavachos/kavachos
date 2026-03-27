@@ -1,5 +1,5 @@
-import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
+import { generateId } from "../crypto/web-crypto.js";
 import type { Database } from "../db/database.js";
 import { tenants } from "../db/schema.js";
 
@@ -64,7 +64,7 @@ export function createTenantModule(db: Database) {
 			throw new Error(`Tenant with slug "${input.slug}" already exists.`);
 		}
 
-		const id = `tnt_${randomUUID().replace(/-/g, "")}`;
+		const id = `tnt_${generateId().replace(/-/g, "")}`;
 		const now = new Date();
 		const settings: TenantSettings = input.settings ?? {};
 

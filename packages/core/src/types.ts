@@ -7,17 +7,22 @@ import type { EmailOtpConfig } from "./auth/email-otp.js";
 import type { MagicLinkConfig } from "./auth/magic-link.js";
 import type { OrgConfig } from "./auth/organization.js";
 import type { PasskeyConfig } from "./auth/passkey.js";
+import type { PasswordResetConfig } from "./auth/password-reset.js";
 import type { PhoneAuthConfig } from "./auth/phone.js";
 import type { SsoConfig } from "./auth/sso.js";
 import type { TotpConfig } from "./auth/totp.js";
 import type { AuthAdapter } from "./auth/types.js";
 import type { UsernameAuthConfig } from "./auth/username.js";
 import type { WebhookConfig } from "./auth/webhooks.js";
+import type { DatabaseConfig } from "./db/database.js";
 import type { DidWebConfig } from "./did/types.js";
 import type { KavachHooks } from "./hooks/lifecycle.js";
 import type { McpConfig } from "./mcp/types.js";
 import type { KavachPlugin } from "./plugin/types.js";
+import type { RedirectConfig } from "./redirect/chain.js";
 import type { SessionConfig } from "./session/session.js";
+
+export type { DatabaseConfig };
 
 /**
  * Main configuration for KavachOS
@@ -152,6 +157,16 @@ export interface KavachConfig {
 	username?: UsernameAuthConfig;
 
 	/**
+	 * Password reset (forgot password) flow.
+	 *
+	 * When provided, `kavach.passwordReset` is available with `requestReset`,
+	 * `resetPassword`, and `handleRequest`. Requires `username` and
+	 * `auth.session` to be configured. The caller provides a `sendResetEmail`
+	 * callback to deliver the reset link.
+	 */
+	passwordReset?: PasswordResetConfig;
+
+	/**
 	 * Phone number (SMS OTP) authentication.
 	 *
 	 * When provided, `kavach.phone` is available with `sendCode`, `verifyCode`,
@@ -174,19 +189,15 @@ export interface KavachConfig {
 	 * to. Deliveries are fire-and-forget with exponential backoff retries.
 	 */
 	webhooks?: WebhookConfig[];
-}
 
-export interface DatabaseConfig {
-	/** Database provider */
-	provider: "sqlite" | "postgres" | "mysql";
-	/** Connection URL (sqlite: file path, postgres/mysql: connection string) */
-	url: string;
 	/**
-	 * Skip automatic `CREATE TABLE IF NOT EXISTS` on init.
-	 * Useful when you manage migrations externally (e.g. Flyway, Liquibase,
-	 * drizzle-kit push). Defaults to `false`.
+	 * Redirect chain configuration.
+	 *
+	 * When provided, `kavach.redirects` is available for capturing the user's
+	 * original destination before auth flows and restoring it afterwards,
+	 * with support for intermediate steps (onboarding, email verification, etc.).
 	 */
-	skipMigrations?: boolean;
+	redirects?: RedirectConfig;
 }
 
 /**

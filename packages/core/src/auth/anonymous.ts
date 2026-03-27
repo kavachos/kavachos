@@ -21,8 +21,8 @@
  * ```
  */
 
-import { randomUUID } from "node:crypto";
 import { and, eq, lt } from "drizzle-orm";
+import { generateId } from "../crypto/web-crypto.js";
 import type { Database } from "../db/database.js";
 import { sessions, users } from "../db/schema.js";
 import type { SessionManager } from "../session/session.js";
@@ -72,7 +72,7 @@ export function createAnonymousAuthModule(
 	const sessionTtlSeconds = config.sessionTtlSeconds ?? DEFAULT_SESSION_TTL_SECONDS;
 
 	async function createAnonymousUser(): Promise<{ userId: string; sessionToken: string }> {
-		const userId = randomUUID();
+		const userId = generateId();
 		const now = new Date();
 
 		await db.insert(users).values({

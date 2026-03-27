@@ -1,5 +1,5 @@
-import { randomUUID } from "node:crypto";
 import { and, eq } from "drizzle-orm";
+import { generateId } from "../crypto/web-crypto.js";
 import type { Database } from "../db/database.js";
 import { delegationChains } from "../db/schema.js";
 import type { DelegateInput, DelegationChain, Permission } from "../types.js";
@@ -92,7 +92,7 @@ export function createDelegationModule(config: DelegationModuleConfig) {
 			);
 		}
 
-		const id = randomUUID();
+		const id = generateId();
 		const now = new Date();
 
 		await db.insert(delegationChains).values({

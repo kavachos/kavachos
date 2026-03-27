@@ -31,9 +31,9 @@
  * ```
  */
 
-import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { and, eq, lt } from "drizzle-orm";
 import { z } from "zod";
+import { generateId, randomBytesHex, sha256 } from "../crypto/web-crypto.js";
 import type { Database } from "../db/database.js";
 import { agents, ephemeralSessions, permissions } from "../db/schema.js";
 import type { KavachError, Result } from "../mcp/types.js";
@@ -119,10 +119,10 @@ const CreateEphemeralSessionSchema = z.object({
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function generateSessionToken(): { token: string; hash: string } {
-	const bytes = randomBytes(32);
-	const token = `kveph_${bytes.toString("base64url")}`;
-	const hash = createHash("sha256").update(token).digest("hex");
+async function generateSessionToken(): Promise<{ token: string; hash: string }> {
+	const hex = randomBytesHex(32);
+	const token = `kveph_${hex}`;
+	const hash = await sha256(token);
 	return { token, hash };
 }
 
@@ -188,12 +188,12 @@ export function createEphemeralSessionModule(
 
 		const now = new Date();
 		const expiresAt = new Date(now.getTime() + requestedTtl * 1000);
-		const sessionId = randomUUID();
-		const agentId = randomUUID();
-		const auditGroupId = auditGrouping ? randomUUID() : sessionId;
+		const sessionId = generateId();
+		const agentId = generateId();
+		const auditGroupId = auditGrouping ? generateId() : sessionId;
 
 		// Token for this ephemeral session (stored as hash in agents table)
-		const { token, hash: tokenHash } = generateSessionToken();
+		const { token, hash: tokenHash } = await generateSessionToken();
 		const tokenPrefix = token.slice(0, 14); // "kveph_" + 8 chars
 
 		// Insert a temporary agent
@@ -220,7 +220,7 @@ export function createEphemeralSessionModule(
 		if (perms.length > 0) {
 			await db.insert(permissions).values(
 				perms.map((p) => ({
-					id: randomUUID(),
+					id: generateId(),
 					agentId,
 					resource: p.resource,
 					actions: p.actions,
@@ -261,7 +261,7 @@ export function createEphemeralSessionModule(
 	// ── validateSession ────────────────────────────────────────────────────────
 
 	async function validateSession(token: string): Promise<Result<EphemeralSessionValidateResult>> {
-		const hash = createHash("sha256").update(token).digest("hex");
+		const hash = await sha256(token);
 		const rows = await db
 			.select()
 			.from(ephemeralSessions)
@@ -311,7 +311,7 @@ export function createEphemeralSessionModule(
 	async function consumeAction(
 		token: string,
 	): Promise<Result<{ actionsRemaining: number | null }>> {
-		const hash = createHash("sha256").update(token).digest("hex");
+		const hash = await sha256(token);
 		const rows = await db
 			.select()
 			.from(ephemeralSessions)

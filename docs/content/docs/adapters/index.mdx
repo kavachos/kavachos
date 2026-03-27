@@ -11,6 +11,8 @@ import { Card, Cards } from 'fumadocs-ui/components/card';
 
 The `kavachos` package has zero framework dependencies. It operates entirely on the Web platform `Request`/`Response` API. Adapter packages wrap the core and expose framework-idiomatic handlers for authentication, authorization, and MCP OAuth routes.
 
+Because the core uses only Web platform APIs, KavachOS runs on edge runtimes without modification: Next.js Edge Runtime, Cloudflare Workers, Deno Deploy, Vercel Edge Functions, and Bun. The Hono and SvelteKit adapters are fully edge-compatible out of the box. The Next.js adapter works on edge when you use `export const runtime = 'edge'` in your route file.
+
 Each adapter follows the same pattern: accept a `kavach` instance, optionally accept a config object, and return something your framework knows how to mount.
 
 ```typescript

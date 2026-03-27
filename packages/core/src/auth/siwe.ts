@@ -25,7 +25,7 @@
  * ```
  */
 
-import { randomBytes } from "node:crypto";
+import { randomBytesHex } from "../crypto/web-crypto.js";
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -111,7 +111,7 @@ async function parseBody(request: Request): Promise<Record<string, unknown>> {
 }
 
 function generateHexNonce(byteLength = 16): string {
-	return randomBytes(byteLength).toString("hex");
+	return randomBytesHex(byteLength);
 }
 
 /**

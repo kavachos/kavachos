@@ -21,7 +21,7 @@
  *     forwards it to the provider and passes the verifier back via the callback.
  */
 
-import { randomUUID } from "node:crypto";
+import { generateId } from "../crypto/web-crypto.js";
 import { generateCodeVerifier } from "./oauth/pkce.js";
 import type { OAuthProvider } from "./oauth/types.js";
 import type { RateLimiter } from "./rate-limiter.js";
@@ -199,7 +199,7 @@ export function createOAuthProxyModule(
 
 		pruneExpired();
 
-		const proxyState = randomUUID();
+		const proxyState = generateId();
 		const serverCodeVerifier = generateCodeVerifier();
 		const expiresAt = Date.now() + ttlMs;
 

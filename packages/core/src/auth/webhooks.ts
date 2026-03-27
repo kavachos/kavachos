@@ -25,7 +25,7 @@
  * ```
  */
 
-import { createHmac } from "node:crypto";
+import { hmacSha256 } from "../crypto/web-crypto.js";
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -71,9 +71,9 @@ export interface WebhookModule {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function signPayload(secret: string, timestamp: string, body: string): string {
+async function signPayload(secret: string, timestamp: string, body: string): Promise<string> {
 	const data = `${timestamp}.${body}`;
-	return createHmac("sha256", secret).update(data).digest("hex");
+	return hmacSha256(secret, data);
 }
 
 async function deliverOnce(
@@ -82,7 +82,7 @@ async function deliverOnce(
 	body: string,
 	timestamp: string,
 ): Promise<boolean> {
-	const signature = signPayload(endpoint.secret, timestamp, body);
+	const signature = await signPayload(endpoint.secret, timestamp, body);
 	const timeout = endpoint.timeout ?? 10_000;
 
 	const controller = new AbortController();

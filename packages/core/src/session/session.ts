@@ -27,9 +27,9 @@
  * ```
  */
 
-import { createSecretKey, randomUUID } from "node:crypto";
 import { and, eq } from "drizzle-orm";
 import { jwtVerify, SignJWT } from "jose";
+import { generateId } from "../crypto/web-crypto.js";
 import type { Database } from "../db/database.js";
 import { sessions } from "../db/schema.js";
 
@@ -122,8 +122,7 @@ export function createSessionManager(config: SessionConfig, db: Database): Sessi
 	}
 
 	const maxAge = config.maxAge ?? DEFAULT_MAX_AGE_SECONDS;
-	const keyBytes = new TextEncoder().encode(config.secret);
-	const keyObject = createSecretKey(keyBytes);
+	const keyObject = new TextEncoder().encode(config.secret);
 
 	// ── helpers ────────────────────────────────────────────────────────────
 
@@ -149,7 +148,7 @@ export function createSessionManager(config: SessionConfig, db: Database): Sessi
 		userId: string,
 		metadata?: Record<string, unknown>,
 	): Promise<{ session: Session; token: string }> {
-		const id = randomUUID();
+		const id = generateId();
 		const now = new Date();
 		const expiresAt = new Date(now.getTime() + maxAge * 1000);
 

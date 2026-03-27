@@ -19,8 +19,8 @@
  * ```
  */
 
-import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 import { and, eq, gt } from "drizzle-orm";
+import { constantTimeEqual, fromHex, generateId, sha256 } from "../crypto/web-crypto.js";
 import type { Database } from "../db/database.js";
 import { phoneVerifications, users } from "../db/schema.js";
 import type { SessionManager } from "../session/session.js";
@@ -77,21 +77,22 @@ const DEFAULT_MAX_ATTEMPTS = 5;
 // Helpers
 // ---------------------------------------------------------------------------
 
-function hashCode(code: string): string {
-	return createHash("sha256").update(code).digest("hex");
+async function hashCode(code: string): Promise<string> {
+	return sha256(code);
 }
 
-function codesEqual(stored: string, candidate: string): boolean {
-	const a = Buffer.from(stored, "hex");
-	const b = Buffer.from(hashCode(candidate), "hex");
+async function codesEqual(stored: string, candidate: string): Promise<boolean> {
+	const a = fromHex(stored);
+	const candidateHash = await hashCode(candidate);
+	const b = fromHex(candidateHash);
 	if (a.byteLength !== b.byteLength) return false;
-	return timingSafeEqual(a, b);
+	return constantTimeEqual(a, b);
 }
 
 function generateNumericCode(length: number): string {
 	const digits: string[] = [];
 	while (digits.length < length) {
-		for (const char of randomUUID().replace(/-/g, "")) {
+		for (const char of generateId().replace(/-/g, "")) {
 			if (digits.length >= length) break;
 			const num = parseInt(char, 16);
 			if (num < 10) digits.push(String(num));
@@ -135,7 +136,7 @@ export function createPhoneAuthModule(
 			}
 		}
 
-		const id = randomUUID();
+		const id = generateId();
 		const now = new Date();
 		await db.insert(users).values({
 			id,
@@ -160,9 +161,9 @@ export function createPhoneAuthModule(
 		await db.delete(phoneVerifications).where(eq(phoneVerifications.phoneNumber, phone));
 
 		await db.insert(phoneVerifications).values({
-			id: randomUUID(),
+			id: generateId(),
 			phoneNumber: phone,
-			codeHash: hashCode(code),
+			codeHash: await hashCode(code),
 			attempts: 0,
 			expiresAt,
 			createdAt: now,
@@ -199,7 +200,7 @@ export function createPhoneAuthModule(
 			.set({ attempts: record.attempts + 1 })
 			.where(eq(phoneVerifications.id, record.id));
 
-		if (!codesEqual(record.codeHash, code)) return null;
+		if (!(await codesEqual(record.codeHash, code))) return null;
 
 		// Code verified — remove record to prevent re-use
 		await db.delete(phoneVerifications).where(eq(phoneVerifications.id, record.id));

@@ -2,7 +2,7 @@
  * Passkey / WebAuthn authentication for KavachOS.
  *
  * Implements server-side WebAuthn (Level 2) without external libraries.
- * Uses Web Crypto API (via node:crypto's webcrypto) for signature verification
+ * Uses the Web Crypto API for signature verification
  * and a minimal CBOR decoder for attestation object parsing.
  *
  * Flow:
@@ -17,8 +17,14 @@
  *     3. verifyAuthentication(response) -> returns userId + credential
  */
 
-import { randomBytes, timingSafeEqual, webcrypto } from "node:crypto";
 import { and, eq, lt } from "drizzle-orm";
+import {
+	constantTimeEqual,
+	fromBase64Url,
+	randomBytes,
+	toBase64Url,
+	toHex,
+} from "../crypto/web-crypto.js";
 import type { Database } from "../db/database.js";
 import { passkeyChallenges, passkeyCredentials } from "../db/schema.js";
 import { decodeCbor } from "./cbor.js";
@@ -182,43 +188,28 @@ const DEFAULT_CHALLENGE_TIMEOUT = 60_000;
 // Base64url helpers (no Buffer -- uses btoa/atob via Uint8Array)
 // ---------------------------------------------------------------------------
 
-function toBase64Url(bytes: Uint8Array): string {
-	let binary = "";
-	for (let i = 0; i < bytes.length; i++) {
-		binary += String.fromCharCode(bytes[i] as number);
-	}
-	const b64 = btoa(binary);
-	return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
-}
-
-function fromBase64Url(str: string): Uint8Array {
-	const padded = str.replace(/-/g, "+").replace(/_/g, "/");
-	const pad = padded.length % 4;
-	const b64 = pad ? padded + "=".repeat(4 - pad) : padded;
-	const binary = atob(b64);
-	const bytes = new Uint8Array(binary.length);
-	for (let i = 0; i < binary.length; i++) {
-		bytes[i] = binary.charCodeAt(i);
-	}
-	return bytes;
-}
+// toBase64Url and fromBase64Url are imported from ../crypto/web-crypto.js
 
 // ---------------------------------------------------------------------------
 // Crypto helpers
 // ---------------------------------------------------------------------------
 
 async function sha256(data: Uint8Array): Promise<Uint8Array> {
-	const hash = await webcrypto.subtle.digest("SHA-256", data);
+	const buf = (data.buffer as ArrayBuffer).slice(
+		data.byteOffset,
+		data.byteOffset + data.byteLength,
+	);
+	const hash = await globalThis.crypto.subtle.digest("SHA-256", buf);
 	return new Uint8Array(hash);
 }
 
 /**
- * Constant-time byte comparison using node:crypto timingSafeEqual.
+ * Constant-time byte comparison using Web Crypto constantTimeEqual.
  * Prevents timing side-channel attacks on hash comparisons.
  */
 function bytesEqual(a: Uint8Array, b: Uint8Array): boolean {
 	if (a.length !== b.length) return false;
-	return timingSafeEqual(a, b);
+	return constantTimeEqual(a, b);
 }
 
 // ---------------------------------------------------------------------------
@@ -284,14 +275,31 @@ async function verifySignatureES(
 		y: toBase64Url(coseKey.y),
 	};
 
-	const key = await webcrypto.subtle.importKey("jwk", jwk, { name: "ECDSA", namedCurve }, false, [
-		"verify",
-	]);
+	const key = await globalThis.crypto.subtle.importKey(
+		"jwk",
+		jwk,
+		{ name: "ECDSA", namedCurve },
+		false,
+		["verify"],
+	);
 
 	// WebAuthn signatures use DER-encoded ECDSA; Web Crypto expects raw (r||s)
 	const rawSig = derToRaw(signature, ecCoordSize(coseKey.alg));
 
-	return webcrypto.subtle.verify({ name: "ECDSA", hash: { name: hash } }, key, rawSig, data);
+	const sigBuf = (rawSig.buffer as ArrayBuffer).slice(
+		rawSig.byteOffset,
+		rawSig.byteOffset + rawSig.byteLength,
+	);
+	const dataBuf = (data.buffer as ArrayBuffer).slice(
+		data.byteOffset,
+		data.byteOffset + data.byteLength,
+	);
+	return globalThis.crypto.subtle.verify(
+		{ name: "ECDSA", hash: { name: hash } },
+		key,
+		sigBuf,
+		dataBuf,
+	);
 }
 
 /**
@@ -351,7 +359,7 @@ async function verifySignatureRSA(
 		alg: "RS256",
 	};
 
-	const key = await webcrypto.subtle.importKey(
+	const key = await globalThis.crypto.subtle.importKey(
 		"jwk",
 		jwk,
 		{ name: "RSASSA-PKCS1-v1_5", hash: { name: "SHA-256" } },
@@ -359,7 +367,15 @@ async function verifySignatureRSA(
 		["verify"],
 	);
 
-	return webcrypto.subtle.verify("RSASSA-PKCS1-v1_5", key, signature, data);
+	const sigBuf = (signature.buffer as ArrayBuffer).slice(
+		signature.byteOffset,
+		signature.byteOffset + signature.byteLength,
+	);
+	const dataBuf = (data.buffer as ArrayBuffer).slice(
+		data.byteOffset,
+		data.byteOffset + data.byteLength,
+	);
+	return globalThis.crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, sigBuf, dataBuf);
 }
 
 async function verifySignatureEdDSA(
@@ -377,9 +393,19 @@ async function verifySignatureEdDSA(
 		x: toBase64Url(coseKey.x),
 	};
 
-	const key = await webcrypto.subtle.importKey("jwk", jwk, { name: "Ed25519" }, false, ["verify"]);
+	const key = await globalThis.crypto.subtle.importKey("jwk", jwk, { name: "Ed25519" }, false, [
+		"verify",
+	]);
 
-	return webcrypto.subtle.verify({ name: "Ed25519" }, key, signature, data);
+	const sigBuf = (signature.buffer as ArrayBuffer).slice(
+		signature.byteOffset,
+		signature.byteOffset + signature.byteLength,
+	);
+	const dataBuf = (data.buffer as ArrayBuffer).slice(
+		data.byteOffset,
+		data.byteOffset + data.byteLength,
+	);
+	return globalThis.crypto.subtle.verify({ name: "Ed25519" }, key, sigBuf, dataBuf);
 }
 
 async function verifyCoseSignature(
@@ -537,7 +563,7 @@ export function createPasskeyModule(config: PasskeyConfig, db: Database): Passke
 
 		const challengeBytes = randomBytes(32);
 		const challenge = toBase64Url(challengeBytes);
-		const id = randomBytes(16).toString("hex");
+		const id = toHex(randomBytes(16));
 		const now = new Date();
 		const expiresAt = new Date(now.getTime() + timeout);
 
@@ -670,7 +696,7 @@ export function createPasskeyModule(config: PasskeyConfig, db: Database): Passke
 
 		// 5. Verify rpIdHash
 		const expectedRpIdHash = new Uint8Array(
-			await webcrypto.subtle.digest("SHA-256", new TextEncoder().encode(config.rpId)),
+			await globalThis.crypto.subtle.digest("SHA-256", new TextEncoder().encode(config.rpId)),
 		);
 		if (!bytesEqual(authData.rpIdHash, expectedRpIdHash)) {
 			throw new PasskeyError(PASSKEY_ERROR.RPID_MISMATCH, "rpIdHash mismatch");
@@ -716,7 +742,7 @@ export function createPasskeyModule(config: PasskeyConfig, db: Database): Passke
 
 		// 9. Store credential
 		const now = new Date();
-		const id = randomBytes(16).toString("hex");
+		const id = toHex(randomBytes(16));
 
 		const transports = response.transports ? JSON.stringify(response.transports) : null;
 
@@ -756,7 +782,7 @@ export function createPasskeyModule(config: PasskeyConfig, db: Database): Passke
 
 		const challengeBytes = randomBytes(32);
 		const challenge = toBase64Url(challengeBytes);
-		const id = randomBytes(16).toString("hex");
+		const id = toHex(randomBytes(16));
 		const now = new Date();
 		const expiresAt = new Date(now.getTime() + timeout);
 
@@ -877,7 +903,7 @@ export function createPasskeyModule(config: PasskeyConfig, db: Database): Passke
 
 		// 5. Verify rpIdHash
 		const expectedRpIdHash = new Uint8Array(
-			await webcrypto.subtle.digest("SHA-256", new TextEncoder().encode(config.rpId)),
+			await globalThis.crypto.subtle.digest("SHA-256", new TextEncoder().encode(config.rpId)),
 		);
 		if (!bytesEqual(authData.rpIdHash, expectedRpIdHash)) {
 			throw new PasskeyError(PASSKEY_ERROR.RPID_MISMATCH, "rpIdHash mismatch");

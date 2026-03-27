@@ -1,5 +1,5 @@
-import { randomUUID } from "node:crypto";
 import { SignJWT } from "jose";
+import { generateId } from "../crypto/web-crypto.js";
 import type {
 	McpAccessToken,
 	McpAuthContext,
@@ -41,7 +41,7 @@ async function issueAccessTokenJwt(
 		throw new Error("MCP signingSecret is required to issue tokens");
 	}
 	const key = await getSigningKey(secret);
-	const jti = randomUUID();
+	const jti = generateId();
 	const now = Math.floor(Date.now() / 1000);
 	const exp = now + ctx.config.accessTokenTtl;
 	const expiresAt = new Date(exp * 1000);

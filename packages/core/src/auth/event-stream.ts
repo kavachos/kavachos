@@ -20,7 +20,7 @@
  *
  * // Emit from anywhere in your app
  * stream.emit({
- *   id: crypto.randomUUID(),
+ *   id: crypto.generateId(),
  *   type: 'agent.created',
  *   timestamp: new Date(),
  *   data: { agentId: 'ag_123', name: 'my-agent' },
@@ -28,9 +28,9 @@
  * ```
  */
 
-import { randomUUID } from "node:crypto";
 import { and, desc, gte, inArray } from "drizzle-orm";
 import { z } from "zod";
+import { generateId } from "../crypto/web-crypto.js";
 import type { Database } from "../db/database.js";
 import { streamEvents } from "../db/schema.js";
 import type { KavachError, Result } from "../mcp/types.js";
@@ -288,7 +288,7 @@ export function createEventStreamModule(config: EventStreamConfig): EventStreamM
 
 		// Async setup — we return the Response immediately and do auth inside the
 		// ReadableStream start callback so the HTTP layer doesn't need to await.
-		const clientId = randomUUID();
+		const clientId = generateId();
 
 		const stream = new ReadableStream<Uint8Array>({
 			start(controller) {

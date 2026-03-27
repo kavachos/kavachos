@@ -8,7 +8,7 @@
  * @see https://haveibeenpwned.com/API/v3#PwnedPasswords
  */
 
-import { createHash } from "node:crypto";
+import { sha1 } from "../crypto/web-crypto.js";
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -55,11 +55,12 @@ export class HibpBreachedError extends Error {
 }
 
 // ---------------------------------------------------------------------------
-// SHA-1 helper (browser-safe path via node:crypto)
+// SHA-1 helper (Web Crypto API)
 // ---------------------------------------------------------------------------
 
-function sha1Hex(input: string): string {
-	return createHash("sha1").update(input, "utf8").digest("hex").toUpperCase();
+async function sha1Hex(input: string): Promise<string> {
+	const hex = await sha1(input);
+	return hex.toUpperCase();
 }
 
 // ---------------------------------------------------------------------------
@@ -104,7 +105,7 @@ export function createHibpModule(config?: HibpConfig): HibpModule {
 	const onError = config?.onError ?? "allow";
 
 	async function check(password: string): Promise<number> {
-		const hash = sha1Hex(password);
+		const hash = await sha1Hex(password);
 		// k-anonymity: only the prefix leaves this process
 		const prefix = hash.slice(0, 5);
 		const suffix = hash.slice(5);

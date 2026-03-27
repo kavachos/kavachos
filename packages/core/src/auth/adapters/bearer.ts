@@ -17,7 +17,6 @@
  * ```
  */
 
-import { createSecretKey } from "node:crypto";
 import { jwtVerify } from "jose";
 import { z } from "zod";
 import type { AuthAdapter, ResolvedUser } from "../types.js";
@@ -70,8 +69,8 @@ const JwtPayloadSchema = z.object({
 export function bearerAuth(options: BearerAuthOptions): AuthAdapter {
 	const parsed = BearerAuthOptionsSchema.parse(options);
 
-	// Pre-compute the KeyObject once so we don't recreate it per request.
-	const keyObject = createSecretKey(Buffer.from(parsed.secret, "utf-8"));
+	// Pre-compute the key bytes once so we don't recreate them per request.
+	const keyObject = new TextEncoder().encode(parsed.secret);
 
 	return {
 		async resolveUser(request: Request): Promise<ResolvedUser | null> {

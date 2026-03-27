@@ -1,5 +1,5 @@
-import { randomUUID } from "node:crypto";
 import { and, eq, gte } from "drizzle-orm";
+import { generateId } from "../crypto/web-crypto.js";
 import type { Database } from "../db/database.js";
 import { auditLogs, rateLimits } from "../db/schema.js";
 import type {
@@ -152,7 +152,7 @@ async function checkRateLimit(
 			.where(eq(rateLimits.id, existing.id));
 	} else {
 		await db.insert(rateLimits).values({
-			id: randomUUID(),
+			id: generateId(),
 			agentId,
 			resource,
 			windowStart: currentWindow,
@@ -178,7 +178,7 @@ export function createPermissionEngine(config: PermissionEngineConfig) {
 		request: AuthorizeRequest,
 	): Promise<AuthorizeResult> {
 		const startTime = performance.now();
-		const auditId = randomUUID();
+		const auditId = generateId();
 
 		// Find matching permission
 		const matchingPermission = agent.permissions.find(

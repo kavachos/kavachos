@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { createAgentModule } from "./agent/agent.js";
 import { createPrivilegeAnalyzer } from "./analyzer/privilege.js";
@@ -14,10 +13,13 @@ import type { EmailOtpModule } from "./auth/email-otp.js";
 import { createEmailOtpModule } from "./auth/email-otp.js";
 import type { MagicLinkModule } from "./auth/magic-link.js";
 import { createMagicLinkModule } from "./auth/magic-link.js";
+import { createOneTimeTokenModule } from "./auth/one-time-token.js";
 import type { OrgModule } from "./auth/organization.js";
 import { createOrgModule } from "./auth/organization.js";
 import type { PasskeyModule } from "./auth/passkey.js";
 import { createPasskeyModule } from "./auth/passkey.js";
+import type { PasswordResetModule } from "./auth/password-reset.js";
+import { createPasswordResetModule } from "./auth/password-reset.js";
 import type { PhoneAuthModule } from "./auth/phone.js";
 import { createPhoneAuthModule } from "./auth/phone.js";
 import type { SsoModule } from "./auth/sso.js";
@@ -29,6 +31,7 @@ import type { UsernameAuthModule } from "./auth/username.js";
 import { createUsernameAuthModule } from "./auth/username.js";
 import type { WebhookModule } from "./auth/webhooks.js";
 import { createWebhookModule } from "./auth/webhooks.js";
+import { generateId } from "./crypto/web-crypto.js";
 import { createDatabase } from "./db/database.js";
 import { createTables } from "./db/migrations.js";
 import { mcpServers } from "./db/schema.js";
@@ -40,6 +43,8 @@ import { createPluginRouter } from "./plugin/router.js";
 import { initializePlugins } from "./plugin/runner.js";
 import type { EndpointContext } from "./plugin/types.js";
 import { createPolicyModule } from "./policies/budget.js";
+import type { RedirectChainManager } from "./redirect/chain.js";
+import { createRedirectChain } from "./redirect/chain.js";
 import type { SessionManager } from "./session/session.js";
 import { createSessionManager } from "./session/session.js";
 import { createTenantModule } from "./tenant/tenant.js";
@@ -201,6 +206,13 @@ export async function createKavach(config: KavachConfig) {
 			? createUsernameAuthModule(config.username, db, sessionManager)
 			: null;
 
+	// Password reset — only created when caller provides config.passwordReset + username + session.
+	const oneTimeTokenModule = createOneTimeTokenModule({}, db);
+	const passwordResetModule: PasswordResetModule | null =
+		config.passwordReset && sessionManager
+			? createPasswordResetModule(config.passwordReset, db, sessionManager, oneTimeTokenModule)
+			: null;
+
 	// Phone auth — only created when the caller provides config.phone.
 	const phoneModule: PhoneAuthModule | null =
 		config.phone && sessionManager ? createPhoneAuthModule(config.phone, db, sessionManager) : null;
@@ -209,6 +221,9 @@ export async function createKavach(config: KavachConfig) {
 	const captchaModule: CaptchaModule | null = config.captcha
 		? createCaptchaModule(config.captcha)
 		: null;
+
+	// Redirect chain — always available (zero-config default).
+	const redirectChain: RedirectChainManager = createRedirectChain(config.redirects);
 
 	// Webhooks — only created when the caller provides config.webhooks.
 	const webhookModule: WebhookModule | null =
@@ -407,7 +422,7 @@ export async function createKavach(config: KavachConfig) {
 		 */
 		async register(input: McpServerInput): Promise<McpServer> {
 			const now = new Date();
-			const id = randomUUID();
+			const id = generateId();
 
 			await db.insert(mcpServers).values({
 				id,
@@ -707,6 +722,31 @@ export async function createKavach(config: KavachConfig) {
 		 */
 		username: usernameModule,
 		/**
+		 * Password reset (forgot password + reset password).
+		 *
+		 * Null when `passwordReset` config was not provided or `auth.session`
+		 * is not configured.
+		 *
+		 * @example
+		 * ```typescript
+		 * // In your route handler
+		 * const response = await kavach.passwordReset?.handleRequest(request);
+		 * if (response) return response;
+		 *
+		 * // Or programmatically
+		 * await kavach.passwordReset?.requestReset('alice@example.com');
+		 * await kavach.passwordReset?.resetPassword(token, 'new-password');
+		 * ```
+		 */
+		passwordReset: passwordResetModule,
+		/**
+		 * One-time tokens (email verify, password reset, invitations, custom).
+		 *
+		 * Always available. Used internally by password reset but exposed for
+		 * custom flows (email verification, invitation links, etc.).
+		 */
+		oneTimeTokens: oneTimeTokenModule,
+		/**
 		 * Phone number (SMS OTP) authentication.
 		 *
 		 * Null when `phone` config was not provided or `auth.session` is not
@@ -742,6 +782,27 @@ export async function createKavach(config: KavachConfig) {
 		 * ```
 		 */
 		webhooks: webhookModule,
+		/**
+		 * Redirect chain manager.
+		 *
+		 * Capture the user's original destination before auth redirects, push
+		 * intermediate steps (onboarding, email verification), and pop them
+		 * back in order. Cookie-based, works across page transitions and tabs.
+		 *
+		 * @example
+		 * ```typescript
+		 * // In auth middleware — save where the user was going
+		 * const setCookie = kavach.redirects.capture(request);
+		 * return new Response(null, { status: 302, headers: { Location: '/sign-in', 'Set-Cookie': setCookie } });
+		 *
+		 * // After sign-in — send user to their original destination
+		 * const { url, clearCookie } = kavach.redirects.pop(request);
+		 * const headers: Record<string, string> = { Location: url };
+		 * if (clearCookie) headers['Set-Cookie'] = clearCookie;
+		 * return new Response(null, { status: 302, headers });
+		 * ```
+		 */
+		redirects: redirectChain,
 		/**
 		 * Plugin system.
 		 *

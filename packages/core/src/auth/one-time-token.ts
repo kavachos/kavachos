@@ -28,9 +28,9 @@
  * ```
  */
 
-import { createHash, randomBytes } from "node:crypto";
 import { and, eq, gt } from "drizzle-orm";
 import { z } from "zod";
+import { randomBytesHex, sha256 } from "../crypto/web-crypto.js";
 import type { Database } from "../db/database.js";
 import { oneTimeTokens } from "../db/schema.js";
 import type { KavachError, Result } from "../mcp/types.js";
@@ -123,12 +123,12 @@ const TOKEN_BYTE_LENGTH = 32; // 256-bit token — 64 hex chars when encoded
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-function hashToken(raw: string): string {
-	return createHash("sha256").update(raw).digest("hex");
+async function hashToken(raw: string): Promise<string> {
+	return sha256(raw);
 }
 
 function generateRawToken(): string {
-	return randomBytes(TOKEN_BYTE_LENGTH).toString("hex");
+	return randomBytesHex(TOKEN_BYTE_LENGTH);
 }
 
 function makeError(code: string, message: string, details?: Record<string, unknown>): KavachError {
@@ -168,7 +168,7 @@ export function createOneTimeTokenModule(
 
 		const { purpose, identifier, metadata, ttlSeconds } = parsed.data;
 		const raw = generateRawToken();
-		const tokenHash = hashToken(raw);
+		const tokenHash = await hashToken(raw);
 		const now = new Date();
 		const expiresAt = new Date(now.getTime() + (ttlSeconds ?? defaultTtl) * 1000);
 
@@ -209,7 +209,7 @@ export function createOneTimeTokenModule(
 			return { success: false, error: makeError("INVALID_INPUT", "purpose must not be empty") };
 		}
 
-		const tokenHash = hashToken(token);
+		const tokenHash = await hashToken(token);
 		const now = new Date();
 
 		const rows = await db

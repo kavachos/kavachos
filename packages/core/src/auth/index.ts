@@ -213,6 +213,9 @@ export type { PasskeyConfig, PasskeyCredential, PasskeyModule } from "./passkey.
 export { createPasskeyModule } from "./passkey.js";
 // Passkey plugin (KavachPlugin wrapper)
 export { passkey } from "./passkey-plugin.js";
+// Password reset (forgot password + reset password flow)
+export type { PasswordResetConfig, PasswordResetModule } from "./password-reset.js";
+export { createPasswordResetModule } from "./password-reset.js";
 // Phone number (SMS OTP) authentication
 export type { PhoneAuthConfig, PhoneAuthModule } from "./phone.js";
 export { createPhoneAuthModule } from "./phone.js";

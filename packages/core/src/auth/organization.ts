@@ -6,8 +6,8 @@
  * kavach_org_members, kavach_org_invitations, and kavach_org_roles tables.
  */
 
-import { randomUUID } from "node:crypto";
 import { and, eq } from "drizzle-orm";
+import { generateId } from "../crypto/web-crypto.js";
 import type { Database } from "../db/database.js";
 import { organizations, orgInvitations, orgMembers, orgRoles } from "../db/schema.js";
 
@@ -164,19 +164,19 @@ function slugRegex(): RegExp {
 }
 
 function makeOrgId(): string {
-	return `org_${randomUUID().replace(/-/g, "")}`;
+	return `org_${generateId().replace(/-/g, "")}`;
 }
 
 function makeMemberId(): string {
-	return `mem_${randomUUID().replace(/-/g, "")}`;
+	return `mem_${generateId().replace(/-/g, "")}`;
 }
 
 function makeInvId(): string {
-	return `inv_${randomUUID().replace(/-/g, "")}`;
+	return `inv_${generateId().replace(/-/g, "")}`;
 }
 
 function makeRoleId(): string {
-	return `rol_${randomUUID().replace(/-/g, "")}`;
+	return `rol_${generateId().replace(/-/g, "")}`;
 }
 
 function rowToOrg(row: {

@@ -18,6 +18,27 @@ const kavach = await createKavach({
 });
 ```
 
+## Common development setup
+
+A minimal config for local development with email/password auth and no email sending:
+
+```typescript
+import { createKavach } from 'kavachos';
+import { emailPassword } from 'kavachos/auth';
+
+const kavach = await createKavach({
+  database: { provider: 'sqlite', url: './kavach.db' },
+  plugins: [
+    emailPassword({
+      requireVerification: false, // skip in dev
+      onSendVerification: async (email, token) => {
+        console.log(`Verify: http://localhost:3000/verify?token=${token}`);
+      },
+    }),
+  ],
+});
+```
+
 ## Top-level options
 
 <TypeTable
@@ -76,13 +97,16 @@ const kavach = await createKavach({
   type={{
     provider: {
       description: 'Database driver to use.',
-      type: '"sqlite" | "postgres" | "mysql"',
+      type: '"sqlite" | "postgres" | "mysql" | "d1"',
       required: true,
     },
     url: {
-      description: 'File path for SQLite, connection string for Postgres/MySQL.',
+      description: 'File path for SQLite, connection string for Postgres/MySQL. Not used with D1.',
       type: 'string',
-      required: true,
+    },
+    binding: {
+      description: 'D1Database binding from the Worker environment. Required when provider is "d1".',
+      type: 'D1Database',
     },
     skipMigrations: {
       description:
@@ -93,11 +117,23 @@ const kavach = await createKavach({
 />
 
 ```typescript
-// SQLite
-database: { provider: 'sqlite', url: './kavach.db' }
+// Cloudflare D1 (edge)
+const kavach = await createKavach({
+  database: {
+    provider: 'd1',
+    binding: env.KAVACH_DB,  // D1Database from Worker env
+  },
+});
 
-// Postgres
-database: { provider: 'postgres', url: process.env.DATABASE_URL }
+// SQLite (Node.js)
+const kavach = await createKavach({
+  database: { provider: 'sqlite', url: './kavach.db' },
+});
+
+// PostgreSQL
+const kavach = await createKavach({
+  database: { provider: 'postgres', url: process.env.DATABASE_URL },
+});
 
 // MySQL
 database: { provider: 'mysql', url: process.env.DATABASE_URL }
@@ -242,6 +278,126 @@ auth: {
 When `auth` is omitted, `kavach.auth.resolveUser()` always returns `null` (manual user management mode).
 
 See [Auth adapters](/docs/guides/auth-adapters) for all adapter options.
+
+## Session config
+
+<TypeTable
+  type={{
+    secret: {
+      description: 'Signing secret for session JWTs. Min 32 characters.',
+      type: 'string',
+      required: true,
+    },
+    maxAge: {
+      description: 'Session lifetime in seconds.',
+      type: 'number',
+      default: '604800 (7 days)',
+    },
+    cookieName: {
+      description: 'Name of the session cookie.',
+      type: 'string',
+      default: "'kavach_session'",
+    },
+  }}
+/>
+
+## Password reset config
+
+Requires `auth.session` to be configured. The caller provides an email-sending callback.
+
+<TypeTable
+  type={{
+    sendResetEmail: {
+      description: 'Callback to deliver the reset email. Receives email, raw token, and constructed URL.',
+      type: '(email: string, token: string, url: string) => Promise<void>',
+      required: true,
+    },
+    resetUrl: {
+      description: 'Base URL for the reset page. Token is appended as ?token=...',
+      type: 'string',
+      required: true,
+    },
+    tokenTtlSeconds: {
+      description: 'Reset token lifetime in seconds.',
+      type: 'number',
+      default: '3600 (1h)',
+    },
+    revokeSessionsOnReset: {
+      description: 'Revoke all sessions when the password is successfully reset.',
+      type: 'boolean',
+      default: 'true',
+    },
+    minPasswordLength: {
+      description: 'Minimum new password length.',
+      type: 'number',
+      default: '8',
+    },
+    maxPasswordLength: {
+      description: 'Maximum new password length.',
+      type: 'number',
+      default: '128',
+    },
+  }}
+/>
+
+<Callout type="warn">
+  Always use an HTTPS URL for `resetUrl` in production. Reset tokens in plain HTTP links can be intercepted in transit or leaked via `Referer` headers.
+</Callout>
+
+```typescript
+auth: {
+  adapter: betterAuthAdapter(auth),
+  session: {
+    secret: process.env.SESSION_SECRET!,
+    maxAge: 60 * 60 * 24 * 7, // 7 days
+  },
+  passwordReset: {
+    resetUrl: 'https://example.com/reset-password',
+    tokenTtlSeconds: 3600,
+    revokeSessionsOnReset: true,
+    minPasswordLength: 10,
+    sendResetEmail: async (email, token, url) => {
+      await mailer.send({
+        to: email,
+        subject: 'Reset your password',
+        html: `<a href="${url}">Reset password</a>`,
+      });
+    },
+  },
+},
+```
+
+## Session freshness config
+
+Controls when sessions are considered "fresh" for sensitive operations like password changes and passkey registration.
+
+<TypeTable
+  type={{
+    freshAge: {
+      description: 'Maximum session age in seconds to be considered fresh.',
+      type: 'number',
+      default: '300 (5 minutes)',
+    },
+  }}
+/>
+
+## Plugins
+
+KavachOS features are composable. Enable what you need:
+
+| Plugin | Import | What it does |
+|--------|--------|--------------|
+| `emailPassword` | `kavachos/auth` | Email + password with verification and reset |
+| `passkey` | `kavachos/auth` | WebAuthn/FIDO2 biometric auth |
+| `magicLink` | `kavachos/auth` | Passwordless email links |
+| `emailOtp` | `kavachos/auth` | One-time password codes via email |
+| `twoFactor` | `kavachos/auth` | TOTP 2FA with backup codes |
+| `multiSession` | `kavachos/auth` | Session limits and device management |
+| `organization` | `kavachos/auth` | Organizations with RBAC |
+| `apiKeys` | `kavachos/auth` | Static API key management |
+| `admin` | `kavachos/auth` | User management, banning, impersonation |
+| `stripe` | `kavachos/auth` | Stripe billing integration |
+| `polar` | `kavachos/auth` | Polar payment integration |
 
 ## Anomaly config
 

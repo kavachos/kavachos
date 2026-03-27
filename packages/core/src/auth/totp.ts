@@ -2,7 +2,7 @@
  * TOTP two-factor authentication for KavachOS.
  *
  * Implements RFC 6238 (TOTP) and RFC 4226 (HOTP) from scratch using
- * node:crypto — no external dependencies.
+ * the Web Crypto API — no external dependencies.
  *
  * Flow:
  *   1. `setup(userId)`  — generate secret + backup codes (not yet active)
@@ -11,8 +11,8 @@
  *   4. `disable(userId, code)` — verify then delete the record
  */
 
-import { createHash, createHmac, randomBytes } from "node:crypto";
 import { eq } from "drizzle-orm";
+import { hmacSha1Raw, randomBytes, sha256 } from "../crypto/web-crypto.js";
 import type { Database } from "../db/database.js";
 import { totpRecords } from "../db/schema.js";
 
@@ -122,7 +122,7 @@ function base32Decode(encoded: string): Uint8Array {
 // TOTP core (RFC 6238 / RFC 4226)
 // ---------------------------------------------------------------------------
 
-function generateTotp(secret: Uint8Array, time: number, period: number): string {
+async function generateTotp(secret: Uint8Array, time: number, period: number): Promise<string> {
 	const counter = Math.floor(time / period);
 
 	// Convert counter to 8-byte big-endian buffer
@@ -134,9 +134,7 @@ function generateTotp(secret: Uint8Array, time: number, period: number): string 
 	}
 
 	// HMAC-SHA1(secret, counterBuffer)
-	const hmac = createHmac("sha1", Buffer.from(secret));
-	hmac.update(Buffer.from(counterBuffer));
-	const digest = new Uint8Array(hmac.digest());
+	const digest = await hmacSha1Raw(secret, counterBuffer);
 
 	// Dynamic truncation
 	const offset = (digest[19] ?? 0) & 0xf;
@@ -150,11 +148,16 @@ function generateTotp(secret: Uint8Array, time: number, period: number): string 
 	return code.toString().padStart(6, "0");
 }
 
-function verifyTotp(secret: Uint8Array, code: string, period: number, window: number): boolean {
+async function verifyTotp(
+	secret: Uint8Array,
+	code: string,
+	period: number,
+	window: number,
+): Promise<boolean> {
 	const now = Math.floor(Date.now() / 1000);
 
 	for (let delta = -window; delta <= window; delta++) {
-		const expected = generateTotp(secret, now + delta * period, period);
+		const expected = await generateTotp(secret, now + delta * period, period);
 		if (expected === code) return true;
 	}
 
@@ -167,7 +170,7 @@ function verifyTotp(secret: Uint8Array, code: string, period: number, window: nu
 
 function generateSecret(): string {
 	const bytes = randomBytes(20);
-	return base32Encode(new Uint8Array(bytes));
+	return base32Encode(bytes);
 }
 
 // ---------------------------------------------------------------------------
@@ -186,18 +189,20 @@ function generateBackupCode(): string {
 	return code;
 }
 
-function hashBackupCode(code: string): string {
-	return createHash("sha256").update(code).digest("hex");
+async function hashBackupCode(code: string): Promise<string> {
+	return sha256(code);
 }
 
-function generateBackupCodes(count: number): { plain: string[]; hashed: BackupCodeEntry[] } {
+async function generateBackupCodes(
+	count: number,
+): Promise<{ plain: string[]; hashed: BackupCodeEntry[] }> {
 	const plain: string[] = [];
 	const hashed: BackupCodeEntry[] = [];
 
 	for (let i = 0; i < count; i++) {
 		const code = generateBackupCode();
 		plain.push(code);
-		hashed.push({ hash: hashBackupCode(code), used: false });
+		hashed.push({ hash: await hashBackupCode(code), used: false });
 	}
 
 	return { plain, hashed };
@@ -236,7 +241,7 @@ export function createTotpModule(config: TotpConfig, db: Database): TotpModule {
 
 	async function setup(userId: string): Promise<TotpSetup> {
 		const secretStr = generateSecret();
-		const { plain, hashed } = generateBackupCodes(backupCodeCount);
+		const { plain, hashed } = await generateBackupCodes(backupCodeCount);
 
 		const uri = `otpauth://totp/${encodeURIComponent(appName)}:${encodeURIComponent(userId)}?secret=${secretStr}&issuer=${encodeURIComponent(appName)}&algorithm=SHA1&digits=6&period=${period}`;
 
@@ -280,7 +285,7 @@ export function createTotpModule(config: TotpConfig, db: Database): TotpModule {
 		}
 
 		const secretBytes = base32Decode(record.secret);
-		const valid = verifyTotp(secretBytes, code, period, window);
+		const valid = await verifyTotp(secretBytes, code, period, window);
 
 		if (!valid) {
 			return { enabled: false };
@@ -309,12 +314,12 @@ export function createTotpModule(config: TotpConfig, db: Database): TotpModule {
 
 		// Try TOTP first
 		const secretBytes = base32Decode(record.secret);
-		if (verifyTotp(secretBytes, code, period, window)) {
+		if (await verifyTotp(secretBytes, code, period, window)) {
 			return { valid: true };
 		}
 
 		// Try backup codes
-		const codeHash = hashBackupCode(code.toUpperCase());
+		const codeHash = await hashBackupCode(code.toUpperCase());
 		const backupCodes = record.backupCodes as BackupCodeEntry[];
 		const matchIndex = backupCodes.findIndex((b) => b.hash === codeHash && !b.used);
 
@@ -367,7 +372,7 @@ export function createTotpModule(config: TotpConfig, db: Database): TotpModule {
 			throw new Error("Invalid TOTP code — cannot regenerate backup codes");
 		}
 
-		const { plain, hashed } = generateBackupCodes(backupCodeCount);
+		const { plain, hashed } = await generateBackupCodes(backupCodeCount);
 
 		await db
 			.update(totpRecords)

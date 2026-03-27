@@ -72,13 +72,18 @@ export function createKavachClient(options?: KavachClientOptions): KavachClient 
 	const user = derived(session, ($session) => $session?.user ?? null);
 	const isAuthenticated = derived(session, ($session) => $session !== null);
 
+	const STORAGE_KEY = "kavach_session";
+
 	async function fetchSession(): Promise<void> {
 		isLoading.set(true);
 		try {
-			const res = await fetch(`${basePath}/session`, { credentials: "include" });
-			if (res.ok) {
-				const json: unknown = await res.json();
-				session.set((json as { data: KavachSession }).data ?? null);
+			if (typeof window === "undefined") {
+				session.set(null);
+				return;
+			}
+			const raw = window.localStorage.getItem(STORAGE_KEY);
+			if (raw) {
+				session.set(JSON.parse(raw) as KavachSession);
 			} else {
 				session.set(null);
 			}
@@ -91,7 +96,7 @@ export function createKavachClient(options?: KavachClientOptions): KavachClient 
 
 	async function signIn(email: string, password: string): Promise<ActionResult> {
 		try {
-			const res = await fetch(`${basePath}/sign-in/email`, {
+			const res = await fetch(`${basePath}/auth/sign-in`, {
 				method: "POST",
 				credentials: "include",
 				headers: { "Content-Type": "application/json" },
@@ -101,7 +106,16 @@ export function createKavachClient(options?: KavachClientOptions): KavachClient 
 			if (!res.ok) {
 				return { success: false, error: extractError(json, `Sign-in failed (${res.status})`) };
 			}
-			session.set((json as { data: KavachSession }).data);
+			const okBody = json as { user: KavachUser; session: { token: string; expiresAt: string } };
+			const sessionData: KavachSession = {
+				token: okBody.session.token,
+				user: okBody.user,
+				expiresAt: okBody.session.expiresAt,
+			};
+			session.set(sessionData);
+			if (typeof window !== "undefined") {
+				window.localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionData));
+			}
 			return { success: true, data: undefined };
 		} catch (err) {
 			return {
@@ -113,7 +127,7 @@ export function createKavachClient(options?: KavachClientOptions): KavachClient 
 
 	async function signUp(email: string, password: string, name?: string): Promise<ActionResult> {
 		try {
-			const res = await fetch(`${basePath}/sign-up/email`, {
+			const res = await fetch(`${basePath}/auth/sign-up`, {
 				method: "POST",
 				credentials: "include",
 				headers: { "Content-Type": "application/json" },
@@ -123,7 +137,15 @@ export function createKavachClient(options?: KavachClientOptions): KavachClient 
 			if (!res.ok) {
 				return { success: false, error: extractError(json, `Sign-up failed (${res.status})`) };
 			}
-			session.set((json as { data: KavachSession }).data);
+			const okBody = json as { user: KavachUser; token: string };
+			const sessionData: KavachSession = {
+				token: okBody.token,
+				user: okBody.user,
+			};
+			session.set(sessionData);
+			if (typeof window !== "undefined") {
+				window.localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionData));
+			}
 			return { success: true, data: undefined };
 		} catch (err) {
 			return {
@@ -134,14 +156,13 @@ export function createKavachClient(options?: KavachClientOptions): KavachClient 
 	}
 
 	async function signOut(): Promise<void> {
-		try {
-			await fetch(`${basePath}/sign-out`, { method: "POST", credentials: "include" });
-		} finally {
-			session.set(null);
+		session.set(null);
+		if (typeof window !== "undefined") {
+			window.localStorage.removeItem(STORAGE_KEY);
 		}
 	}
 
-	// Fetch session on creation — guard for SSR environments
+	// Restore session from localStorage on creation — guard for SSR environments
 	if (typeof window !== "undefined") {
 		void fetchSession();
 	} else {

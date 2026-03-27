@@ -32,10 +32,10 @@
  * ```
  */
 
-import { createHash, randomBytes } from "node:crypto";
 import { eq } from "drizzle-orm";
 import * as jose from "jose";
 import { z } from "zod";
+import { generateId, randomBytesHex, sha256, sha256Raw } from "../crypto/web-crypto.js";
 import type { Database } from "../db/database.js";
 import { oidcAuthCodes, oidcClients, oidcRefreshTokens } from "../db/schema.js";
 import type { KavachError, Result } from "../mcp/types.js";
@@ -254,11 +254,11 @@ function makeError(code: string, message: string, details?: Record<string, unkno
 }
 
 function generateRandomHex(bytes: number): string {
-	return randomBytes(bytes).toString("hex");
+	return randomBytesHex(bytes);
 }
 
-function hashSecret(raw: string): string {
-	return createHash("sha256").update(raw).digest("hex");
+async function hashSecret(raw: string): Promise<string> {
+	return sha256(raw);
 }
 
 async function computeS256Challenge(codeVerifier: string): Promise<string> {
@@ -352,12 +352,12 @@ export function createOidcProviderModule(
 
 		const clientId = generateRandomHex(CLIENT_ID_BYTE_LENGTH);
 		const rawSecret = generateRandomHex(CLIENT_SECRET_BYTE_LENGTH);
-		const secretHash = hashSecret(rawSecret);
+		const secretHash = await hashSecret(rawSecret);
 		const now = new Date();
 
 		try {
 			await db.insert(oidcClients).values({
-				id: crypto.randomUUID(),
+				id: generateId(),
 				clientId,
 				clientSecretHash: secretHash,
 				clientName,
@@ -515,13 +515,13 @@ export function createOidcProviderModule(
 
 		// Generate authorization code
 		const code = generateRandomHex(AUTH_CODE_BYTE_LENGTH);
-		const codeHash = hashSecret(code);
+		const codeHash = await hashSecret(code);
 		const now = new Date();
 		const expiresAt = new Date(now.getTime() + authCodeTtl * 1000);
 
 		try {
 			await db.insert(oidcAuthCodes).values({
-				id: crypto.randomUUID(),
+				id: generateId(),
 				codeHash,
 				clientId,
 				userId,
@@ -581,7 +581,7 @@ export function createOidcProviderModule(
 		clientSecret?: string;
 	}): Promise<Result<TokenResponse>> {
 		const { code, redirectUri, codeVerifier, clientId, clientSecret } = data;
-		const codeHash = hashSecret(code);
+		const codeHash = await hashSecret(code);
 
 		// Find the auth code
 		const codeRows = await db
@@ -664,7 +664,7 @@ export function createOidcProviderModule(
 		clientSecret?: string;
 	}): Promise<Result<TokenResponse>> {
 		const { refreshToken, clientId, clientSecret } = data;
-		const tokenHash = hashSecret(refreshToken);
+		const tokenHash = await hashSecret(refreshToken);
 
 		// Authenticate client
 		const clientResult = await authenticateClient(clientId, clientSecret);
@@ -736,7 +736,7 @@ export function createOidcProviderModule(
 					error: makeError("CLIENT_AUTH_REQUIRED", "client_secret is required"),
 				};
 			}
-			if (hashSecret(clientSecret) !== client.clientSecretHash) {
+			if ((await hashSecret(clientSecret)) !== client.clientSecretHash) {
 				return {
 					success: false,
 					error: makeError("INVALID_CLIENT_SECRET", "Invalid client credentials"),
@@ -755,7 +755,7 @@ export function createOidcProviderModule(
 	): Promise<Result<TokenResponse>> {
 		const key = await getSigningKey();
 		const now = Math.floor(Date.now() / 1000);
-		const jti = crypto.randomUUID();
+		const jti = generateId();
 
 		// Access token (JWT)
 		const accessTokenBuilder = new jose.SignJWT({
@@ -782,7 +782,7 @@ export function createOidcProviderModule(
 			idTokenPayload.nonce = nonce;
 		}
 		// Add at_hash (access token hash)
-		const atHashBuffer = createHash("sha256").update(accessToken).digest();
+		const atHashBuffer = await sha256Raw(accessToken);
 		const atHashHalf = atHashBuffer.subarray(0, atHashBuffer.length / 2);
 		idTokenPayload.at_hash = jose.base64url.encode(atHashHalf);
 
@@ -797,12 +797,12 @@ export function createOidcProviderModule(
 
 		// Refresh token (opaque)
 		const rawRefreshToken = generateRandomHex(REFRESH_TOKEN_BYTE_LENGTH);
-		const refreshTokenHash = hashSecret(rawRefreshToken);
+		const refreshTokenHash = await hashSecret(rawRefreshToken);
 		const refreshExpiresAt = new Date((now + refreshTokenTtl) * 1000);
 
 		try {
 			await db.insert(oidcRefreshTokens).values({
-				id: crypto.randomUUID(),
+				id: generateId(),
 				tokenHash: refreshTokenHash,
 				clientId,
 				userId,

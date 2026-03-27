@@ -29,9 +29,9 @@
  * ```
  */
 
-import { randomUUID } from "node:crypto";
 import * as jose from "jose";
 import { z } from "zod";
+import { generateId } from "../crypto/web-crypto.js";
 import type { KavachError, Result } from "../mcp/types.js";
 
 // ─── Constants ──────────────────────────────────────────────────────────────
@@ -295,7 +295,7 @@ export function createFederationModule(config: FederationConfig): FederationModu
 				.setSubject(agentId)
 				.setIssuedAt(now)
 				.setExpirationTime(exp)
-				.setJti(randomUUID());
+				.setJti(generateId());
 
 			if (targetInstance) {
 				builder.setAudience(targetInstance);

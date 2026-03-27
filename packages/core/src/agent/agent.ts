@@ -1,5 +1,5 @@
-import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { and, eq } from "drizzle-orm";
+import { generateId, randomBytes, sha256, toBase64Url } from "../crypto/web-crypto.js";
 import type { Database } from "../db/database.js";
 import { agents, permissions } from "../db/schema.js";
 import type {
@@ -24,10 +24,10 @@ interface AgentModuleConfig {
  * - hash: SHA-256 hash (stored in DB)
  * - prefix: first 8 chars (for identification in logs/UI)
  */
-function generateAgentToken(): { token: string; hash: string; prefix: string } {
+async function generateAgentToken(): Promise<{ token: string; hash: string; prefix: string }> {
 	const tokenBytes = randomBytes(32);
-	const token = `kv_${tokenBytes.toString("base64url")}`;
-	const hash = createHash("sha256").update(token).digest("hex");
+	const token = `kv_${toBase64Url(tokenBytes)}`;
+	const hash = await sha256(token);
 	const prefix = token.slice(0, 11); // "kv_" + 8 chars
 	return { token, hash, prefix };
 }
@@ -69,8 +69,8 @@ export function createAgentModule(config: AgentModuleConfig) {
 			);
 		}
 
-		const id = randomUUID();
-		const { token, hash, prefix } = generateAgentToken();
+		const id = generateId();
+		const { token, hash, prefix } = await generateAgentToken();
 		const now = new Date();
 		const expires = input.expiresAt ?? parseTokenExpiry(tokenExpiry);
 
@@ -94,7 +94,7 @@ export function createAgentModule(config: AgentModuleConfig) {
 		if (input.permissions.length > 0) {
 			await db.insert(permissions).values(
 				input.permissions.map((p) => ({
-					id: randomUUID(),
+					id: generateId(),
 					agentId: id,
 					resource: p.resource,
 					actions: p.actions,
@@ -201,7 +201,7 @@ export function createAgentModule(config: AgentModuleConfig) {
 			if (input.permissions.length > 0) {
 				await db.insert(permissions).values(
 					input.permissions.map((p) => ({
-						id: randomUUID(),
+						id: generateId(),
 						agentId,
 						resource: p.resource,
 						actions: p.actions,
@@ -233,7 +233,7 @@ export function createAgentModule(config: AgentModuleConfig) {
 		if (existing.status !== "active")
 			throw new Error(`Cannot rotate token for ${existing.status} agent.`);
 
-		const { token, hash, prefix } = generateAgentToken();
+		const { token, hash, prefix } = await generateAgentToken();
 		const now = new Date();
 
 		await db
@@ -249,7 +249,7 @@ export function createAgentModule(config: AgentModuleConfig) {
 	 * Used internally by the authorization engine.
 	 */
 	async function validateToken(token: string): Promise<AgentIdentity | null> {
-		const hash = createHash("sha256").update(token).digest("hex");
+		const hash = await sha256(token);
 		const rows = await db.select().from(agents).where(eq(agents.tokenHash, hash)).limit(1);
 		const agent = rows[0];
 		if (!agent) return null;

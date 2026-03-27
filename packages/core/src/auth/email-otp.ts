@@ -19,8 +19,8 @@
  * ```
  */
 
-import { createHash, randomUUID } from "node:crypto";
 import { and, eq, gt } from "drizzle-orm";
+import { generateId, sha256 } from "../crypto/web-crypto.js";
 import type { Database } from "../db/database.js";
 import { emailOtps, users } from "../db/schema.js";
 import type { SessionManager } from "../session/session.js";
@@ -77,17 +77,17 @@ const DEFAULT_MAX_ATTEMPTS = 5;
 // Helpers
 // ---------------------------------------------------------------------------
 
-function hashCode(code: string): string {
-	return createHash("sha256").update(code).digest("hex");
+async function hashCode(code: string): Promise<string> {
+	return sha256(code);
 }
 
 function generateNumericCode(length: number): string {
-	// Build the code digit-by-digit using randomUUID entropy (avoid modulo bias).
+	// Build the code digit-by-digit using generateId entropy (avoid modulo bias).
 	// Each hex digit maps to 0-15; we take digits 0-9 and retry for A-F.
 	const digits: string[] = [];
 	while (digits.length < length) {
-		// randomUUID gives 32 hex chars — plenty of entropy per call.
-		for (const char of randomUUID().replace(/-/g, "")) {
+		// generateId gives 32 hex chars — plenty of entropy per call.
+		for (const char of generateId().replace(/-/g, "")) {
 			if (digits.length >= length) break;
 			const num = parseInt(char, 16);
 			if (num < 10) digits.push(String(num));
@@ -119,7 +119,7 @@ export function createEmailOtpModule(
 
 		if (existing[0]) return { id: existing[0].id, email: existing[0].email };
 
-		const id = randomUUID();
+		const id = generateId();
 		const now = new Date();
 		await db.insert(users).values({
 			id,
@@ -143,9 +143,9 @@ export function createEmailOtpModule(
 		await db.delete(emailOtps).where(eq(emailOtps.email, email));
 
 		await db.insert(emailOtps).values({
-			id: randomUUID(),
+			id: generateId(),
 			email,
-			codeHash: hashCode(code),
+			codeHash: await hashCode(code),
 			expiresAt,
 			attempts: 0,
 			createdAt: now,
@@ -183,7 +183,7 @@ export function createEmailOtpModule(
 			.set({ attempts: record.attempts + 1 })
 			.where(eq(emailOtps.id, record.id));
 
-		if (hashCode(code) !== record.codeHash) return null;
+		if ((await hashCode(code)) !== record.codeHash) return null;
 
 		// Code is correct — remove the record to prevent re-use.
 		await db.delete(emailOtps).where(eq(emailOtps.id, record.id));

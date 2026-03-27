@@ -1,4 +1,4 @@
-import { getRandomValues, randomUUID } from "node:crypto";
+import { generateId, randomBytes, toBase64Url } from "../crypto/web-crypto.js";
 
 /**
  * Generate a cryptographically secure random token string.
@@ -7,9 +7,8 @@ import { getRandomValues, randomUUID } from "node:crypto";
  * a URL-safe base64 string of the requested byte length.
  */
 export function generateSecureToken(byteLength: number): string {
-	const bytes = new Uint8Array(byteLength);
-	getRandomValues(bytes);
-	return uint8ArrayToBase64Url(bytes);
+	const bytes = randomBytes(byteLength);
+	return toBase64Url(bytes);
 }
 
 /**
@@ -18,7 +17,7 @@ export function generateSecureToken(byteLength: number): string {
  * combined with PKCE code_verifier for security).
  */
 export function generateAuthorizationCode(): string {
-	return randomUUID();
+	return generateId();
 }
 
 /**
@@ -32,7 +31,7 @@ export async function computeS256Challenge(codeVerifier: string): Promise<string
 	const encoder = new TextEncoder();
 	const data = encoder.encode(codeVerifier);
 	const digest = await globalThis.crypto.subtle.digest("SHA-256", data);
-	return uint8ArrayToBase64Url(new Uint8Array(digest));
+	return toBase64Url(new Uint8Array(digest));
 }
 
 /**
@@ -60,17 +59,6 @@ function timingSafeEqual(a: string, b: string): boolean {
 		diff |= bufA[i]! ^ bufB[i]!;
 	}
 	return diff === 0;
-}
-
-/**
- * Encode a Uint8Array as a base64url string (no padding).
- */
-function uint8ArrayToBase64Url(bytes: Uint8Array): string {
-	let binary = "";
-	for (let i = 0; i < bytes.length; i++) {
-		binary += String.fromCharCode(bytes[i] as number);
-	}
-	return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
 /**

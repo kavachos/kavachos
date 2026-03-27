@@ -6,7 +6,7 @@
  * retrieval, cancellation, and SSE streaming.
  */
 
-import { randomUUID } from "node:crypto";
+import { generateId } from "../crypto/web-crypto.js";
 import type {
 	A2AAgentCard,
 	A2ACancelTaskParams,
@@ -85,7 +85,7 @@ export function createA2AClient(config: A2AClientConfig): A2AClient {
 				},
 				body: JSON.stringify({
 					jsonrpc: A2A_JSONRPC_VERSION,
-					id: randomUUID(),
+					id: generateId(),
 					method,
 					params,
 				}),
@@ -222,7 +222,7 @@ export function createA2AClient(config: A2AClientConfig): A2AClient {
 			},
 			body: JSON.stringify({
 				jsonrpc: A2A_JSONRPC_VERSION,
-				id: randomUUID(),
+				id: generateId(),
 				method: A2A_METHODS.SEND_STREAMING_MESSAGE,
 				params,
 			}),

@@ -14,8 +14,8 @@
  * use the `kavach_oauth_accounts` table — both defined in `./schema.ts`.
  */
 
-import { randomUUID } from "node:crypto";
 import { and, eq, lt } from "drizzle-orm";
+import { generateId } from "../../crypto/web-crypto.js";
 import type { Database } from "../../db/database.js";
 import { generateCodeVerifier } from "./pkce.js";
 import { oauthAccounts, oauthStates } from "./schema.js";
@@ -97,7 +97,7 @@ export function createOAuthModule(db: Database, config: OAuthModuleConfig): OAut
 	): Promise<{ url: string; state: string }> {
 		const provider = getProvider(providerId);
 
-		const state = randomUUID();
+		const state = generateId();
 		const codeVerifier = generateCodeVerifier();
 		const now = new Date();
 		const expiresAt = new Date(now.getTime() + stateTtl * 1000);
@@ -199,7 +199,7 @@ export function createOAuthModule(db: Database, config: OAuthModuleConfig): OAut
 		// New link — we do NOT create the kavach_users row here.  That is the
 		// caller's responsibility because they may want to look up an existing
 		// user by email, collect extra profile fields, enforce tenant rules, etc.
-		const accountId = randomUUID();
+		const accountId = generateId();
 		const expiresAt = tokens.expiresIn ? new Date(now.getTime() + tokens.expiresIn * 1000) : null;
 
 		await db.insert(oauthAccounts).values({
@@ -270,7 +270,7 @@ export function createOAuthModule(db: Database, config: OAuthModuleConfig): OAut
 			return rowToAccount(updated[0] as typeof oauthAccounts.$inferSelect);
 		}
 
-		const accountId = randomUUID();
+		const accountId = generateId();
 
 		await db.insert(oauthAccounts).values({
 			id: accountId,

@@ -20,8 +20,8 @@
  * ```
  */
 
-import { createHash } from "node:crypto";
 import { eq, inArray, or, sql } from "drizzle-orm";
+import { sha256 } from "../crypto/web-crypto.js";
 import type { Database } from "../db/database.js";
 import {
 	agents,
@@ -109,12 +109,13 @@ export interface GdprModule {
  * Produce a stable short hash for an ID so anonymized audit logs from the
  * same deleted account are still groupable in aggregate reports.
  */
-function stableHash(id: string): string {
-	return createHash("sha256").update(id).digest("hex").slice(0, 12);
+async function stableHash(id: string): Promise<string> {
+	const hash = await sha256(id);
+	return hash.slice(0, 12);
 }
 
-function anonymizedUserId(userId: string): string {
-	return `[deleted-${stableHash(userId)}]`;
+async function anonymizedUserId(userId: string): Promise<string> {
+	return `[deleted-${await stableHash(userId)}]`;
 }
 
 function anonymizedEmail(userId: string): string {
@@ -328,12 +329,12 @@ export function createGdprModule(db: Database): GdprModule {
 				// The audit log FK columns are NOT NULL and reference users/agents,
 				// so we must temporarily disable FK enforcement to store the
 				// anonymized placeholder. We re-enable it immediately after.
-				const anonUserId = anonymizedUserId(userId);
+				const anonUserId = await anonymizedUserId(userId);
 
 				await db.run(sql`PRAGMA foreign_keys = OFF`);
 				try {
 					for (const agentId of agentIds) {
-						const anonAgentId = anonymizedUserId(agentId);
+						const anonAgentId = await anonymizedUserId(agentId);
 						const affectedRows = await db
 							.select({ id: auditLogs.id })
 							.from(auditLogs)

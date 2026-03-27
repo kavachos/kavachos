@@ -8,6 +8,8 @@ export default defineConfig({
 	sourcemap: true,
 	splitting: false,
 	treeshake: true,
-	target: "node22",
+	// esnext: ensures no Node-only polyfills are injected, making the output
+	// compatible with both Node.js and Cloudflare Workers runtime.
+	target: "esnext",
 	external: ["kavachos", "zod", "hono"],
 });

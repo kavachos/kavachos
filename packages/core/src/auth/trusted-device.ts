@@ -8,8 +8,8 @@
  * Fingerprints are HMAC-signed to prevent client-side spoofing.
  */
 
-import { createHmac, randomBytes } from "node:crypto";
 import { and, asc, eq, gt } from "drizzle-orm";
+import { hmacSha256, randomBytesHex } from "../crypto/web-crypto.js";
 import type { Database } from "../db/database.js";
 import { trustedDevices } from "../db/schema.js";
 
@@ -58,7 +58,7 @@ export interface TrustedDeviceModule {
 	 * The same request will always produce the same fingerprint; changing
 	 * user-agent or accept-language invalidates the fingerprint.
 	 */
-	generateFingerprint(request: Request): string;
+	generateFingerprint(request: Request): Promise<string>;
 }
 
 // ---------------------------------------------------------------------------
@@ -88,8 +88,8 @@ function labelFromUserAgent(ua: string): string {
 }
 
 /** Generate a URL-safe random id. */
-function generateId(): string {
-	return randomBytes(16).toString("hex");
+function generateDeviceId(): string {
+	return randomBytesHex(16);
 }
 
 // ---------------------------------------------------------------------------
@@ -104,11 +104,11 @@ export function createTrustedDeviceModule(
 	const maxDevices = config.maxDevices ?? DEFAULT_MAX_DEVICES;
 	// Per-process fallback key so the module works without explicit config,
 	// but fingerprints will differ across restarts (safe degradation).
-	const hmacSecret = config.secret ?? randomBytes(32).toString("hex");
+	const hmacSecret = config.secret ?? randomBytesHex(32);
 
 	// ── generateFingerprint ────────────────────────────────────────────────
 
-	function generateFingerprint(request: Request): string {
+	async function generateFingerprint(request: Request): Promise<string> {
 		const ua = request.headers.get("user-agent") ?? "";
 		const lang = request.headers.get("accept-language") ?? "";
 		const encoding = request.headers.get("accept-encoding") ?? "";
@@ -116,7 +116,7 @@ export function createTrustedDeviceModule(
 
 		const payload = [ua, lang, encoding, accept].join("|");
 
-		return createHmac("sha256", hmacSecret).update(payload, "utf8").digest("hex");
+		return hmacSha256(hmacSecret, payload);
 	}
 
 	// ── trustDevice ───────────────────────────────────────────────────────
@@ -154,7 +154,7 @@ export function createTrustedDeviceModule(
 		// reconstructing it — we store the label separately at trust time.
 		// Since we only have the fingerprint here, we store a generic label.
 		// Callers who want a specific label should use a separate overload.
-		const id = generateId();
+		const id = generateDeviceId();
 
 		await db.insert(trustedDevices).values({
 			id,

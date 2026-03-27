@@ -1,5 +1,5 @@
-import { randomUUID } from "node:crypto";
 import { and, eq, isNull, ne, or } from "drizzle-orm";
+import { generateId } from "../crypto/web-crypto.js";
 import type { Database } from "../db/database.js";
 import { budgetPolicies } from "../db/schema.js";
 
@@ -101,7 +101,7 @@ function isExceeded(limits: BudgetLimits, usage: BudgetUsage): boolean {
 
 export function createPolicyModule(db: Database) {
 	async function create(input: CreatePolicyInput): Promise<BudgetPolicy> {
-		const id = `pol_${randomUUID().replace(/-/g, "")}`;
+		const id = `pol_${generateId().replace(/-/g, "")}`;
 		const now = new Date();
 		const usage = emptyUsage();
 

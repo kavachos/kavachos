@@ -24,7 +24,7 @@
  * ```
  */
 
-import { randomBytes } from "node:crypto";
+import { randomBytes, toHex } from "../crypto/web-crypto.js";
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -116,7 +116,7 @@ async function parseBody(request: Request): Promise<Record<string, unknown>> {
 }
 
 function generateDeviceCode(): string {
-	return randomBytes(32).toString("hex");
+	return toHex(randomBytes(32));
 }
 
 /**

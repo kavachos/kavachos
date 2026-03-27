@@ -20,8 +20,8 @@
  * ```
  */
 
-import { createHash, randomUUID, scryptSync, timingSafeEqual } from "node:crypto";
 import { and, eq } from "drizzle-orm";
+import { generateId, pbkdf2Hash, pbkdf2Verify } from "../crypto/web-crypto.js";
 import type { Database } from "../db/database.js";
 import { usernameAccounts, users } from "../db/schema.js";
 import type { SessionManager } from "../session/session.js";
@@ -74,32 +74,16 @@ const DEFAULT_MAX_USERNAME = 32;
 const DEFAULT_ALLOWED_PATTERN = /^[a-zA-Z0-9_-]+$/;
 const DEFAULT_MIN_PASSWORD = 8;
 const DEFAULT_MAX_PASSWORD = 128;
-const SCRYPT_KEYLEN = 64;
-const SCRYPT_PARAMS = { N: 16384, r: 8, p: 1 };
-
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function saltedHash(salt: string, password: string): Uint8Array {
-	return scryptSync(password, salt, SCRYPT_KEYLEN, SCRYPT_PARAMS);
+async function hashPassword(password: string): Promise<string> {
+	return pbkdf2Hash(password);
 }
 
-function hashPassword(password: string): string {
-	const salt = createHash("sha256").update(randomUUID()).digest("hex").slice(0, 32);
-	const derived = saltedHash(salt, password);
-	return `${salt}:${Buffer.from(derived).toString("hex")}`;
-}
-
-function verifyPassword(stored: string, candidate: string): boolean {
-	const colonIdx = stored.indexOf(":");
-	if (colonIdx === -1) return false;
-	const salt = stored.slice(0, colonIdx);
-	const storedHash = stored.slice(colonIdx + 1);
-	const candidateHash = saltedHash(salt, candidate);
-	const storedBuf = Buffer.from(storedHash, "hex");
-	if (candidateHash.byteLength !== storedBuf.byteLength) return false;
-	return timingSafeEqual(candidateHash, storedBuf);
+async function verifyPassword(stored: string, candidate: string): Promise<boolean> {
+	return pbkdf2Verify(candidate, stored);
 }
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -175,8 +159,8 @@ export function createUsernameAuthModule(
 		if (existing[0]) throw new Error("Username already taken");
 
 		const now = new Date();
-		const userId = randomUUID();
-		const passwordHash = hashPassword(input.password);
+		const userId = generateId();
+		const passwordHash = await hashPassword(input.password);
 
 		await db.insert(users).values({
 			id: userId,
@@ -187,7 +171,7 @@ export function createUsernameAuthModule(
 		});
 
 		await db.insert(usernameAccounts).values({
-			id: randomUUID(),
+			id: generateId(),
 			userId,
 			username: normalisedUsername,
 			passwordHash,
@@ -217,7 +201,7 @@ export function createUsernameAuthModule(
 		const account = rows[0];
 		if (!account) throw new Error("Invalid username or password");
 
-		const valid = verifyPassword(account.passwordHash, input.password);
+		const valid = await verifyPassword(account.passwordHash, input.password);
 		if (!valid) throw new Error("Invalid username or password");
 
 		const { token, session } = await sessionManager.create(account.userId);
@@ -241,13 +225,13 @@ export function createUsernameAuthModule(
 		const account = rows[0];
 		if (!account) throw new Error("Account not found");
 
-		const valid = verifyPassword(account.passwordHash, current);
+		const valid = await verifyPassword(account.passwordHash, current);
 		if (!valid) throw new Error("Current password is incorrect");
 
 		const passwordError = validatePassword(newPassword);
 		if (passwordError) throw new Error(passwordError);
 
-		const newHash = hashPassword(newPassword);
+		const newHash = await hashPassword(newPassword);
 		await db
 			.update(usernameAccounts)
 			.set({ passwordHash: newHash, updatedAt: new Date() })

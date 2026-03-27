@@ -8,6 +8,9 @@ export {
 } from "./cookie.js";
 export type { CsrfValidationResult } from "./csrf.js";
 export { generateCsrfToken, validateCsrfToken, validateOrigin } from "./csrf.js";
+// Session freshness enforcement for sensitive operations
+export type { SessionFreshnessConfig, SessionFreshnessModule } from "./freshness.js";
+export { createSessionFreshnessModule } from "./freshness.js";
 export type {
 	CookieSessionConfig,
 	CookieSessionManager,

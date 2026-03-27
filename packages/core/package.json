@@ -1,6 +1,6 @@
 {
   "name": "kavachos",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "The auth OS for AI agents - identity, permissions, delegation, and audit for the agentic era",
   "type": "module",
   "main": "dist/index.js",
@@ -37,6 +37,14 @@
     "./vc": {
       "types": "./dist/vc/index.d.ts",
       "import": "./dist/vc/index.js"
+    },
+    "./crypto": {
+      "import": "./dist/crypto/index.js",
+      "types": "./dist/crypto/index.d.ts"
+    },
+    "./redirect": {
+      "import": "./dist/redirect/index.js",
+      "types": "./dist/redirect/index.d.ts"
     }
   },
   "files": [

@@ -21,8 +21,8 @@
  * ```
  */
 
-import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
+import { generateId, randomBytesHex, sha256 } from "../crypto/web-crypto.js";
 import type { Database } from "../db/database.js";
 import { apiKeys as apiKeysTable } from "../db/schema.js";
 
@@ -73,8 +73,8 @@ export interface ApiKeyManagerModule {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function hashKey(key: string): string {
-	return createHash("sha256").update(key).digest("hex");
+async function hashKey(key: string): Promise<string> {
+	return sha256(key);
 }
 
 // ---------------------------------------------------------------------------
@@ -118,7 +118,7 @@ export function createApiKeyManagerModule(
 	const defaultExpiryDays = config.defaultExpiryDays ?? 365;
 
 	function generateKey(): string {
-		return `${prefix}${randomBytes(32).toString("hex")}`;
+		return `${prefix}${randomBytesHex(32)}`;
 	}
 
 	function computeDefaultExpiry(): Date {
@@ -134,9 +134,9 @@ export function createApiKeyManagerModule(
 		expiresAt?: Date;
 	}): Promise<{ apiKey: ApiKey; key: string }> {
 		const key = generateKey();
-		const keyHash = hashKey(key);
+		const keyHash = await hashKey(key);
 		const keyPrefix = key.slice(0, prefix.length + 8); // prefix + first 8 hex chars
-		const id = `key_${randomUUID().replace(/-/g, "")}`;
+		const id = `key_${generateId().replace(/-/g, "")}`;
 		const now = new Date();
 		const expiresAt = input.expiresAt ?? computeDefaultExpiry();
 
@@ -169,7 +169,7 @@ export function createApiKeyManagerModule(
 	async function validate(
 		key: string,
 	): Promise<{ userId: string; permissions: string[]; keyId: string } | null> {
-		const keyHash = hashKey(key);
+		const keyHash = await hashKey(key);
 		const now = new Date();
 
 		const rows = await db.select().from(apiKeysTable).where(eq(apiKeysTable.keyHash, keyHash));

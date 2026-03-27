@@ -4,6 +4,34 @@ import { drizzle as drizzleSqlite } from "drizzle-orm/better-sqlite3";
 import * as schema from "./schema.js";
 
 // ──────────────────────────────────────────────────────────────────────────────
+// Cloudflare D1 minimal interfaces
+// (avoids a hard dep on @cloudflare/workers-types)
+// ──────────────────────────────────────────────────────────────────────────────
+
+/** Minimal Cloudflare D1 interface for type compatibility */
+export interface D1DatabaseBinding {
+	prepare(query: string): D1PreparedStatement;
+	batch<T = unknown>(statements: D1PreparedStatement[]): Promise<D1Result<T>[]>;
+	exec(query: string): Promise<D1ExecResult>;
+}
+interface D1PreparedStatement {
+	bind(...values: unknown[]): D1PreparedStatement;
+	first<T = unknown>(colName?: string): Promise<T | null>;
+	run<T = unknown>(): Promise<D1Result<T>>;
+	all<T = unknown>(): Promise<D1Result<T>>;
+	raw<T = unknown>(): Promise<T[]>;
+}
+interface D1Result<T = unknown> {
+	results: T[];
+	success: boolean;
+	meta: Record<string, unknown>;
+}
+interface D1ExecResult {
+	count: number;
+	duration: number;
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
 // Type definitions
 // ──────────────────────────────────────────────────────────────────────────────
 
@@ -25,20 +53,32 @@ export type Database = BetterSQLite3Database<typeof schema>;
 export type AnyDatabase =
 	| { provider: "sqlite"; db: Database }
 	| { provider: "postgres"; db: PostgresDatabase }
-	| { provider: "mysql"; db: MySQLDatabase };
+	| { provider: "mysql"; db: MySQLDatabase }
+	| { provider: "d1"; db: D1DrizzleDatabase };
 
 // Import types lazily so the drivers stay optional peer deps.
 // biome-ignore lint/suspicious/noExplicitAny: adapter boundary - drizzle pg/mysql types are not compatible with sqlite schema
 type PostgresDatabase = any;
 // biome-ignore lint/suspicious/noExplicitAny: adapter boundary - drizzle pg/mysql types are not compatible with sqlite schema
 type MySQLDatabase = any;
+// biome-ignore lint/suspicious/noExplicitAny: adapter boundary - D1 drizzle types differ from SQLite
+type D1DrizzleDatabase = any;
 
-export interface DatabaseConfig {
-	provider: "sqlite" | "postgres" | "mysql";
-	url: string;
-	/** Skip automatic table creation on init (default: false) */
-	skipMigrations?: boolean;
-}
+export type DatabaseConfig =
+	| {
+			provider: "sqlite" | "postgres" | "mysql";
+			/** Connection URL. Required for sqlite, postgres, and mysql. */
+			url: string;
+			/** Skip automatic table creation on init (default: false) */
+			skipMigrations?: boolean;
+	  }
+	| {
+			provider: "d1";
+			/** Cloudflare D1 binding from the Worker environment. Required when provider is "d1". */
+			binding: D1DatabaseBinding;
+			/** Skip automatic table creation on init (default: false) */
+			skipMigrations?: boolean;
+	  };
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Factory
@@ -50,8 +90,9 @@ export interface DatabaseConfig {
  * - **SQLite** – fully typed Drizzle ORM via `better-sqlite3` (current default).
  * - **Postgres** – Drizzle connection via `drizzle-orm/node-postgres` + `pg` (peer dep).
  * - **MySQL** – Drizzle connection via `drizzle-orm/mysql2` + `mysql2` (peer dep).
+ * - **D1** – Drizzle connection via `drizzle-orm/d1` for Cloudflare Workers (peer dep).
  *
- * For Postgres and MySQL the return value is typed as `Database` for source
+ * For Postgres, MySQL, and D1 the return value is typed as `Database` for source
  * compatibility; the underlying Drizzle instance is created against the
  * correct driver. Full pg-core / mysql-core schema typings are planned for v0.2.0.
  */
@@ -91,13 +132,19 @@ export async function createDatabase(config: DatabaseConfig): Promise<Database> 
 
 		const pool = mysql2.createPool(config.url);
 		// Cast to Database for API compatibility; full mysql-core schema arrives in v0.2.0.
-		// biome-ignore lint/suspicious/noExplicitAny: adapter boundary - cast pg drizzle to sqlite-typed Database
+		// biome-ignore lint/suspicious/noExplicitAny: adapter boundary - cast mysql drizzle to sqlite-typed Database
 		return drizzle(pool) as any as Database;
+	}
+
+	if (config.provider === "d1") {
+		const { drizzle } = await import("drizzle-orm/d1");
+		// biome-ignore lint/suspicious/noExplicitAny: adapter boundary - D1 drizzle types differ from SQLite
+		return drizzle(config.binding as any, { schema }) as unknown as Database;
 	}
 
 	throw new Error(
 		`KavachOS: unsupported database provider "${(config as DatabaseConfig).provider}". ` +
-			'Valid values are "sqlite", "postgres", "mysql".',
+			'Valid values are "sqlite", "postgres", "mysql", "d1".',
 	);
 }
 
@@ -115,6 +162,7 @@ export function createDatabaseSync(config: DatabaseConfig): Database {
 				`Use the async createDatabase() for provider "${config.provider}".`,
 		);
 	}
+	// After the provider check, TypeScript narrows config to the sqlite variant (url: string).
 	const sqlite = new BetterSqlite3(config.url);
 	sqlite.pragma("journal_mode = WAL");
 	sqlite.pragma("foreign_keys = ON");

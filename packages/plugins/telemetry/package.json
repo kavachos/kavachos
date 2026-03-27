@@ -1,6 +1,6 @@
 {
   "name": "@kavachos/plugin-telemetry",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "OpenTelemetry integration plugin for KavachOS — converts auth events into OTel spans",
   "type": "module",
   "main": "dist/index.js",
