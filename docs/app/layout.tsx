@@ -1,3 +1,4 @@
+import { Analytics } from "@vercel/analytics/next";
 import { RootProvider } from "fumadocs-ui/provider/next";
 import type { Metadata } from "next";
 import { Space_Grotesk, Manrope, JetBrains_Mono } from "next/font/google";
@@ -100,6 +101,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 					<Nav />
 					{children}
 				</RootProvider>
+				<Analytics />
 			</body>
 		</html>
 	);
