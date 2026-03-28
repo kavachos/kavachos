@@ -182,7 +182,7 @@ export async function hmacSha1Raw(key: Uint8Array, data: Uint8Array): Promise<Ui
 // PBKDF2 password hashing
 // ---------------------------------------------------------------------------
 
-const PBKDF2_ITERATIONS = 600_000; // OWASP 2023 recommendation for SHA-256
+const PBKDF2_ITERATIONS = 100_000; // CF Workers caps at 100K; OWASP recommends 600K for Node.js
 const PBKDF2_KEY_LENGTH = 64; // bytes
 const PBKDF2_SALT_LENGTH = 32; // bytes
 
