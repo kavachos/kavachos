@@ -237,16 +237,30 @@ const kavach = createKavach({
 
 ## Documentation
 
-Full docs at [kavachos.com/docs](https://kavachos.com/docs).
+Full docs at [docs.kavachos.com/docs](https://docs.kavachos.com/docs).
 
-- [Getting started](https://kavachos.com/docs/quickstart)
-- [Authentication](https://kavachos.com/docs/auth)
-- [Agent identity](https://kavachos.com/docs/agents)
-- [Permissions](https://kavachos.com/docs/permissions)
-- [Delegation](https://kavachos.com/docs/delegation)
-- [MCP OAuth 2.1](https://kavachos.com/docs/mcp)
-- [Framework adapters](https://kavachos.com/docs/adapters)
-- [REST API reference](https://kavachos.com/docs/api)
+- [Getting started](https://docs.kavachos.com/docs/quickstart)
+- [Authentication](https://docs.kavachos.com/docs/auth)
+- [Agent identity](https://docs.kavachos.com/docs/agents)
+- [Permissions](https://docs.kavachos.com/docs/permissions)
+- [Delegation](https://docs.kavachos.com/docs/delegation)
+- [MCP OAuth 2.1](https://docs.kavachos.com/docs/mcp)
+- [Framework adapters](https://docs.kavachos.com/docs/adapters)
+- [REST API reference](https://docs.kavachos.com/docs/api)
+
+---
+
+## KavachOS Cloud
+
+Managed hosting with a dashboard, billing, and zero infrastructure to manage.
+
+- **Free tier:** 1,000 MAU, 1 project, 2 API keys
+- **Starter:** $29/mo for 10,000 MAU
+- **Growth:** $79/mo for 50,000 MAU
+
+Every plan includes MCP OAuth 2.1, agent identity, delegation chains, trust scoring, and compliance reports.
+
+[Start free](https://app.kavachos.com/sign-up) | [Pricing](https://kavachos.com/pricing) | [Self-host instead](https://docs.kavachos.com/docs/quickstart)
 
 ---
 
