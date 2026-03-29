@@ -9,9 +9,9 @@ import posthog from "posthog-js";
 import { Logo } from "./logo";
 
 const PRODUCT_LINKS = [
-	{ href: "/products/agent-identity", label: "Agent identity", description: "Cryptographic tokens, permissions, delegation, audit" },
-	{ href: "/products/security", label: "Security", description: "Anomaly detection, trust scoring, compliance" },
-	{ href: "/products/platform", label: "Platform", description: "MCP OAuth 2.1, adapters, dashboard, SDK" },
+	{ href: "https://kavachos.com/products/agent-identity", label: "Agent identity", description: "Cryptographic tokens, permissions, delegation, audit" },
+	{ href: "https://kavachos.com/products/security", label: "Security", description: "Anomaly detection, trust scoring, compliance" },
+	{ href: "https://kavachos.com/products/platform", label: "Platform", description: "MCP OAuth 2.1, adapters, dashboard, SDK" },
 ] as const;
 
 function GitHubIcon({ className }: { className?: string }) {
@@ -57,7 +57,7 @@ export function Nav() {
 				<div className="relative mx-auto flex h-[var(--nav-height)] max-w-[1400px] items-center justify-between px-5 lg:px-8">
 
 					{/* Left: Logo */}
-					<Link href="/" className="group flex items-center gap-3 rounded-xl px-2 py-2 transition-all hover:bg-fd-accent/40">
+					<Link href="https://kavachos.com" className="group flex items-center gap-3 rounded-xl px-2 py-2 transition-all hover:bg-fd-accent/40">
 						<Logo size={30} />
 						<div className="flex items-baseline gap-[2px] font-heading text-[17px] font-bold tracking-tight">
 							<span>kavach</span>
@@ -175,7 +175,7 @@ export function Nav() {
 			{mobileOpen && (
 				<div className="fixed inset-0 top-[var(--nav-height)] z-40 overflow-y-auto border-t border-fd-border bg-fd-background/95 backdrop-blur-xl md:hidden">
 					<nav className="mx-auto flex max-w-sm flex-col gap-1 p-6">
-						<MobileNavLink href="/" active={isHome}>Home</MobileNavLink>
+						<MobileNavLink href="https://kavachos.com">Home</MobileNavLink>
 						<MobileNavLink href="/docs" active={isDocsPage}>Documentation</MobileNavLink>
 						<p className="mt-3 px-4 text-[10px] font-semibold uppercase tracking-[0.12em] text-fd-muted-foreground/40">Products</p>
 						{PRODUCT_LINKS.map((link) => (
