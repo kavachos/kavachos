@@ -30,13 +30,17 @@
  * ```
  */
 
-import { createHash, createVerify, randomBytes, randomUUID } from "node:crypto";
-import { TextEncoder as NodeTextEncoder } from "node:util";
 import { deflateRaw } from "node:zlib";
 import { and, eq } from "drizzle-orm";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import type { Database } from "../db/database.js";
 import { ssoConnections } from "../db/schema.js";
+import {
+	generateId,
+	randomBytesHex,
+	sha256Raw,
+	toHex,
+} from "../crypto/web-crypto.js";
 
 // ---------------------------------------------------------------------------
 // Error codes
@@ -161,9 +165,9 @@ export interface SsoModule {
 	) => Promise<{ user: { id: string; email: string; name?: string }; orgId: string }>;
 	handleRequest: (request: Request) => Promise<Response | null>;
 	/** Generate a state token with embedded timestamp for expiry checking */
-	generateState: () => string;
+	generateState: () => Promise<string>;
 	/** Validate a state token has not expired */
-	validateState: (state: string) => boolean;
+	validateState: (state: string) => Promise<boolean>;
 }
 
 // ---------------------------------------------------------------------------
@@ -588,7 +592,7 @@ function getSamlAttributeValue(assertion: XmlNode, attributeName: string): strin
 // ---------------------------------------------------------------------------
 
 function deflateRawAsync(input: string): Promise<Uint8Array> {
-	const encoder = new NodeTextEncoder();
+	const encoder = new TextEncoder();
 	return new Promise((resolve, reject) => {
 		deflateRaw(encoder.encode(input), (err, result) => {
 			if (err) reject(err);
@@ -609,7 +613,7 @@ function uint8ArrayToBase64(bytes: Uint8Array): string {
 async function buildSamlAuthnRequest(
 	provider: SamlProvider,
 ): Promise<{ requestId: string; encoded: string }> {
-	const requestId = `_${randomBytes(16).toString("hex")}`;
+	const requestId = `_${randomBytesHex(16)}`;
 	const now = new Date().toISOString();
 
 	const xml = `<samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="${requestId}" Version="2.0" IssueInstant="${now}" Destination="${provider.entryPoint}" AssertionConsumerServiceURL="${provider.callbackUrl}"><saml:Issuer xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">${provider.entityId ?? provider.issuer}</saml:Issuer></samlp:AuthnRequest>`;
@@ -617,6 +621,37 @@ async function buildSamlAuthnRequest(
 	const deflated = await deflateRawAsync(xml);
 	const b64 = uint8ArrayToBase64(deflated);
 	return { requestId, encoded: encodeURIComponent(b64) };
+}
+
+// ---------------------------------------------------------------------------
+// PEM / base64 helpers for Web Crypto
+// ---------------------------------------------------------------------------
+
+/** Convert a PEM-encoded certificate or public key to an ArrayBuffer (DER). */
+function pemToArrayBuffer(pem: string): ArrayBuffer {
+	// Strip headers and whitespace
+	const base64 = pem
+		.replace(/-----[^-]+-----/g, "")
+		.replace(/\s+/g, "");
+	const binary = atob(base64);
+	const bytes = new Uint8Array(binary.length);
+	for (let i = 0; i < binary.length; i++) {
+		bytes[i] = binary.charCodeAt(i);
+	}
+	return bytes.buffer as ArrayBuffer;
+}
+
+/** Convert a base64 string (standard or url-safe) to an ArrayBuffer. */
+function base64ToArrayBuffer(b64: string): ArrayBuffer {
+	// Normalize base64url to base64
+	let base64 = b64.replace(/-/g, "+").replace(/_/g, "/");
+	while (base64.length % 4 !== 0) base64 += "=";
+	const binary = atob(base64);
+	const bytes = new Uint8Array(binary.length);
+	for (let i = 0; i < binary.length; i++) {
+		bytes[i] = binary.charCodeAt(i);
+	}
+	return bytes.buffer as ArrayBuffer;
 }
 
 /**
@@ -628,7 +663,7 @@ async function buildSamlAuthnRequest(
  * 3. The signature over SignedInfo is valid against the IdP certificate
  * 4. The signature algorithm is RSA-SHA256 or RSA-SHA1
  */
-function verifySamlSignature(doc: XmlNode, certPem: string): boolean {
+async function verifySamlSignature(doc: XmlNode, certPem: string): Promise<boolean> {
 	const signatureNode = findElement(doc, "Signature");
 	if (!signatureNode) return false;
 
@@ -690,16 +725,23 @@ function verifySamlSignature(doc: XmlNode, certPem: string): boolean {
 			}
 
 			if (referencedContent && expectedDigest) {
-				let hashAlgo: string;
+				let digestHashName: "SHA-256" | "SHA-1";
 				if (digestAlgo.includes("sha256") || digestAlgo.includes("SHA256")) {
-					hashAlgo = "sha256";
+					digestHashName = "SHA-256";
 				} else if (digestAlgo.includes("sha1") || digestAlgo.includes("SHA1")) {
-					hashAlgo = "sha1";
+					digestHashName = "SHA-1";
 				} else {
-					hashAlgo = "sha256";
+					digestHashName = "SHA-256";
 				}
 
-				const actualDigest = createHash(hashAlgo).update(referencedContent).digest("base64");
+				const contentBuf = new TextEncoder().encode(referencedContent);
+				const digestBuf = await globalThis.crypto.subtle.digest(digestHashName, contentBuf);
+				const digestBytes = new Uint8Array(digestBuf);
+				let digestBinary = "";
+				for (let i = 0; i < digestBytes.length; i++) {
+					digestBinary += String.fromCharCode(digestBytes[i] as number);
+				}
+				const actualDigest = btoa(digestBinary);
 				if (actualDigest !== expectedDigest) {
 					return false;
 				}
@@ -712,11 +754,25 @@ function verifySamlSignature(doc: XmlNode, certPem: string): boolean {
 		? certPem
 		: `-----BEGIN CERTIFICATE-----\n${certPem}\n-----END CERTIFICATE-----`;
 
-	// Verify signature over SignedInfo
-	const verifier = createVerify(nodeAlgo);
-	verifier.update(signedInfoNode.rawOuterXml);
+	// Verify signature over SignedInfo using Web Crypto
 	try {
-		return verifier.verify(normalizedCert, sigValue, "base64");
+		const hashName: "SHA-256" | "SHA-1" = nodeAlgo === "RSA-SHA1" ? "SHA-1" : "SHA-256";
+		const certDer = pemToArrayBuffer(normalizedCert);
+		const cryptoKey = await globalThis.crypto.subtle.importKey(
+			"spki",
+			certDer,
+			{ name: "RSASSA-PKCS1-v1_5", hash: hashName },
+			false,
+			["verify"],
+		);
+		const signatureBuffer = base64ToArrayBuffer(sigValue);
+		const dataBuffer = new TextEncoder().encode(signedInfoNode.rawOuterXml);
+		return await globalThis.crypto.subtle.verify(
+			"RSASSA-PKCS1-v1_5",
+			cryptoKey,
+			signatureBuffer,
+			dataBuffer,
+		);
 	} catch {
 		return false;
 	}
@@ -757,11 +813,11 @@ interface ParsedSamlResponse {
  * - Audience restriction
  * - NameID is present
  */
-function parseSamlResponse(
+async function parseSamlResponse(
 	samlResponse: string,
 	provider: SamlProvider,
 	expectedRequestId?: string,
-): ParsedSamlResponse {
+): Promise<ParsedSamlResponse> {
 	const decoded = atob(samlResponse);
 
 	// Parse XML properly
@@ -795,7 +851,7 @@ function parseSamlResponse(
 				"SAML response is not signed but signature is required",
 			);
 		}
-		if (!verifySamlSignature(doc, provider.cert)) {
+		if (!(await verifySamlSignature(doc, provider.cert))) {
 			throw new SsoError(
 				SSO_ERROR.SAML_SIGNATURE_INVALID,
 				"SAML response signature verification failed",
@@ -1031,24 +1087,26 @@ class RateLimiter {
 // ---------------------------------------------------------------------------
 
 /** Encode a timestamp into a state token for expiry checking. */
-function encodeState(stateTtlSeconds: number): string {
+async function encodeState(stateTtlSeconds: number): Promise<string> {
 	const now = Date.now();
 	const expires = now + stateTtlSeconds * 1000;
-	const random = randomBytes(16).toString("hex");
+	const random = randomBytesHex(16);
 	// Format: random.timestamp
 	const payload = `${random}.${expires}`;
-	// Simple HMAC-like integrity check using the random component
-	const hash = createHash("sha256").update(payload).digest("hex").slice(0, 8);
+	// Simple integrity check using SHA-256 of the payload
+	const hashBytes = await sha256Raw(payload);
+	const hash = toHex(hashBytes).slice(0, 8);
 	return `${payload}.${hash}`;
 }
 
-function validateStateToken(state: string): boolean {
+async function validateStateToken(state: string): Promise<boolean> {
 	const parts = state.split(".");
 	if (parts.length !== 3) return false;
 
 	const [random, expiresStr, hash] = parts as [string, string, string];
 	const payload = `${random}.${expiresStr}`;
-	const expectedHash = createHash("sha256").update(payload).digest("hex").slice(0, 8);
+	const hashBytes = await sha256Raw(payload);
+	const expectedHash = toHex(hashBytes).slice(0, 8);
 
 	if (hash !== expectedHash) return false;
 
@@ -1113,7 +1171,7 @@ export function createSsoModule(config: SsoConfig, db: Database): SsoModule {
 		type: "saml" | "oidc";
 		domain: string;
 	}): Promise<SsoConnection> {
-		const id = `sso_${randomUUID().replace(/-/g, "")}`;
+		const id = `sso_${generateId().replace(/-/g, "")}`;
 		const now = new Date();
 
 		await db.insert(ssoConnections).values({
@@ -1229,9 +1287,10 @@ export function createSsoModule(config: SsoConfig, db: Database): SsoModule {
 			);
 
 		try {
-			const { email, name } = parseSamlResponse(samlResponse, provider, expectedRequestId);
+			const { email, name } = await parseSamlResponse(samlResponse, provider, expectedRequestId);
 
-			const userId = `saml_${createHash("sha256").update(`${conn.providerId}:${email}`).digest("hex").slice(0, 32)}`;
+			const userIdHash = await sha256Raw(`${conn.providerId}:${email}`);
+			const userId = `saml_${toHex(userIdHash).slice(0, 32)}`;
 
 			emitAudit({
 				type: "sso_login_success",
@@ -1399,9 +1458,8 @@ export function createSsoModule(config: SsoConfig, db: Database): SsoModule {
 		if (payload.at_hash && tokens.access_token) {
 			const atHash = payload.at_hash as string;
 			// at_hash is the base64url encoding of the left half of the hash of the access_token
-			// Determine hash algorithm from id_token header (default SHA-256)
-			const accessTokenHash = createHash("sha256").update(tokens.access_token).digest();
-			const leftHalf = accessTokenHash.subarray(0, accessTokenHash.length / 2);
+			const accessTokenHashBytes = await sha256Raw(tokens.access_token);
+			const leftHalf = accessTokenHashBytes.subarray(0, accessTokenHashBytes.length / 2);
 			const expectedAtHash = uint8ArrayToBase64Url(leftHalf);
 			if (atHash !== expectedAtHash) {
 				emitAudit({
@@ -1422,7 +1480,8 @@ export function createSsoModule(config: SsoConfig, db: Database): SsoModule {
 		}
 		const name = (payload.name as string | undefined) ?? undefined;
 
-		const userId = `oidc_${createHash("sha256").update(`${conn.providerId}:${payload.sub}`).digest("hex").slice(0, 32)}`;
+		const oidcUserIdHash = await sha256Raw(`${conn.providerId}:${payload.sub}`);
+		const userId = `oidc_${toHex(oidcUserIdHash).slice(0, 32)}`;
 
 		emitAudit({
 			type: "sso_login_success",
@@ -1437,11 +1496,11 @@ export function createSsoModule(config: SsoConfig, db: Database): SsoModule {
 		};
 	}
 
-	function generateState(): string {
+	async function generateState(): Promise<string> {
 		return encodeState(stateTtlSeconds);
 	}
 
-	function validateState(state: string): boolean {
+	async function validateState(state: string): Promise<boolean> {
 		return validateStateToken(state);
 	}
 

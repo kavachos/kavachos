@@ -1,3 +1,4 @@
+
 import type { SVGProps } from "react";
 
 const iconProps = { width: "1em", height: "1em", fill: "currentColor" } as const;
