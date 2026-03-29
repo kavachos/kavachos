@@ -5,12 +5,11 @@
 <h1 align="center">KavachOS</h1>
 
 <p align="center">
-  Authentication and authorization for AI agents and humans.<br />
-  Identity, permissions, delegation, and audit — built for the agentic era.
+  Auth for AI agents and humans. One library, both sides.
 </p>
 
 <p align="center">
-  by <strong>GLINR STUDIOS</strong> · Owner: <a href="https://glincker.com">glincker.com</a>
+  by <a href="https://glincker.com"><strong>GLINR STUDIOS</strong></a> · a <a href="https://glincker.com">GLINCKER LLC</a> project
 </p>
 
 <p align="center">
@@ -33,15 +32,35 @@
 
 ## Why KavachOS
 
-Auth libraries handle human sign-in. KavachOS does that **and** gives AI agents first-class identity — scoped permissions, delegation chains, trust scoring, and an immutable audit trail. One library for both sides.
+Most auth libraries stop at human sign-in. That leaves you stitching together separate systems when your AI agents need identity, scoped permissions, delegation, and audit trails. KavachOS handles both in one place.
 
-- **Agent identity** — cryptographic bearer tokens, wildcard permission matching, delegation depth limits, budget policies, anomaly detection, and CIBA approval flows. No other auth library ships this.
-- **Human auth (14 methods)** — email/password, magic link, email OTP, phone SMS, passkey/WebAuthn, TOTP 2FA, anonymous, Google One-tap, Sign In With Ethereum, device authorization, username/password, captcha, password reset, session freshness.
-- **OAuth (27+ providers)** — Google, GitHub, Apple, Microsoft, Discord, Slack, GitLab, LinkedIn, Twitter/X, Facebook, Spotify, Twitch, Reddit, Notion, plus a generic OIDC factory for any provider.
-- **MCP OAuth 2.1** — spec-compliant authorization server for the Model Context Protocol. PKCE S256, RFC 9728 / 8707 / 8414 / 7591.
-- **Enterprise** — organizations with RBAC, SAML 2.0 and OIDC SSO, admin controls (ban/impersonate), API key management, SCIM directory sync, multi-tenant isolation, GDPR (export/delete/anonymize), compliance reports (EU AI Act, NIST, SOC 2, ISO 42001).
-- **Edge-native** — runs on Cloudflare Workers, Deno, and Bun with zero code changes. Only three runtime dependencies: `drizzle-orm`, `jose`, `zod`.
-- **Security built in** — rate limiting (per-agent and per-IP), HIBP password breach checking, CSRF protection, httpOnly secure cookies, email enumeration prevention, trusted device windows, signed expiring password reset tokens, session freshness enforcement.
+### Agent identity
+
+Cryptographic bearer tokens (`kv_...`), wildcard permission matching, delegation chains with depth limits, budget policies, anomaly detection, and CIBA approval flows.
+
+### Human auth
+
+14 methods: email/password, magic link, email OTP, phone SMS, passkey/WebAuthn, TOTP 2FA, anonymous, Google One-tap, Sign In With Ethereum, device authorization, username/password, captcha, password reset, session freshness.
+
+### OAuth
+
+27+ providers out of the box. Google, GitHub, Apple, Microsoft, Discord, Slack, GitLab, LinkedIn, Twitter/X, Facebook, Spotify, Twitch, Reddit, Notion. There's also a generic OIDC factory if yours isn't listed.
+
+### MCP OAuth 2.1
+
+Authorization server for the Model Context Protocol. PKCE S256, RFC 9728 / 8707 / 8414 / 7591.
+
+### Enterprise
+
+Organizations with RBAC, SAML 2.0 and OIDC SSO, admin controls (ban/impersonate), API key management, SCIM directory sync, multi-tenant isolation, GDPR export/delete/anonymize, compliance reports for EU AI Act, NIST, SOC 2, ISO 42001.
+
+### Runs on the edge
+
+Works on Cloudflare Workers, Deno, and Bun without code changes. Three runtime dependencies: `drizzle-orm`, `jose`, `zod`.
+
+### Security
+
+Rate limiting per agent and per IP, HIBP password breach checking, CSRF protection, httpOnly secure cookies, email enumeration prevention, trusted device windows, signed expiring reset tokens, session freshness enforcement.
 
 ---
 
@@ -126,25 +145,25 @@ export default app;
 
 ### Core
 
-| Package | Description | |
+| Package | What it does | |
 | --- | --- | --- |
-| [`kavachos`](https://www.npmjs.com/package/kavachos) | Core SDK — agents, permissions, delegation, audit, auth plugins | [![npm](https://img.shields.io/npm/v/kavachos?style=flat-square&color=c9a84c)](https://www.npmjs.com/package/kavachos) |
-| [`@kavachos/client`](https://www.npmjs.com/package/@kavachos/client) | Zero-dependency TypeScript REST client | [![npm](https://img.shields.io/npm/v/@kavachos/client?style=flat-square)](https://www.npmjs.com/package/@kavachos/client) |
-| [`@kavachos/cli`](https://www.npmjs.com/package/@kavachos/cli) | CLI for init, migrate, and dashboard commands | [![npm](https://img.shields.io/npm/v/@kavachos/cli?style=flat-square)](https://www.npmjs.com/package/@kavachos/cli) |
-| [`@kavachos/dashboard`](https://www.npmjs.com/package/@kavachos/dashboard) | Embeddable React admin dashboard | [![npm](https://img.shields.io/npm/v/@kavachos/dashboard?style=flat-square)](https://www.npmjs.com/package/@kavachos/dashboard) |
-| [`@kavachos/gateway`](https://www.npmjs.com/package/@kavachos/gateway) | Standalone auth proxy with rate limiting | [![npm](https://img.shields.io/npm/v/@kavachos/gateway?style=flat-square)](https://www.npmjs.com/package/@kavachos/gateway) |
+| [`kavachos`](https://www.npmjs.com/package/kavachos) | Core SDK: agents, permissions, delegation, audit, auth plugins | [![npm](https://img.shields.io/npm/v/kavachos?style=flat-square&color=c9a84c)](https://www.npmjs.com/package/kavachos) |
+| [`@kavachos/client`](https://www.npmjs.com/package/@kavachos/client) | TypeScript REST client, no dependencies | [![npm](https://img.shields.io/npm/v/@kavachos/client?style=flat-square)](https://www.npmjs.com/package/@kavachos/client) |
+| [`@kavachos/cli`](https://www.npmjs.com/package/@kavachos/cli) | `kavach init`, `kavach migrate`, `kavach dashboard` | [![npm](https://img.shields.io/npm/v/@kavachos/cli?style=flat-square)](https://www.npmjs.com/package/@kavachos/cli) |
+| [`@kavachos/dashboard`](https://www.npmjs.com/package/@kavachos/dashboard) | Embeddable React admin UI | [![npm](https://img.shields.io/npm/v/@kavachos/dashboard?style=flat-square)](https://www.npmjs.com/package/@kavachos/dashboard) |
+| [`@kavachos/gateway`](https://www.npmjs.com/package/@kavachos/gateway) | Auth proxy with rate limiting | [![npm](https://img.shields.io/npm/v/@kavachos/gateway?style=flat-square)](https://www.npmjs.com/package/@kavachos/gateway) |
 
 ### Client libraries
 
-| Package | Description | |
+| Package | What it does | |
 | --- | --- | --- |
-| [`@kavachos/react`](https://www.npmjs.com/package/@kavachos/react) | React provider and hooks | [![npm](https://img.shields.io/npm/v/@kavachos/react?style=flat-square)](https://www.npmjs.com/package/@kavachos/react) |
-| [`@kavachos/vue`](https://www.npmjs.com/package/@kavachos/vue) | Vue 3 plugin and composables | [![npm](https://img.shields.io/npm/v/@kavachos/vue?style=flat-square)](https://www.npmjs.com/package/@kavachos/vue) |
+| [`@kavachos/react`](https://www.npmjs.com/package/@kavachos/react) | `KavachProvider` + hooks | [![npm](https://img.shields.io/npm/v/@kavachos/react?style=flat-square)](https://www.npmjs.com/package/@kavachos/react) |
+| [`@kavachos/vue`](https://www.npmjs.com/package/@kavachos/vue) | Vue 3 plugin + composables | [![npm](https://img.shields.io/npm/v/@kavachos/vue?style=flat-square)](https://www.npmjs.com/package/@kavachos/vue) |
 | [`@kavachos/svelte`](https://www.npmjs.com/package/@kavachos/svelte) | Svelte stores | [![npm](https://img.shields.io/npm/v/@kavachos/svelte?style=flat-square)](https://www.npmjs.com/package/@kavachos/svelte) |
-| [`@kavachos/ui`](https://www.npmjs.com/package/@kavachos/ui) | Pre-built auth components (sign-in, sign-up, user button) | [![npm](https://img.shields.io/npm/v/@kavachos/ui?style=flat-square)](https://www.npmjs.com/package/@kavachos/ui) |
-| [`@kavachos/expo`](https://www.npmjs.com/package/@kavachos/expo) | React Native and Expo with SecureStore | [![npm](https://img.shields.io/npm/v/@kavachos/expo?style=flat-square)](https://www.npmjs.com/package/@kavachos/expo) |
-| [`@kavachos/electron`](https://www.npmjs.com/package/@kavachos/electron) | Electron desktop with safeStorage and OAuth popup | [![npm](https://img.shields.io/npm/v/@kavachos/electron?style=flat-square)](https://www.npmjs.com/package/@kavachos/electron) |
-| [`@kavachos/test-utils`](https://www.npmjs.com/package/@kavachos/test-utils) | Mock providers, factories, and test assertions | [![npm](https://img.shields.io/npm/v/@kavachos/test-utils?style=flat-square)](https://www.npmjs.com/package/@kavachos/test-utils) |
+| [`@kavachos/ui`](https://www.npmjs.com/package/@kavachos/ui) | Sign-in, sign-up, user button components | [![npm](https://img.shields.io/npm/v/@kavachos/ui?style=flat-square)](https://www.npmjs.com/package/@kavachos/ui) |
+| [`@kavachos/expo`](https://www.npmjs.com/package/@kavachos/expo) | React Native / Expo with SecureStore | [![npm](https://img.shields.io/npm/v/@kavachos/expo?style=flat-square)](https://www.npmjs.com/package/@kavachos/expo) |
+| [`@kavachos/electron`](https://www.npmjs.com/package/@kavachos/electron) | Electron with safeStorage + OAuth popup | [![npm](https://img.shields.io/npm/v/@kavachos/electron?style=flat-square)](https://www.npmjs.com/package/@kavachos/electron) |
+| [`@kavachos/test-utils`](https://www.npmjs.com/package/@kavachos/test-utils) | Mocks, factories, test assertions | [![npm](https://img.shields.io/npm/v/@kavachos/test-utils?style=flat-square)](https://www.npmjs.com/package/@kavachos/test-utils) |
 
 ### Framework adapters
 
@@ -165,7 +184,7 @@ export default app;
 
 ## UI components
 
-Drop-in auth forms. Override styling with `classNames`, replace sub-components, or skip the package and use hooks from `@kavachos/react` directly.
+If you want ready-made forms, `@kavachos/ui` has them. Override styling with `classNames`, swap sub-components, or skip the package entirely and use hooks from `@kavachos/react`.
 
 ```tsx
 import { SignIn, OAUTH_PROVIDERS } from "@kavachos/ui";
@@ -183,7 +202,7 @@ import { SignIn, OAUTH_PROVIDERS } from "@kavachos/ui";
 
 ## Plugins
 
-Auth methods, security features, and integrations are all plugins. Enable only what you need:
+Everything is a plugin. Auth methods, security features, integrations. Turn on what you need:
 
 ```typescript
 import { createKavach } from "kavachos";
@@ -227,9 +246,9 @@ const kavach = createKavach({
 
 ---
 
-## Documentation
+## Docs
 
-Full reference at **[docs.kavachos.com](https://docs.kavachos.com/docs)**
+[docs.kavachos.com](https://docs.kavachos.com/docs)
 
 - [Getting started](https://docs.kavachos.com/docs/quickstart)
 - [Authentication](https://docs.kavachos.com/docs/auth)
@@ -237,20 +256,20 @@ Full reference at **[docs.kavachos.com](https://docs.kavachos.com/docs)**
 - [Permissions and delegation](https://docs.kavachos.com/docs/permissions)
 - [MCP OAuth 2.1](https://docs.kavachos.com/docs/mcp)
 - [Framework adapters](https://docs.kavachos.com/docs/adapters)
-- [REST API reference](https://docs.kavachos.com/docs/api)
+- [API reference](https://docs.kavachos.com/docs/api)
 
 ---
 
 ## KavachOS Cloud
 
-Managed hosting with a dashboard, billing, and zero infrastructure to run.
+KavachOS Cloud is the hosted version. Dashboard, billing, no infrastructure.
 
 |       | Free  | Starter | Growth | Scale   | Enterprise |
 | ----- | ----- | ------- | ------ | ------- | ---------- |
 | MAU   | 1,000 | 10,000  | 50,000 | 200,000 | Custom     |
 | Price | $0    | $29/mo  | $79/mo | $199/mo | Custom     |
 
-Every plan includes MCP OAuth 2.1, agent identity, delegation chains, trust scoring, and compliance reports.
+All plans include MCP OAuth 2.1, agent identity, delegation, trust scoring, and compliance reports.
 
 <p align="center">
   <a href="https://app.kavachos.com/sign-up"><strong>Start free</strong></a> ·
@@ -262,13 +281,13 @@ Every plan includes MCP OAuth 2.1, agent identity, delegation chains, trust scor
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Community and support
+## Support
 
-- [SUPPORT.md](SUPPORT.md) — support channels
-- [SECURITY.md](SECURITY.md) — vulnerability reporting
-- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) — community standards
+- [SUPPORT.md](SUPPORT.md) for help
+- [SECURITY.md](SECURITY.md) to report vulnerabilities
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
 
 ## License
 
@@ -276,4 +295,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.
 
 ---
 
-<p align="center">Built by <a href="https://glincker.com">GLINCKER LLC</a></p>
+<p align="center">A <a href="https://glincker.com">GLINCKER LLC</a> open source project</p>
