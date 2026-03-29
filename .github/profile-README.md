@@ -1,4 +1,8 @@
-# KavachOS - Authentication and Authorization for AI Agents and Humans
+# GLINR STUDIOS
+
+Owner: https://glincker.com
+
+## KavachOS - Authentication and Authorization for AI Agents and Humans
 
 KavachOS is an open-source authentication and authorization platform built for applications where AI agents and humans collaborate. It provides full human authentication (email, OAuth, passkeys, SSO) alongside agent-native primitives: API keys, delegation, capability-based permissions, and cryptographically verifiable audit trails.
 
