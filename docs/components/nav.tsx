@@ -34,7 +34,7 @@ export function Nav() {
 	const isHome = pathname === "/";
 
 	useEffect(() => { setMounted(true); }, []);
-	useEffect(() => { setMobileOpen(false); setProductsOpen(false); }, [pathname]);
+	useEffect(() => { setMobileOpen(false); }, [pathname]);
 	useEffect(() => {
 		function handleClickOutside(e: MouseEvent) {
 			}
