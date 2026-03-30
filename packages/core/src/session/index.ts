@@ -25,5 +25,23 @@ export {
 	createMultiSessionModule,
 	MultiSessionLimitError,
 } from "./multi-session.js";
+// Refresh token rotation and reuse detection
+export type {
+	AccessTokenPayload,
+	RefreshError,
+	RefreshHandleResult,
+	RefreshResult,
+	RefreshSessionConfig,
+	SessionRefresher,
+	SessionRefresherConfig,
+} from "./refresh.js";
+export { createSessionRefresher, RefreshTokenError } from "./refresh.js";
 export type { Session, SessionConfig, SessionManager } from "./session.js";
 export { createSessionManager } from "./session.js";
+export type {
+	ConsumeTokenResult,
+	ConsumeTokenStatus,
+	TokenFamily,
+	TokenFamilyStore,
+} from "./token-family.js";
+export { createTokenFamilyStore } from "./token-family.js";

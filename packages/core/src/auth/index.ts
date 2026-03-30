@@ -227,9 +227,16 @@ export type { PolarConfig, PolarModule, PolarSubscription } from "./polar.js";
 export { createPolarModule } from "./polar.js";
 // Polar plugin (KavachPlugin wrapper)
 export { polar } from "./polar-plugin.js";
+// rateLimit plugin (KavachPlugin wrapper with per-endpoint limits and pluggable store)
+export type {
+	EndpointLimit,
+	RateLimitConfig as RateLimitPluginConfig,
+	RateLimitStore,
+} from "./rate-limit.js";
+export { rateLimit } from "./rate-limit.js";
 export type { RateLimitMiddlewareOptions } from "./rate-limit-middleware.js";
 export { withRateLimit } from "./rate-limit-middleware.js";
-// Rate limiting for auth endpoints
+// Rate limiting for auth endpoints (lower-level primitives)
 export type { RateLimitConfig, RateLimiter, RateLimitResult } from "./rate-limiter.js";
 export { createRateLimiter } from "./rate-limiter.js";
 // Relationship-Based Access Control (ReBAC) — Zanzibar-inspired
@@ -264,6 +271,10 @@ export type {
 	SsoModule,
 } from "./sso.js";
 export { createSsoModule, SSO_ERROR, SsoError } from "./sso.js";
+export type { KVNamespace } from "./stores/kv.js";
+export { KVStore, kvStore } from "./stores/kv.js";
+// Rate limiting stores
+export { MemoryStore } from "./stores/memory.js";
 // Stripe payment integration
 export type {
 	CheckoutOptions,

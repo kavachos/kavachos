@@ -779,3 +779,34 @@ export const federationTokens = sqliteTable("kavach_federation_tokens", {
 	expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
 	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 });
+
+// ============================================================
+// Refresh Token Families (token rotation / reuse detection)
+// ============================================================
+export const refreshTokenFamilies = sqliteTable("kavach_refresh_token_families", {
+	id: text("id").primaryKey(),
+	userId: text("user_id")
+		.notNull()
+		.references(() => users.id, { onDelete: "cascade" }),
+	/** Absolute session expiry — no rotation can extend beyond this date. */
+	absoluteExpiresAt: integer("absolute_expires_at", { mode: "timestamp" }).notNull(),
+	/** 0 = active, 1 = revoked (reuse detection or explicit logout). */
+	revoked: integer("revoked").notNull().default(0),
+	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+});
+
+// ============================================================
+// Refresh Tokens (individual one-time-use tokens per family)
+// ============================================================
+export const refreshTokens = sqliteTable("kavach_refresh_tokens", {
+	id: text("id").primaryKey(),
+	familyId: text("family_id")
+		.notNull()
+		.references(() => refreshTokenFamilies.id, { onDelete: "cascade" }),
+	/** SHA-256 hash of the opaque token — never store the raw token. */
+	tokenHash: text("token_hash").notNull().unique(),
+	/** 0 = unused, 1 = already consumed (one-time use). */
+	used: integer("used").notNull().default(0),
+	expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
+	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+});

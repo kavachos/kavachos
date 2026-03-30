@@ -23,6 +23,20 @@ export interface EmailTemplateConfig {
 // HTML helpers
 // ---------------------------------------------------------------------------
 
+/**
+ * Escape characters that have special meaning in HTML to prevent XSS when
+ * interpolating user-controlled strings into HTML templates.
+ */
+export function escapeHtml(value: string): string {
+	return value
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;")
+		.replace(/'/g, "&#39;")
+		.replace(/`/g, "&#96;");
+}
+
 const OUTER_STYLES =
 	'font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f4f4f5;margin:0;padding:0;';
 const CONTAINER_STYLES =

@@ -699,6 +699,33 @@ function buildStatements(provider: DatabaseConfig["provider"]): string[] {
   ON kavach_federation_tokens (source_instance_id)`,
 
 		// ------------------------------------------------------------------
+		// kavach_refresh_token_families  (token rotation / reuse detection)
+		// ------------------------------------------------------------------
+		`CREATE TABLE ${ifne} kavach_refresh_token_families (
+  id                   TEXT    NOT NULL PRIMARY KEY,
+  user_id              TEXT    NOT NULL REFERENCES kavach_users(id) ON DELETE CASCADE,
+  absolute_expires_at  ${ts}   NOT NULL,
+  revoked              ${bool} NOT NULL DEFAULT ${isPostgres ? "FALSE" : "0"},
+  created_at           ${ts}   NOT NULL
+)`,
+		`CREATE INDEX ${ifne} kavach_refresh_token_families_user_id
+  ON kavach_refresh_token_families (user_id)`,
+
+		// ------------------------------------------------------------------
+		// kavach_refresh_tokens  (individual one-time-use tokens per family)
+		// ------------------------------------------------------------------
+		`CREATE TABLE ${ifne} kavach_refresh_tokens (
+  id          TEXT    NOT NULL PRIMARY KEY,
+  family_id   TEXT    NOT NULL REFERENCES kavach_refresh_token_families(id) ON DELETE CASCADE,
+  token_hash  TEXT    NOT NULL UNIQUE,
+  used        ${bool} NOT NULL DEFAULT ${isPostgres ? "FALSE" : "0"},
+  expires_at  ${ts}   NOT NULL,
+  created_at  ${ts}   NOT NULL
+)`,
+		`CREATE INDEX ${ifne} kavach_refresh_tokens_family_id
+  ON kavach_refresh_tokens (family_id)`,
+
+		// ------------------------------------------------------------------
 		// kavach_users ban columns  (ALTER TABLE IF NOT EXISTS — safe no-ops)
 		// These are appended as separate ALTER statements for existing DBs.
 		// For SQLite we use a separate migration path since SQLite ALTER is limited.
