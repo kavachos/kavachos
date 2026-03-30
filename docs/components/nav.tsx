@@ -2,17 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, Moon, Sun, ArrowRight, ChevronDown } from "lucide-react";
+import { Menu, X, Moon, Sun, ArrowRight } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import posthog from "posthog-js";
 import { Logo } from "./logo";
 
-const PRODUCT_LINKS = [
-	{ href: "https://kavachos.com/products/agent-identity", label: "Agent identity", description: "Cryptographic tokens, permissions, delegation, audit" },
-	{ href: "https://kavachos.com/products/security", label: "Security", description: "Anomaly detection, trust scoring, compliance" },
-	{ href: "https://kavachos.com/products/platform", label: "Platform", description: "MCP OAuth 2.1, adapters, dashboard, SDK" },
-] as const;
 
 function GitHubIcon({ className }: { className?: string }) {
 	return (
@@ -34,19 +29,15 @@ export function Nav() {
 	const pathname = usePathname();
 	const { resolvedTheme, setTheme } = useTheme();
 	const [mobileOpen, setMobileOpen] = useState(false);
-	const [productsOpen, setProductsOpen] = useState(false);
 	const [mounted, setMounted] = useState(false);
-	const productsRef = useRef<HTMLDivElement>(null);
 	const isDocsPage = pathname.startsWith("/docs");
 	const isHome = pathname === "/";
-	const isProductsPage = pathname.startsWith("/products");
 
 	useEffect(() => { setMounted(true); }, []);
 	useEffect(() => { setMobileOpen(false); setProductsOpen(false); }, [pathname]);
 	useEffect(() => {
 		function handleClickOutside(e: MouseEvent) {
-			if (productsRef.current && !productsRef.current.contains(e.target as Node)) setProductsOpen(false);
-		}
+			}
 		document.addEventListener("mousedown", handleClickOutside);
 		return () => document.removeEventListener("mousedown", handleClickOutside);
 	}, []);
@@ -67,41 +58,6 @@ export function Nav() {
 
 					{/* Center: Nav links (absolute center) */}
 					<nav className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-1 md:flex">
-						{/* Products dropdown */}
-						<div ref={productsRef} className="relative">
-							<button
-								type="button"
-								onClick={() => {
-									const next = !productsOpen;
-									setProductsOpen(next);
-									if (next) posthog.capture("products_menu_opened");
-								}}
-								className={`flex h-[var(--nav-height)] items-center gap-1 border-b-2 px-4 text-[13px] font-medium transition-all ${
-									isProductsPage || productsOpen
-										? "border-fd-foreground text-fd-foreground"
-										: "border-transparent text-fd-muted-foreground hover:text-fd-foreground hover:border-fd-muted-foreground/20"
-								}`}
-							>
-								Products
-								<ChevronDown className={`h-3 w-3 opacity-50 transition-transform duration-200 ${productsOpen ? "rotate-180" : ""}`} />
-							</button>
-							{productsOpen && (
-								<div className="gold-glow absolute left-1/2 top-full mt-2 w-80 -translate-x-1/2 overflow-hidden rounded-2xl border border-[var(--kavach-border-ghost)] bg-[var(--kavach-surface-high)] p-1.5 shadow-2xl shadow-black/30 backdrop-blur-xl dark:bg-[var(--kavach-surface-high)]">
-									{PRODUCT_LINKS.map((link) => (
-										<Link
-											key={link.href}
-											href={link.href}
-											onClick={() => posthog.capture("product_page_clicked", { product: link.label, href: link.href })}
-											className="flex flex-col gap-0.5 rounded-xl px-4 py-3 transition-colors hover:bg-[var(--kavach-surface-bright)]"
-										>
-											<span className="text-sm font-medium text-[var(--kavach-text)]">{link.label}</span>
-											<span className="text-[11px] text-[var(--kavach-text-muted)]">{link.description}</span>
-										</Link>
-									))}
-								</div>
-							)}
-						</div>
-
 						<NavLink href="/docs" active={isDocsPage}>Docs</NavLink>
 
 						<Link
@@ -177,10 +133,7 @@ export function Nav() {
 					<nav className="mx-auto flex max-w-sm flex-col gap-1 p-6">
 						<MobileNavLink href="https://kavachos.com">Home</MobileNavLink>
 						<MobileNavLink href="/docs" active={isDocsPage}>Documentation</MobileNavLink>
-						<p className="mt-3 px-4 text-[10px] font-semibold uppercase tracking-[0.12em] text-fd-muted-foreground/40">Products</p>
-						{PRODUCT_LINKS.map((link) => (
-							<MobileNavLink key={link.href} href={link.href} active={pathname === link.href}>{link.label}</MobileNavLink>
-						))}
+						<MobileNavLink href="/docs/quickstart">Quickstart</MobileNavLink>
 						<MobileNavLink href="https://github.com/kavachos/kavachos" external>GitHub</MobileNavLink>
 						<div className="mt-6 border-t border-fd-border pt-6">
 							<Link href="/docs/quickstart" onClick={() => posthog.capture("get_started_clicked", { location: "nav_mobile" })} className="kavach-btn-gold relative flex items-center justify-center gap-2 overflow-hidden rounded-full px-4 py-3 text-sm font-semibold text-[#1a1000]">
