@@ -1,6 +1,6 @@
 {
   "name": "kavachos",
-  "version": "0.1.0",
+  "version": "0.0.7",
   "description": "The auth OS for AI agents - identity, permissions, delegation, and audit for the agentic era",
   "type": "module",
   "main": "dist/index.js",
@@ -8,43 +8,53 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     },
     "./agent": {
       "types": "./dist/agent/index.d.ts",
-      "import": "./dist/agent/index.js"
+      "import": "./dist/agent/index.js",
+      "default": "./dist/agent/index.js"
     },
     "./auth": {
       "types": "./dist/auth/index.d.ts",
-      "import": "./dist/auth/index.js"
+      "import": "./dist/auth/index.js",
+      "default": "./dist/auth/index.js"
     },
     "./mcp": {
       "types": "./dist/mcp/index.d.ts",
-      "import": "./dist/mcp/index.js"
+      "import": "./dist/mcp/index.js",
+      "default": "./dist/mcp/index.js"
     },
     "./permission": {
       "types": "./dist/permission/index.d.ts",
-      "import": "./dist/permission/index.js"
+      "import": "./dist/permission/index.js",
+      "default": "./dist/permission/index.js"
     },
     "./audit": {
       "types": "./dist/audit/index.d.ts",
-      "import": "./dist/audit/index.js"
+      "import": "./dist/audit/index.js",
+      "default": "./dist/audit/index.js"
     },
     "./a2a": {
       "types": "./dist/a2a/index.d.ts",
-      "import": "./dist/a2a/index.js"
+      "import": "./dist/a2a/index.js",
+      "default": "./dist/a2a/index.js"
     },
     "./vc": {
       "types": "./dist/vc/index.d.ts",
-      "import": "./dist/vc/index.js"
+      "import": "./dist/vc/index.js",
+      "default": "./dist/vc/index.js"
     },
     "./crypto": {
+      "types": "./dist/crypto/index.d.ts",
       "import": "./dist/crypto/index.js",
-      "types": "./dist/crypto/index.d.ts"
+      "default": "./dist/crypto/index.js"
     },
     "./redirect": {
+      "types": "./dist/redirect/index.d.ts",
       "import": "./dist/redirect/index.js",
-      "types": "./dist/redirect/index.d.ts"
+      "default": "./dist/redirect/index.js"
     }
   },
   "files": [
