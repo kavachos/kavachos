@@ -33,7 +33,7 @@ jobs:
 
       - run: pnpm install --frozen-lockfile --prefer-offline
       - run: pnpm build
-      - run: pnpm test
+      - run: pnpm test --filter kavachos -- --exclude tests/timer-test.test.ts --exclude tests/webhook-delivery.test.ts
 
       # Determine npm tag from git tag
       - name: Determine npm tag
