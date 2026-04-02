@@ -758,19 +758,25 @@ export async function createTables(
 ): Promise<void> {
 	const statements = buildStatements(provider);
 
-	if (provider === "sqlite") {
-		// SQLite Drizzle exposes the underlying better-sqlite3 instance via
-		// the `session` property. We use it for synchronous multi-statement
-		// execution which is the most reliable path for DDL on SQLite.
+	if (provider === "sqlite" || provider === "sqlite-native") {
 		// biome-ignore lint/suspicious/noExplicitAny: accessing internal drizzle session for raw DDL
 		const session = (db as any).session;
+
+		// Path 1: better-sqlite3 (sqlite-native) exposes session.client.exec()
 		if (session?.client?.exec) {
-			// better-sqlite3 Database.exec() runs multiple statements separated
-			// by semicolons in a single call.
 			session.client.exec(`${statements.join(";\n")};`);
 			return;
 		}
-		// Fallback: run each statement individually via drizzle `run`.
+
+		// Path 2: sql.js (default sqlite) exposes session.client.run()
+		if (session?.client?.run) {
+			for (const sql of statements) {
+				session.client.run(sql);
+			}
+			return;
+		}
+
+		// Path 3: Fallback via drizzle run() (works for both sql.js and better-sqlite3)
 		// biome-ignore lint/suspicious/noExplicitAny: raw SQL fallback for DDL execution
 		const anyDb = db as any;
 		for (const sql of statements) {

@@ -48,9 +48,7 @@
   },
   "devDependencies": {
     "kavachos": "workspace:*",
-    "@types/better-sqlite3": "^7.6.13",
     "@types/micromatch": "^4.0.9",
-    "better-sqlite3": "^11.0.0",
     "tsup": "^8.4.0",
     "typescript": "^5.8.0",
     "vitest": "^3.0.0",

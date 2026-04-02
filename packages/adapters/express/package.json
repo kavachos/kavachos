@@ -41,10 +41,8 @@
   },
   "devDependencies": {
     "kavachos": "workspace:*",
-    "@types/better-sqlite3": "^7.6.13",
     "@types/express": "^5.0.0",
     "@types/supertest": "^6.0.0",
-    "better-sqlite3": "^11.0.0",
     "express": "^5.1.0",
     "supertest": "^7.0.0",
     "tsup": "^8.4.0",

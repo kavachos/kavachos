@@ -142,6 +142,31 @@ export type { MagicLinkConfig, MagicLinkModule } from "./magic-link.js";
 export { createMagicLinkModule } from "./magic-link.js";
 // Magic link plugin (KavachPlugin wrapper)
 export { magicLink } from "./magic-link-plugin.js";
+export { createOAuthModule } from "./oauth/module.js";
+// OAuth 2.0 / OIDC provider system
+export type { OAuthPluginConfig } from "./oauth/plugin.js";
+export { oauth } from "./oauth/plugin.js";
+export {
+	createAppleProvider,
+	createDiscordProvider,
+	createGithubProvider,
+	createGitlabProvider,
+	createGoogleProvider,
+	createLinkedInProvider,
+	createMicrosoftProvider,
+	createSlackProvider,
+	createTwitterProvider,
+} from "./oauth/providers/index.js";
+export type {
+	OAuthAccount,
+	OAuthCallbackResult,
+	OAuthModule,
+	OAuthModuleConfig,
+	OAuthProvider,
+	OAuthProviderConfig,
+	OAuthTokens,
+	OAuthUserInfo,
+} from "./oauth/types.js";
 // OAuth proxy (server-side OAuth for mobile apps)
 export type { OAuthProxyConfig, OAuthProxyModule, ProxyTokens } from "./oauth-proxy.js";
 export { createOAuthProxyModule, OAuthProxyError } from "./oauth-proxy.js";

@@ -64,8 +64,8 @@ type D1DrizzleDatabase = any;
 
 export type DatabaseConfig =
 	| {
-			provider: "sqlite" | "postgres" | "mysql";
-			/** Connection URL. Required for sqlite, postgres, and mysql. */
+			provider: "sqlite" | "sqlite-native" | "postgres" | "mysql";
+			/** Connection URL / file path. Required for sqlite, postgres, and mysql. */
 			url: string;
 			/** Skip automatic table creation on init (default: false) */
 			skipMigrations?: boolean;
@@ -85,7 +85,8 @@ export type DatabaseConfig =
 /**
  * Create a database connection.
  *
- * - **SQLite** – fully typed Drizzle ORM via `better-sqlite3` (current default).
+ * - **SQLite** – fully typed Drizzle ORM via `sql.js` (WASM, default). Zero native deps.
+ * - **SQLite Native** – via `better-sqlite3` for max performance (optional, needs C++ build tools).
  * - **Postgres** – Drizzle connection via `drizzle-orm/node-postgres` + `pg` (peer dep).
  * - **MySQL** – Drizzle connection via `drizzle-orm/mysql2` + `mysql2` (peer dep).
  * - **D1** – Drizzle connection via `drizzle-orm/d1` for Cloudflare Workers (peer dep).
@@ -95,11 +96,87 @@ export type DatabaseConfig =
  * correct driver. Full pg-core / mysql-core schema typings are planned for v0.2.0.
  */
 export async function createDatabase(config: DatabaseConfig): Promise<Database> {
+	// ── SQLite (WASM, default) ────────────────────────────────────────
+	// Uses sql.js (SQLite compiled to WebAssembly). Zero native deps.
+	// Works on Node.js, Bun, Deno, Vercel, Cloudflare, everywhere.
 	if (config.provider === "sqlite") {
+		const initSqlJs = (
+			await import("sql.js").catch(() => {
+				throw new Error(
+					'KavachOS: provider "sqlite" requires the "sql.js" package. ' +
+						"Install it with: npm install sql.js",
+				);
+			})
+		).default;
+		const { drizzle: drizzleSqlJs } = await import("drizzle-orm/sql-js");
+		const fs = await import("node:fs").catch(() => null);
+
+		const SQL = await initSqlJs();
+
+		let db: InstanceType<typeof SQL.Database>;
+
+		// Load existing database file if it exists
+		if (config.url !== ":memory:" && fs) {
+			try {
+				const existsSync = fs.existsSync(config.url);
+				if (existsSync) {
+					const buffer = fs.readFileSync(config.url);
+					db = new SQL.Database(new Uint8Array(buffer));
+				} else {
+					db = new SQL.Database();
+				}
+			} catch {
+				db = new SQL.Database();
+			}
+		} else {
+			db = new SQL.Database();
+		}
+
+		db.run("PRAGMA foreign_keys = ON");
+
+		const drizzleDb = drizzleSqlJs(db, { schema });
+
+		// Auto-persist to disk after mutations (non-memory mode)
+		if (config.url !== ":memory:" && fs) {
+			const persist = () => {
+				try {
+					const data = db.export();
+					fs.writeFileSync(config.url, Buffer.from(data));
+				} catch {
+					// Silently fail on edge runtimes where fs is unavailable
+				}
+			};
+
+			// Proxy to auto-save after write operations
+			const originalRun = db.run.bind(db);
+			db.run = (...args: Parameters<typeof db.run>) => {
+				const result = originalRun(...args);
+				const sql = typeof args[0] === "string" ? args[0].trim().toUpperCase() : "";
+				if (
+					sql.startsWith("INSERT") ||
+					sql.startsWith("UPDATE") ||
+					sql.startsWith("DELETE") ||
+					sql.startsWith("CREATE") ||
+					sql.startsWith("ALTER") ||
+					sql.startsWith("DROP")
+				) {
+					persist();
+				}
+				return result;
+			};
+		}
+
+		return drizzleDb as unknown as Database;
+	}
+
+	// ── SQLite (native, optional) ─────────────────────────────────────
+	// Uses better-sqlite3 for maximum performance. Requires C++ build tools.
+	// Use this when you need the fastest possible SQLite on Node.js.
+	if (config.provider === "sqlite-native") {
 		const BetterSqlite3 = (
 			await import("better-sqlite3").catch(() => {
 				throw new Error(
-					'KavachOS: provider "sqlite" requires the "better-sqlite3" package. ' +
+					'KavachOS: provider "sqlite-native" requires the "better-sqlite3" package. ' +
 						"Install it with: npm install better-sqlite3",
 				);
 			})
@@ -152,7 +229,7 @@ export async function createDatabase(config: DatabaseConfig): Promise<Database> 
 
 	throw new Error(
 		`KavachOS: unsupported database provider "${(config as DatabaseConfig).provider}". ` +
-			'Valid values are "sqlite", "postgres", "mysql", "d1".',
+			'Valid values are "sqlite", "sqlite-native", "postgres", "mysql", "d1".',
 	);
 }
 

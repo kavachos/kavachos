@@ -20,5 +20,13 @@ export default defineConfig({
 	splitting: true,
 	treeshake: true,
 	target: "es2022",
-	external: ["better-sqlite3", "pg", "mysql2", "mysql2/promise", "@libsql/client", "nodemailer"],
+	external: [
+		"better-sqlite3",
+		"sql.js",
+		"pg",
+		"mysql2",
+		"mysql2/promise",
+		"@libsql/client",
+		"nodemailer",
+	],
 });
