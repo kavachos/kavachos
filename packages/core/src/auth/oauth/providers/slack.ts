@@ -104,7 +104,7 @@ export function createSlackProvider(config: OAuthProviderConfig): OAuthProvider 
 
 	async function exchangeCode(
 		code: string,
-		_codeVerifier: string,
+		codeVerifier: string,
 		redirectUri: string,
 	): Promise<OAuthTokens> {
 		const effectiveRedirectUri = config.redirectUri ?? redirectUri;
@@ -115,6 +115,7 @@ export function createSlackProvider(config: OAuthProviderConfig): OAuthProvider 
 			client_secret: config.clientSecret,
 			code,
 			redirect_uri: effectiveRedirectUri,
+			code_verifier: codeVerifier,
 		});
 
 		const response = await fetch(TOKEN_URL, {
