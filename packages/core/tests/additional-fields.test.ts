@@ -306,6 +306,7 @@ describe("additionalFields plugin endpoints", () => {
 
 		const kavach = await createKavach({
 			database: { provider: "sqlite", url: ":memory:" },
+			auth: { session: { secret: "test-secret-at-least-32-characters-long" } },
 			plugins: [
 				additionalFields({
 					user: { plan: { type: "string", required: false, defaultValue: "free" } },
@@ -324,8 +325,12 @@ describe("additionalFields plugin endpoints", () => {
 			updatedAt: now,
 		});
 
+		const { token } = await kavach.auth.session.create(userId);
+
 		const response = await kavach.plugins.handleRequest(
-			new Request(`http://localhost/auth/users/fields?userId=${userId}`),
+			new Request(`http://localhost/auth/users/fields?userId=${userId}`, {
+				headers: { Authorization: `Bearer ${token}` },
+			}),
 		);
 
 		expect(response?.status).toBe(200);
@@ -338,11 +343,27 @@ describe("additionalFields plugin endpoints", () => {
 
 		const kavach = await createKavach({
 			database: { provider: "sqlite", url: ":memory:" },
+			auth: { session: { secret: "test-secret-at-least-32-characters-long" } },
 			plugins: [additionalFields()],
 		});
 
+		// Create a user and auth session to pass the requireAuth check
+		const userId = randomUUID();
+		const now = new Date();
+		await kavach.db.insert(users).values({
+			id: userId,
+			email: `${userId}@test.com`,
+			name: "Test",
+			metadata: null,
+			createdAt: now,
+			updatedAt: now,
+		});
+		const { token } = await kavach.auth.session.create(userId);
+
 		const response = await kavach.plugins.handleRequest(
-			new Request("http://localhost/auth/users/fields"),
+			new Request("http://localhost/auth/users/fields", {
+				headers: { Authorization: `Bearer ${token}` },
+			}),
 		);
 		expect(response?.status).toBe(400);
 	});
@@ -352,6 +373,7 @@ describe("additionalFields plugin endpoints", () => {
 
 		const kavach = await createKavach({
 			database: { provider: "sqlite", url: ":memory:" },
+			auth: { session: { secret: "test-secret-at-least-32-characters-long" } },
 			plugins: [
 				additionalFields({
 					user: { plan: { type: "string", required: false } },
@@ -370,10 +392,15 @@ describe("additionalFields plugin endpoints", () => {
 			updatedAt: now,
 		});
 
+		const { token } = await kavach.auth.session.create(userId);
+
 		const response = await kavach.plugins.handleRequest(
 			new Request("http://localhost/auth/users/fields", {
 				method: "PUT",
-				headers: { "Content-Type": "application/json" },
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${token}`,
+				},
 				body: JSON.stringify({ userId, fields: { plan: "pro" } }),
 			}),
 		);
@@ -388,6 +415,7 @@ describe("additionalFields plugin endpoints", () => {
 
 		const kavach = await createKavach({
 			database: { provider: "sqlite", url: ":memory:" },
+			auth: { session: { secret: "test-secret-at-least-32-characters-long" } },
 			plugins: [
 				additionalFields({
 					user: { credits: { type: "number", required: true } },
@@ -406,10 +434,15 @@ describe("additionalFields plugin endpoints", () => {
 			updatedAt: now,
 		});
 
+		const { token } = await kavach.auth.session.create(userId);
+
 		const response = await kavach.plugins.handleRequest(
 			new Request("http://localhost/auth/users/fields", {
 				method: "PUT",
-				headers: { "Content-Type": "application/json" },
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${token}`,
+				},
 				body: JSON.stringify({ userId, fields: { credits: "not-a-number" } }),
 			}),
 		);

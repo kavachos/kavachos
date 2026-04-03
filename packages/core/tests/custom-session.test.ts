@@ -308,8 +308,13 @@ describe("customSession plugin endpoints", () => {
 			createdAt: now,
 		});
 
+		// Create a real auth session to get a Bearer token
+		const { token } = await kavach.auth.session.create(userId);
+
 		const response = await kavach.plugins.handleRequest(
-			new Request(`http://localhost/auth/session/fields?sessionId=${sessionId}`),
+			new Request(`http://localhost/auth/session/fields?sessionId=${sessionId}`, {
+				headers: { Authorization: `Bearer ${token}` },
+			}),
 		);
 
 		expect(response).not.toBeNull();
@@ -324,11 +329,27 @@ describe("customSession plugin endpoints", () => {
 
 		const kavach = await createKavach({
 			database: { provider: "sqlite", url: ":memory:" },
+			auth: { session: { secret: SESSION_SECRET } },
 			plugins: [customSession()],
 		});
 
+		// Create a user and auth session to pass the requireAuth check
+		const userId = randomUUID();
+		const now = new Date();
+		await kavach.db.insert(users).values({
+			id: userId,
+			email: `${userId}@test.com`,
+			name: "Test",
+			metadata: null,
+			createdAt: now,
+			updatedAt: now,
+		});
+		const { token } = await kavach.auth.session.create(userId);
+
 		const response = await kavach.plugins.handleRequest(
-			new Request("http://localhost/auth/session/fields"),
+			new Request("http://localhost/auth/session/fields", {
+				headers: { Authorization: `Bearer ${token}` },
+			}),
 		);
 		expect(response?.status).toBe(400);
 	});
@@ -338,6 +359,7 @@ describe("customSession plugin endpoints", () => {
 
 		const kavach = await createKavach({
 			database: { provider: "sqlite", url: ":memory:" },
+			auth: { session: { secret: SESSION_SECRET } },
 			plugins: [customSession()],
 		});
 
@@ -361,10 +383,16 @@ describe("customSession plugin endpoints", () => {
 			createdAt: now,
 		});
 
+		// Create a real auth session to get a Bearer token
+		const { token } = await kavach.auth.session.create(userId);
+
 		const patchResponse = await kavach.plugins.handleRequest(
 			new Request("http://localhost/auth/session/fields", {
 				method: "PATCH",
-				headers: { "Content-Type": "application/json" },
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${token}`,
+				},
 				body: JSON.stringify({ sessionId, fields: { role: "editor" } }),
 			}),
 		);
@@ -380,13 +408,31 @@ describe("customSession plugin endpoints", () => {
 
 		const kavach = await createKavach({
 			database: { provider: "sqlite", url: ":memory:" },
+			auth: { session: { secret: SESSION_SECRET } },
 			plugins: [customSession()],
 		});
+
+		// Create a real user and auth session so requireAuth passes,
+		// but use a non-existent sessionId in the body so the handler returns 404.
+		const userId = randomUUID();
+		const now = new Date();
+		await kavach.db.insert(users).values({
+			id: userId,
+			email: `${userId}@test.com`,
+			name: "Ghost Test",
+			metadata: null,
+			createdAt: now,
+			updatedAt: now,
+		});
+		const { token } = await kavach.auth.session.create(userId);
 
 		const response = await kavach.plugins.handleRequest(
 			new Request("http://localhost/auth/session/fields", {
 				method: "PATCH",
-				headers: { "Content-Type": "application/json" },
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${token}`,
+				},
 				body: JSON.stringify({ sessionId: "ghost-session", fields: { x: 1 } }),
 			}),
 		);
