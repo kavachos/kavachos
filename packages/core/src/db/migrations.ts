@@ -239,7 +239,7 @@ function buildStatements(provider: DatabaseConfig["provider"]): string[] {
 		// ------------------------------------------------------------------
 		`CREATE TABLE ${ifne} kavach_oauth_accounts (
   id                   TEXT NOT NULL PRIMARY KEY,
-  user_id              TEXT NOT NULL REFERENCES kavach_users(id) ON DELETE CASCADE,
+  user_id              TEXT NOT NULL,
   provider             TEXT NOT NULL,
   provider_account_id  TEXT NOT NULL,
   access_token         TEXT NOT NULL,

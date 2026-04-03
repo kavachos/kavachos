@@ -32,32 +32,7 @@ async function createTestDb(): Promise<Database> {
 	const db = await createDatabase({ provider: "sqlite", url: ":memory:" });
 	await createTables(db, "sqlite");
 
-	// Create the OAuth tables (not in the main migration yet — added separately).
-	db.run(`
-		CREATE TABLE IF NOT EXISTS kavach_oauth_accounts (
-			id TEXT NOT NULL PRIMARY KEY,
-			user_id TEXT NOT NULL,
-			provider TEXT NOT NULL,
-			provider_account_id TEXT NOT NULL,
-			access_token TEXT NOT NULL,
-			refresh_token TEXT,
-			expires_at INTEGER,
-			created_at INTEGER NOT NULL,
-			updated_at INTEGER NOT NULL
-		)
-	`);
-
-	db.run(`
-		CREATE TABLE IF NOT EXISTS kavach_oauth_states (
-			state TEXT NOT NULL PRIMARY KEY,
-			code_verifier TEXT NOT NULL,
-			redirect_uri TEXT NOT NULL,
-			provider TEXT NOT NULL,
-			expires_at INTEGER NOT NULL,
-			created_at INTEGER NOT NULL
-		)
-	`);
-
+	// OAuth tables are now created by createTables() migration.
 	// Seed a user for FK-sensitive tests.
 	db.insert(schema.users)
 		.values({
