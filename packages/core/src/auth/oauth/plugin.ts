@@ -1,4 +1,7 @@
+import { eq } from "drizzle-orm";
+import { users } from "../../db/schema.js";
 import type { KavachPlugin } from "../../plugin/types.js";
+import { createSessionManager } from "../../session/session.js";
 import { withRateLimit } from "../rate-limit-middleware.js";
 import { createRateLimiter } from "../rate-limiter.js";
 import { createOAuthModule } from "./module.js";
@@ -48,6 +51,9 @@ export function oauth(config: OAuthPluginConfig): KavachPlugin {
 			const module = createOAuthModule(ctx.db, config);
 
 			const baseUrl = ctx.config.baseUrl ?? "";
+
+			const sessionConfig = ctx.config.auth?.session;
+			const sessionManager = sessionConfig ? createSessionManager(sessionConfig, ctx.db) : null;
 
 			const authorizeLimiter = createRateLimiter({ max: 20, window: 60 });
 
@@ -111,6 +117,47 @@ export function oauth(config: OAuthPluginConfig): KavachPlugin {
 
 					try {
 						const result = await module.handleCallback(provider, code, state, redirectUri);
+
+						// Find or create a kavach user by email
+						const email = result.userInfo.email;
+						let userId = result.account.userId;
+
+						if (userId === "__pending__" && email && ctx.db) {
+							const existing = await ctx.db.select().from(users).where(eq(users.email, email));
+
+							if (existing[0]) {
+								userId = existing[0].id;
+							} else {
+								const newId = crypto.randomUUID();
+								await ctx.db.insert(users).values({
+									id: newId,
+									email,
+									name: result.userInfo.name ?? null,
+									externalProvider: `oauth:${provider}`,
+									externalId: result.userInfo.id,
+									emailVerified: 1,
+									createdAt: new Date(),
+									updatedAt: new Date(),
+								});
+								userId = newId;
+							}
+
+							await module.linkAccount(userId, provider, result.userInfo, {
+								accessToken: result.account.accessToken,
+								refreshToken: result.account.refreshToken ?? undefined,
+								tokenType: "Bearer",
+								raw: {},
+							});
+						}
+
+						// Create session and redirect
+						if (sessionManager && userId !== "__pending__") {
+							const { session, token } = await sessionManager.create(userId);
+							const callbackUrl = `${baseUrl}/?session=${encodeURIComponent(JSON.stringify({ token, user: { id: userId, email }, expiresAt: session.expiresAt }))}`;
+							return redirectResponse(callbackUrl);
+						}
+
+						// Fallback: return JSON if no session manager
 						return jsonResponse({
 							isNewAccount: result.isNewAccount,
 							account: result.account,

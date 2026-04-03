@@ -151,7 +151,7 @@ export function createOAuthModule(db: Database, config: OAuthModuleConfig): OAut
 		await db.delete(oauthStates).where(eq(oauthStates.state, state));
 
 		// ── 2. Exchange authorization code for tokens ──────────────────────────
-		const tokens = await provider.exchangeCode(stateRow.codeVerifier, code, redirectUri);
+		const tokens = await provider.exchangeCode(code, stateRow.codeVerifier, redirectUri);
 
 		// ── 3. Fetch user profile ──────────────────────────────────────────────
 		const userInfo = await provider.getUserInfo(tokens.accessToken);
