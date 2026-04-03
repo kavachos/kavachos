@@ -1,26 +1,7 @@
+import { json, parseBody } from "../plugin/helpers.js";
 import type { KavachPlugin } from "../plugin/types.js";
-import { createSessionManager } from "../session/session.js";
 import type { AnonymousAuthConfig } from "./anonymous.js";
 import { createAnonymousAuthModule } from "./anonymous.js";
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function jsonResponse(body: unknown, status = 200): Response {
-	return new Response(JSON.stringify(body), {
-		status,
-		headers: { "Content-Type": "application/json" },
-	});
-}
-
-async function parseBody(request: Request): Promise<Record<string, unknown>> {
-	try {
-		return (await request.json()) as Record<string, unknown>;
-	} catch {
-		return {};
-	}
-}
 
 // ---------------------------------------------------------------------------
 // Plugin factory
@@ -31,18 +12,11 @@ export function anonymousAuth(config?: AnonymousAuthConfig): KavachPlugin {
 		id: "kavach-anonymous",
 
 		async init(ctx): Promise<undefined> {
-			const sessionSecret = (
-				ctx.config as unknown as {
-					auth?: { session?: { secret?: string } };
-				}
-			).auth?.session?.secret;
-
-			if (!sessionSecret) {
+			if (!ctx.sessionManager) {
 				throw new Error("anonymousAuth plugin requires auth.session.secret to be configured");
 			}
 
-			const sessionManager = createSessionManager({ secret: sessionSecret }, ctx.db);
-			const mod = createAnonymousAuthModule(config ?? {}, ctx.db, sessionManager);
+			const mod = createAnonymousAuthModule(config ?? {}, ctx.db, ctx.sessionManager);
 
 			// POST /auth/anonymous
 			// Creates a new anonymous user and returns a session token.
@@ -56,9 +30,9 @@ export function anonymousAuth(config?: AnonymousAuthConfig): KavachPlugin {
 				async handler(_request, _endpointCtx) {
 					try {
 						const result = await mod.createAnonymousUser();
-						return jsonResponse({ userId: result.userId, sessionToken: result.sessionToken });
+						return json({ userId: result.userId, sessionToken: result.sessionToken });
 					} catch (err) {
-						return jsonResponse(
+						return json(
 							{ error: err instanceof Error ? err.message : "Failed to create anonymous user" },
 							500,
 						);
@@ -78,24 +52,27 @@ export function anonymousAuth(config?: AnonymousAuthConfig): KavachPlugin {
 				async handler(request, endpointCtx) {
 					const user = await endpointCtx.getUser(request);
 					if (!user) {
-						return jsonResponse({ error: "Authentication required" }, 401);
+						return json({ error: "Authentication required" }, 401);
 					}
 
-					const body = await parseBody(request);
-					const email = typeof body.email === "string" ? body.email.trim() : null;
-					const name = typeof body.name === "string" ? body.name.trim() : undefined;
+					const bodyResult = await parseBody(request);
+					if (!bodyResult.ok) return bodyResult.response;
+					const email =
+						typeof bodyResult.data.email === "string" ? bodyResult.data.email.trim() : null;
+					const name =
+						typeof bodyResult.data.name === "string" ? bodyResult.data.name.trim() : undefined;
 
 					if (!email) {
-						return jsonResponse({ error: "Missing required field: email" }, 400);
+						return json({ error: "Missing required field: email" }, 400);
 					}
 
 					try {
 						await mod.upgradeUser(user.id, { email, name });
-						return jsonResponse({ upgraded: true });
+						return json({ upgraded: true });
 					} catch (err) {
 						const message = err instanceof Error ? err.message : "Upgrade failed";
 						const status = message.includes("not an anonymous user") ? 400 : 500;
-						return jsonResponse({ error: message }, status);
+						return json({ error: message }, status);
 					}
 				},
 			});
@@ -112,11 +89,11 @@ export function anonymousAuth(config?: AnonymousAuthConfig): KavachPlugin {
 				async handler(request, endpointCtx) {
 					const user = await endpointCtx.getUser(request);
 					if (!user) {
-						return jsonResponse({ error: "Authentication required" }, 401);
+						return json({ error: "Authentication required" }, 401);
 					}
 
 					const anonymous = await mod.isAnonymous(user.id);
-					return jsonResponse({ anonymous });
+					return json({ anonymous });
 				},
 			});
 		},

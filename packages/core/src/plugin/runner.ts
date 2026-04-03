@@ -1,4 +1,5 @@
 import type { Database, DatabaseConfig } from "../db/database.js";
+import type { SessionManager } from "../session/session.js";
 import type { KavachConfig } from "../types.js";
 import type { KavachPlugin, PluginContext, PluginEndpoint } from "./types.js";
 
@@ -89,6 +90,7 @@ export async function initializePlugins(
 	plugins: KavachPlugin[],
 	db: Database,
 	config: KavachConfig,
+	sessionManager: SessionManager | null,
 ): Promise<PluginRegistry> {
 	const registry: PluginRegistry = {
 		endpoints: [],
@@ -108,6 +110,7 @@ export async function initializePlugins(
 		const ctx: PluginContext = {
 			db,
 			config,
+			sessionManager,
 			addEndpoint(endpoint: PluginEndpoint): void {
 				registry.endpoints.push(endpoint);
 			},

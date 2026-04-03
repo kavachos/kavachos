@@ -1,28 +1,9 @@
+import { json, parseBody } from "../plugin/helpers.js";
 import type { KavachPlugin } from "../plugin/types.js";
-import { createSessionManager } from "../session/session.js";
 import type { AdminConfig } from "./admin.js";
 import { createAdminModule } from "./admin.js";
 
 export type { AdminConfig };
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function jsonResponse(body: unknown, status = 200): Response {
-	return new Response(JSON.stringify(body), {
-		status,
-		headers: { "Content-Type": "application/json" },
-	});
-}
-
-async function parseBody(request: Request): Promise<Record<string, unknown>> {
-	try {
-		return (await request.json()) as Record<string, unknown>;
-	} catch {
-		return {};
-	}
-}
 
 // ---------------------------------------------------------------------------
 // Plugin factory
@@ -33,9 +14,7 @@ export function admin(config?: AdminConfig): KavachPlugin {
 		id: "kavach-admin",
 
 		async init(ctx): Promise<undefined> {
-			const sessionConfig = ctx.config.auth?.session;
-			const sessionManager = sessionConfig ? createSessionManager(sessionConfig, ctx.db) : null;
-			const module = createAdminModule(config ?? {}, ctx.db, sessionManager);
+			const module = createAdminModule(config ?? {}, ctx.db, ctx.sessionManager ?? null);
 
 			// GET /auth/admin/users
 			// Lists all users. Requires admin.
@@ -49,12 +28,12 @@ export function admin(config?: AdminConfig): KavachPlugin {
 				async handler(request, endpointCtx) {
 					const user = await endpointCtx.getUser(request);
 					if (!user) {
-						return jsonResponse({ error: "Authentication required" }, 401);
+						return json({ error: "Authentication required" }, 401);
 					}
 
 					const isAdminUser = await module.isAdmin(user.id);
 					if (!isAdminUser) {
-						return jsonResponse({ error: "Admin access required" }, 403);
+						return json({ error: "Admin access required" }, 403);
 					}
 
 					const url = new URL(request.url);
@@ -68,7 +47,7 @@ export function admin(config?: AdminConfig): KavachPlugin {
 						search,
 					});
 
-					return jsonResponse(result);
+					return json(result);
 				},
 			});
 
@@ -84,12 +63,12 @@ export function admin(config?: AdminConfig): KavachPlugin {
 				async handler(request, endpointCtx) {
 					const user = await endpointCtx.getUser(request);
 					if (!user) {
-						return jsonResponse({ error: "Authentication required" }, 401);
+						return json({ error: "Authentication required" }, 401);
 					}
 
 					const isAdminUser = await module.isAdmin(user.id);
 					if (!isAdminUser) {
-						return jsonResponse({ error: "Admin access required" }, 403);
+						return json({ error: "Admin access required" }, 403);
 					}
 
 					const url = new URL(request.url);
@@ -98,15 +77,15 @@ export function admin(config?: AdminConfig): KavachPlugin {
 					const targetId = segments[3];
 
 					if (!targetId) {
-						return jsonResponse({ error: "Missing user ID in path" }, 400);
+						return json({ error: "Missing user ID in path" }, 400);
 					}
 
 					const found = await module.getUser(decodeURIComponent(targetId));
 					if (!found) {
-						return jsonResponse({ error: "User not found" }, 404);
+						return json({ error: "User not found" }, 404);
 					}
 
-					return jsonResponse(found);
+					return json(found);
 				},
 			});
 
@@ -122,12 +101,12 @@ export function admin(config?: AdminConfig): KavachPlugin {
 				async handler(request, endpointCtx) {
 					const user = await endpointCtx.getUser(request);
 					if (!user) {
-						return jsonResponse({ error: "Authentication required" }, 401);
+						return json({ error: "Authentication required" }, 401);
 					}
 
 					const isAdminUser = await module.isAdmin(user.id);
 					if (!isAdminUser) {
-						return jsonResponse({ error: "Admin access required" }, 403);
+						return json({ error: "Admin access required" }, 403);
 					}
 
 					const url = new URL(request.url);
@@ -136,15 +115,19 @@ export function admin(config?: AdminConfig): KavachPlugin {
 					const targetId = segments[3];
 
 					if (!targetId) {
-						return jsonResponse({ error: "Missing user ID in path" }, 400);
+						return json({ error: "Missing user ID in path" }, 400);
 					}
 
-					const body = await parseBody(request);
-					const reason = typeof body.reason === "string" ? body.reason : undefined;
-					const expiresAt = body.expiresAt ? new Date(body.expiresAt as string) : undefined;
+					const bodyResult = await parseBody(request);
+					if (!bodyResult.ok) return bodyResult.response;
+					const reason =
+						typeof bodyResult.data.reason === "string" ? bodyResult.data.reason : undefined;
+					const expiresAt = bodyResult.data.expiresAt
+						? new Date(bodyResult.data.expiresAt as string)
+						: undefined;
 
 					await module.banUser(decodeURIComponent(targetId), reason, expiresAt);
-					return jsonResponse({ success: true });
+					return json({ success: true });
 				},
 			});
 
@@ -160,12 +143,12 @@ export function admin(config?: AdminConfig): KavachPlugin {
 				async handler(request, endpointCtx) {
 					const user = await endpointCtx.getUser(request);
 					if (!user) {
-						return jsonResponse({ error: "Authentication required" }, 401);
+						return json({ error: "Authentication required" }, 401);
 					}
 
 					const isAdminUser = await module.isAdmin(user.id);
 					if (!isAdminUser) {
-						return jsonResponse({ error: "Admin access required" }, 403);
+						return json({ error: "Admin access required" }, 403);
 					}
 
 					const url = new URL(request.url);
@@ -174,11 +157,11 @@ export function admin(config?: AdminConfig): KavachPlugin {
 					const targetId = segments[3];
 
 					if (!targetId) {
-						return jsonResponse({ error: "Missing user ID in path" }, 400);
+						return json({ error: "Missing user ID in path" }, 400);
 					}
 
 					await module.unbanUser(decodeURIComponent(targetId));
-					return jsonResponse({ success: true });
+					return json({ success: true });
 				},
 			});
 
@@ -194,12 +177,12 @@ export function admin(config?: AdminConfig): KavachPlugin {
 				async handler(request, endpointCtx) {
 					const user = await endpointCtx.getUser(request);
 					if (!user) {
-						return jsonResponse({ error: "Authentication required" }, 401);
+						return json({ error: "Authentication required" }, 401);
 					}
 
 					const isAdminUser = await module.isAdmin(user.id);
 					if (!isAdminUser) {
-						return jsonResponse({ error: "Admin access required" }, 403);
+						return json({ error: "Admin access required" }, 403);
 					}
 
 					const url = new URL(request.url);
@@ -208,11 +191,11 @@ export function admin(config?: AdminConfig): KavachPlugin {
 					const targetId = segments[3];
 
 					if (!targetId) {
-						return jsonResponse({ error: "Missing user ID in path" }, 400);
+						return json({ error: "Missing user ID in path" }, 400);
 					}
 
 					await module.deleteUser(decodeURIComponent(targetId));
-					return jsonResponse({ success: true });
+					return json({ success: true });
 				},
 			});
 
@@ -228,12 +211,12 @@ export function admin(config?: AdminConfig): KavachPlugin {
 				async handler(request, endpointCtx) {
 					const user = await endpointCtx.getUser(request);
 					if (!user) {
-						return jsonResponse({ error: "Authentication required" }, 401);
+						return json({ error: "Authentication required" }, 401);
 					}
 
 					const isAdminUser = await module.isAdmin(user.id);
 					if (!isAdminUser) {
-						return jsonResponse({ error: "Admin access required" }, 403);
+						return json({ error: "Admin access required" }, 403);
 					}
 
 					const url = new URL(request.url);
@@ -242,14 +225,14 @@ export function admin(config?: AdminConfig): KavachPlugin {
 					const targetId = segments[3];
 
 					if (!targetId) {
-						return jsonResponse({ error: "Missing user ID in path" }, 400);
+						return json({ error: "Missing user ID in path" }, 400);
 					}
 
 					try {
 						const result = await module.impersonate(user.id, decodeURIComponent(targetId));
-						return jsonResponse(result);
+						return json(result);
 					} catch (err) {
-						return jsonResponse(
+						return json(
 							{ error: err instanceof Error ? err.message : "Impersonation failed" },
 							403,
 						);

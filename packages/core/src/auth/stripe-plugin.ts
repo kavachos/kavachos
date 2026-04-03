@@ -1,27 +1,9 @@
+import { json, parseBody } from "../plugin/helpers.js";
 import type { KavachPlugin } from "../plugin/types.js";
 import type { StripeConfig } from "./stripe.js";
 import { createStripeModule } from "./stripe.js";
 
 export type { StripeConfig };
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function json(body: unknown, status = 200): Response {
-	return new Response(JSON.stringify(body), {
-		status,
-		headers: { "Content-Type": "application/json" },
-	});
-}
-
-async function parseBody(request: Request): Promise<Record<string, unknown>> {
-	try {
-		return (await request.json()) as Record<string, unknown>;
-	} catch {
-		return {};
-	}
-}
 
 // ---------------------------------------------------------------------------
 // Plugin factory
@@ -51,20 +33,25 @@ export function stripe(config: StripeConfig): KavachPlugin {
 						return json({ error: "Authentication required" }, 401);
 					}
 
-					const body = await parseBody(request);
-					const priceId = typeof body.priceId === "string" ? body.priceId.trim() : null;
+					const bodyResult = await parseBody(request);
+					if (!bodyResult.ok) return bodyResult.response;
+					const priceId =
+						typeof bodyResult.data.priceId === "string" ? bodyResult.data.priceId.trim() : null;
 					if (!priceId) {
 						return json({ error: "Missing required field: priceId" }, 400);
 					}
 
-					const successUrl = typeof body.successUrl === "string" ? body.successUrl : undefined;
-					const cancelUrl = typeof body.cancelUrl === "string" ? body.cancelUrl : undefined;
-					const trialDays = typeof body.trialDays === "number" ? body.trialDays : undefined;
+					const successUrl =
+						typeof bodyResult.data.successUrl === "string" ? bodyResult.data.successUrl : undefined;
+					const cancelUrl =
+						typeof bodyResult.data.cancelUrl === "string" ? bodyResult.data.cancelUrl : undefined;
+					const trialDays =
+						typeof bodyResult.data.trialDays === "number" ? bodyResult.data.trialDays : undefined;
 					const metadata =
-						body.metadata != null &&
-						typeof body.metadata === "object" &&
-						!Array.isArray(body.metadata)
-							? (body.metadata as Record<string, string>)
+						bodyResult.data.metadata != null &&
+						typeof bodyResult.data.metadata === "object" &&
+						!Array.isArray(bodyResult.data.metadata)
+							? (bodyResult.data.metadata as Record<string, string>)
 							: undefined;
 
 					try {
@@ -102,8 +89,10 @@ export function stripe(config: StripeConfig): KavachPlugin {
 						return json({ error: "Authentication required" }, 401);
 					}
 
-					const body = await parseBody(request);
-					const returnUrl = typeof body.returnUrl === "string" ? body.returnUrl.trim() : null;
+					const bodyResult = await parseBody(request);
+					if (!bodyResult.ok) return bodyResult.response;
+					const returnUrl =
+						typeof bodyResult.data.returnUrl === "string" ? bodyResult.data.returnUrl.trim() : null;
 					if (!returnUrl) {
 						return json({ error: "Missing required field: returnUrl" }, 400);
 					}

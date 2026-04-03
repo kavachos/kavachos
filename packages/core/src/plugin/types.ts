@@ -1,6 +1,6 @@
 import type { ResolvedUser } from "../auth/types.js";
 import type { Database } from "../db/database.js";
-import type { Session } from "../session/session.js";
+import type { Session, SessionManager } from "../session/session.js";
 import type { KavachConfig } from "../types.js";
 
 /** Context passed to plugin init */
@@ -11,6 +11,8 @@ export interface PluginContext {
 	addEndpoint: (endpoint: PluginEndpoint) => void;
 	/** Register a DB migration (CREATE TABLE statement) */
 	addMigration: (sql: string) => void;
+	/** Shared session manager — null if auth.session not configured */
+	sessionManager: SessionManager | null;
 }
 
 /** An API endpoint registered by a plugin */

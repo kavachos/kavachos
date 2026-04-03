@@ -1,5 +1,5 @@
+import { json, parseBody } from "../plugin/helpers.js";
 import type { KavachPlugin } from "../plugin/types.js";
-import { createSessionManager } from "../session/session.js";
 import type { MagicLinkConfig } from "./magic-link.js";
 import { createMagicLinkModule } from "./magic-link.js";
 import { withRateLimit } from "./rate-limit-middleware.js";
@@ -17,15 +17,13 @@ export function magicLink(config: MagicLinkConfig): KavachPlugin {
 		id: "kavach-magic-link",
 
 		async init(ctx): Promise<undefined> {
-			const sessionConfig = ctx.config.auth?.session;
-			if (!sessionConfig) {
+			if (!ctx.sessionManager) {
 				throw new Error(
 					"kavach-magic-link plugin requires auth.session to be configured so that sessions can be issued on successful verification.",
 				);
 			}
 
-			const sessionManager = createSessionManager(sessionConfig, ctx.db);
-			const module = createMagicLinkModule(config, ctx.db, sessionManager);
+			const module = createMagicLinkModule(config, ctx.db, ctx.sessionManager);
 
 			const sendLimiter = createRateLimiter({ max: 5, window: 60 });
 
@@ -39,38 +37,25 @@ export function magicLink(config: MagicLinkConfig): KavachPlugin {
 					description: "Send a magic link to the provided email address",
 				},
 				handler: withRateLimit(async (request) => {
-					let body: unknown;
-					try {
-						body = await request.json();
-					} catch {
-						return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
-							status: 400,
-							headers: { "Content-Type": "application/json" },
-						});
-					}
+					const bodyResult = await parseBody(request);
+					if (!bodyResult.ok) return bodyResult.response;
 
-					const b = body as Record<string, unknown>;
-					const rawEmail = typeof b.email === "string" ? b.email.trim().toLowerCase() : null;
+					const rawEmail =
+						typeof bodyResult.data.email === "string"
+							? bodyResult.data.email.trim().toLowerCase()
+							: null;
 
 					if (!rawEmail) {
-						return new Response(JSON.stringify({ error: "Missing required field: email" }), {
-							status: 400,
-							headers: { "Content-Type": "application/json" },
-						});
+						return json({ error: "Missing required field: email" }, 400);
 					}
 
 					try {
 						const result = await module.sendLink(rawEmail);
-						return new Response(JSON.stringify(result), {
-							status: 200,
-							headers: { "Content-Type": "application/json" },
-						});
+						return json(result);
 					} catch (err) {
-						return new Response(
-							JSON.stringify({
-								error: err instanceof Error ? err.message : "Failed to send magic link",
-							}),
-							{ status: 500, headers: { "Content-Type": "application/json" } },
+						return json(
+							{ error: err instanceof Error ? err.message : "Failed to send magic link" },
+							500,
 						);
 					}
 				}, sendLimiter),
@@ -89,25 +74,16 @@ export function magicLink(config: MagicLinkConfig): KavachPlugin {
 					const token = url.searchParams.get("token");
 
 					if (!token) {
-						return new Response(JSON.stringify({ error: "Missing token query parameter" }), {
-							status: 400,
-							headers: { "Content-Type": "application/json" },
-						});
+						return json({ error: "Missing token query parameter" }, 400);
 					}
 
 					const result = await module.verify(token);
 
 					if (!result) {
-						return new Response(JSON.stringify({ error: "Invalid or expired magic link" }), {
-							status: 401,
-							headers: { "Content-Type": "application/json" },
-						});
+						return json({ error: "Invalid or expired magic link" }, 401);
 					}
 
-					return new Response(JSON.stringify(result), {
-						status: 200,
-						headers: { "Content-Type": "application/json" },
-					});
+					return json(result);
 				},
 			});
 		},

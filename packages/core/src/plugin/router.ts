@@ -1,3 +1,4 @@
+import { json } from "./helpers.js";
 import type { EndpointContext, PluginEndpoint } from "./types.js";
 
 /**
@@ -54,6 +55,22 @@ export function createPluginRouter(endpoints: PluginEndpoint[]): {
 	/** Get all registered endpoints (for adapter mounting) */
 	getEndpoints: () => PluginEndpoint[];
 } {
+	const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
+
+	function checkRateLimit(key: string, windowSeconds: number, max: number): boolean {
+		const now = Date.now();
+		const entry = rateLimitStore.get(key);
+
+		if (!entry || now > entry.resetAt) {
+			rateLimitStore.set(key, { count: 1, resetAt: now + windowSeconds * 1000 });
+			return true;
+		}
+
+		if (entry.count >= max) return false;
+		entry.count++;
+		return true;
+	}
+
 	return {
 		async handle(
 			request: Request,
@@ -84,6 +101,27 @@ export function createPluginRouter(endpoints: PluginEndpoint[]): {
 
 				const params = matchPath(endpoint.path, pathname);
 				if (params === null) continue;
+
+				// --- Rate limit enforcement ---
+				if (endpoint.metadata?.rateLimit) {
+					const { window: windowSec, max } = endpoint.metadata.rateLimit;
+					const ip =
+						request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+						request.headers.get("x-real-ip") ??
+						"unknown";
+					const key = `${ip}:${endpoint.path}`;
+					if (!checkRateLimit(key, windowSec, max)) {
+						return json({ error: "Rate limit exceeded" }, 429);
+					}
+				}
+
+				// --- Auth enforcement ---
+				if (endpoint.metadata?.requireAuth) {
+					const user = await endpointCtx.getUser(request);
+					if (!user) {
+						return json({ error: "Authentication required" }, 401);
+					}
+				}
 
 				// Attach matched path params to the request URL so handlers can read
 				// them via `new URL(request.url).searchParams` or a dedicated helper.

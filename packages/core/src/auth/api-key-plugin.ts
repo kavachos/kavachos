@@ -1,27 +1,9 @@
+import { json, parseBody } from "../plugin/helpers.js";
 import type { KavachPlugin } from "../plugin/types.js";
 import type { ApiKeyManagerConfig } from "./api-key-manager.js";
 import { createApiKeyManagerModule } from "./api-key-manager.js";
 
 export type { ApiKeyManagerConfig };
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function jsonResponse(body: unknown, status = 200): Response {
-	return new Response(JSON.stringify(body), {
-		status,
-		headers: { "Content-Type": "application/json" },
-	});
-}
-
-async function parseBody(request: Request): Promise<Record<string, unknown>> {
-	try {
-		return (await request.json()) as Record<string, unknown>;
-	} catch {
-		return {};
-	}
-}
 
 // ---------------------------------------------------------------------------
 // Plugin factory
@@ -47,18 +29,24 @@ export function apiKeys(config?: ApiKeyManagerConfig): KavachPlugin {
 				async handler(request, endpointCtx) {
 					const user = await endpointCtx.getUser(request);
 					if (!user) {
-						return jsonResponse({ error: "Authentication required" }, 401);
+						return json({ error: "Authentication required" }, 401);
 					}
 
-					const body = await parseBody(request);
-					const name = typeof body.name === "string" ? body.name.trim() : null;
-					const permissions = Array.isArray(body.permissions) ? body.permissions : null;
+					const bodyResult = await parseBody(request);
+					if (!bodyResult.ok) return bodyResult.response;
+					const name =
+						typeof bodyResult.data.name === "string" ? bodyResult.data.name.trim() : null;
+					const permissions = Array.isArray(bodyResult.data.permissions)
+						? bodyResult.data.permissions
+						: null;
 
 					if (!name || !permissions) {
-						return jsonResponse({ error: "Missing required fields: name, permissions" }, 400);
+						return json({ error: "Missing required fields: name, permissions" }, 400);
 					}
 
-					const expiresAt = body.expiresAt ? new Date(body.expiresAt as string) : undefined;
+					const expiresAt = bodyResult.data.expiresAt
+						? new Date(bodyResult.data.expiresAt as string)
+						: undefined;
 
 					try {
 						const result = await module.create({
@@ -67,9 +55,9 @@ export function apiKeys(config?: ApiKeyManagerConfig): KavachPlugin {
 							permissions: permissions as string[],
 							expiresAt,
 						});
-						return jsonResponse(result, 201);
+						return json(result, 201);
 					} catch (err) {
-						return jsonResponse(
+						return json(
 							{ error: err instanceof Error ? err.message : "Failed to create API key" },
 							500,
 						);
@@ -90,11 +78,11 @@ export function apiKeys(config?: ApiKeyManagerConfig): KavachPlugin {
 				async handler(request, endpointCtx) {
 					const user = await endpointCtx.getUser(request);
 					if (!user) {
-						return jsonResponse({ error: "Authentication required" }, 401);
+						return json({ error: "Authentication required" }, 401);
 					}
 
 					const keys = await module.list(user.id);
-					return jsonResponse({ apiKeys: keys });
+					return json({ apiKeys: keys });
 				},
 			});
 
@@ -110,7 +98,7 @@ export function apiKeys(config?: ApiKeyManagerConfig): KavachPlugin {
 				async handler(request, endpointCtx) {
 					const user = await endpointCtx.getUser(request);
 					if (!user) {
-						return jsonResponse({ error: "Authentication required" }, 401);
+						return json({ error: "Authentication required" }, 401);
 					}
 
 					const url = new URL(request.url);
@@ -119,18 +107,18 @@ export function apiKeys(config?: ApiKeyManagerConfig): KavachPlugin {
 					const keyId = segments[2];
 
 					if (!keyId) {
-						return jsonResponse({ error: "Missing API key ID in path" }, 400);
+						return json({ error: "Missing API key ID in path" }, 400);
 					}
 
 					// Confirm ownership before revoking.
 					const keys = await module.list(user.id);
 					const owned = keys.some((k) => k.id === decodeURIComponent(keyId));
 					if (!owned) {
-						return jsonResponse({ error: "API key not found" }, 404);
+						return json({ error: "API key not found" }, 404);
 					}
 
 					await module.revoke(decodeURIComponent(keyId));
-					return jsonResponse({ revoked: true });
+					return json({ revoked: true });
 				},
 			});
 
@@ -147,7 +135,7 @@ export function apiKeys(config?: ApiKeyManagerConfig): KavachPlugin {
 				async handler(request, endpointCtx) {
 					const user = await endpointCtx.getUser(request);
 					if (!user) {
-						return jsonResponse({ error: "Authentication required" }, 401);
+						return json({ error: "Authentication required" }, 401);
 					}
 
 					const url = new URL(request.url);
@@ -156,21 +144,21 @@ export function apiKeys(config?: ApiKeyManagerConfig): KavachPlugin {
 					const keyId = segments[2];
 
 					if (!keyId) {
-						return jsonResponse({ error: "Missing API key ID in path" }, 400);
+						return json({ error: "Missing API key ID in path" }, 400);
 					}
 
 					// Confirm ownership before rotating.
 					const keys = await module.list(user.id);
 					const owned = keys.some((k) => k.id === decodeURIComponent(keyId));
 					if (!owned) {
-						return jsonResponse({ error: "API key not found" }, 404);
+						return json({ error: "API key not found" }, 404);
 					}
 
 					try {
 						const result = await module.rotate(decodeURIComponent(keyId));
-						return jsonResponse(result);
+						return json(result);
 					} catch (err) {
-						return jsonResponse(
+						return json(
 							{ error: err instanceof Error ? err.message : "Failed to rotate API key" },
 							400,
 						);

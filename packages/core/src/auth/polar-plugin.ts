@@ -1,27 +1,9 @@
+import { json, parseBody } from "../plugin/helpers.js";
 import type { KavachPlugin } from "../plugin/types.js";
 import type { PolarConfig } from "./polar.js";
 import { createPolarModule } from "./polar.js";
 
 export type { PolarConfig };
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function json(body: unknown, status = 200): Response {
-	return new Response(JSON.stringify(body), {
-		status,
-		headers: { "Content-Type": "application/json" },
-	});
-}
-
-async function parseBody(request: Request): Promise<Record<string, unknown>> {
-	try {
-		return (await request.json()) as Record<string, unknown>;
-	} catch {
-		return {};
-	}
-}
 
 // ---------------------------------------------------------------------------
 // Plugin factory
@@ -50,15 +32,20 @@ export function polar(config: PolarConfig): KavachPlugin {
 						return json({ error: "Authentication required" }, 401);
 					}
 
-					const body = await parseBody(request);
-					const productId = typeof body.productId === "string" ? body.productId.trim() : null;
+					const bodyResult = await parseBody(request);
+					if (!bodyResult.ok) return bodyResult.response;
+					const productId =
+						typeof bodyResult.data.productId === "string" ? bodyResult.data.productId.trim() : null;
 					if (!productId) {
 						return json({ error: "Missing required field: productId" }, 400);
 					}
 
-					const successUrl = typeof body.successUrl === "string" ? body.successUrl : undefined;
+					const successUrl =
+						typeof bodyResult.data.successUrl === "string" ? bodyResult.data.successUrl : undefined;
 					const customerEmail =
-						typeof body.customerEmail === "string" ? body.customerEmail : undefined;
+						typeof bodyResult.data.customerEmail === "string"
+							? bodyResult.data.customerEmail
+							: undefined;
 
 					try {
 						const result = await module.createCheckout(user.id, productId, {

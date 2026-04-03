@@ -36,11 +36,12 @@ import { createWebhookModule } from "./auth/webhooks.js";
 import { generateId } from "./crypto/web-crypto.js";
 import { createDatabase } from "./db/database.js";
 import { createTables } from "./db/migrations.js";
-import { mcpServers } from "./db/schema.js";
+import { mcpServers, users } from "./db/schema.js";
 import { createDelegationModule } from "./delegation/delegation.js";
 import { createDidModule } from "./did/module.js";
 import type { ViolationType } from "./hooks/lifecycle.js";
 import { createPermissionEngine } from "./permission/engine.js";
+import { buildClearCookie, extractToken, json } from "./plugin/helpers.js";
 import { createPluginRouter } from "./plugin/router.js";
 import { initializePlugins } from "./plugin/runner.js";
 import type { EndpointContext } from "./plugin/types.js";
@@ -240,15 +241,43 @@ export async function createKavach(config: KavachConfig) {
 
 	// Plugin system — runs after core modules so plugins can depend on them.
 	// Plugins may register endpoints, run migrations, and collect lifecycle hooks.
-	const pluginRegistry = await initializePlugins(config.plugins ?? [], db, config);
+	const pluginRegistry = await initializePlugins(config.plugins ?? [], db, config, sessionManager);
 
 	// Build an EndpointContext that plugins can use inside their handlers.
 	// We capture sessionManager in closure so it's available if configured.
 	const endpointCtx: EndpointContext = {
 		db,
 		async getUser(request: Request): Promise<ResolvedUser | null> {
-			if (!authAdapter) return null;
-			return authAdapter.resolveUser(request);
+			// 1. Try configured auth adapter first
+			if (authAdapter) {
+				const user = await authAdapter.resolveUser(request);
+				if (user) return user;
+			}
+
+			// 2. Fall back to session-based resolution
+			if (sessionManager) {
+				const token = extractToken(request);
+				if (!token) return null;
+
+				try {
+					const session = await sessionManager.validate(token);
+					if (!session) return null;
+
+					const userRows = await db.select().from(users).where(eq(users.id, session.userId));
+					const user = userRows[0];
+					if (!user) return null;
+
+					return {
+						id: user.id,
+						email: user.email ?? undefined,
+						name: user.name ?? undefined,
+					};
+				} catch {
+					return null;
+				}
+			}
+
+			return null;
 		},
 		async getSession(token: string) {
 			if (!sessionManager) return null;
@@ -257,6 +286,54 @@ export async function createKavach(config: KavachConfig) {
 	};
 
 	const pluginRouter = createPluginRouter(pluginRegistry.endpoints);
+
+	// Register core session endpoints when session manager is available
+	if (sessionManager) {
+		pluginRegistry.endpoints.push({
+			method: "POST",
+			path: "/auth/sign-out",
+			metadata: { description: "Revoke the current session and clear cookie" },
+			async handler(request) {
+				const token = extractToken(request);
+				if (!token) return json({ error: "No session" }, 401);
+
+				try {
+					const session = await sessionManager.validate(token);
+					if (session) {
+						await sessionManager.revoke(session.id);
+					}
+				} catch {
+					// Token invalid — still clear the cookie
+				}
+
+				return new Response(JSON.stringify({ success: true }), {
+					status: 200,
+					headers: {
+						"Content-Type": "application/json",
+						"Set-Cookie": buildClearCookie("kavach_session"),
+					},
+				});
+			},
+		});
+
+		pluginRegistry.endpoints.push({
+			method: "GET",
+			path: "/auth/session",
+			metadata: { description: "Get current session and user info" },
+			async handler(request) {
+				const user = await endpointCtx.getUser(request);
+				if (!user) return json({ error: "Not authenticated" }, 401);
+
+				const token = extractToken(request);
+				const session = token ? await sessionManager.validate(token) : null;
+
+				return json({
+					user,
+					session: session ? { id: session.id, expiresAt: session.expiresAt } : null,
+				});
+			},
+		});
+	}
 
 	// Authorize: look up agent, check own permissions then delegated permissions
 	async function authorize(

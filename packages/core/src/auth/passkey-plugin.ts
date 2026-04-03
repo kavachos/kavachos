@@ -1,3 +1,4 @@
+import { buildSetCookie } from "../plugin/helpers.js";
 import type { KavachPlugin } from "../plugin/types.js";
 import type { PasskeyConfig } from "./passkey.js";
 import { createPasskeyModule } from "./passkey.js";
@@ -153,6 +154,29 @@ export function passkey(config: PasskeyConfig): KavachPlugin {
 						if (!result) {
 							return jsonResponse({ error: "Authentication failed" }, 401);
 						}
+
+						// Issue a session if session manager is available
+						if (ctx.sessionManager) {
+							const { session, token } = await ctx.sessionManager.create(result.userId);
+							const maxAge = Math.floor((session.expiresAt.getTime() - Date.now()) / 1000);
+
+							return new Response(
+								JSON.stringify({
+									user: { id: result.userId },
+									session: { token, expiresAt: session.expiresAt },
+									credential: result.credential,
+								}),
+								{
+									status: 200,
+									headers: {
+										"Content-Type": "application/json",
+										"Set-Cookie": buildSetCookie("kavach_session", token, maxAge),
+									},
+								},
+							);
+						}
+
+						// Fallback: no session manager, return raw result
 						return jsonResponse(result);
 					} catch (err) {
 						return jsonResponse(

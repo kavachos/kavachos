@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { users } from "../../db/schema.js";
+import { buildSetCookie } from "../../plugin/helpers.js";
 import type { KavachPlugin } from "../../plugin/types.js";
-import { createSessionManager } from "../../session/session.js";
 import { withRateLimit } from "../rate-limit-middleware.js";
 import { createRateLimiter } from "../rate-limiter.js";
 import { createOAuthModule } from "./module.js";
@@ -52,8 +52,12 @@ export function oauth(config: OAuthPluginConfig): KavachPlugin {
 
 			const baseUrl = ctx.config.baseUrl ?? "";
 
-			const sessionConfig = ctx.config.auth?.session;
-			const sessionManager = sessionConfig ? createSessionManager(sessionConfig, ctx.db) : null;
+			const sessionManager = ctx.sessionManager;
+			if (!sessionManager) {
+				throw new Error(
+					"kavach-oauth plugin requires auth.session to be configured so that sessions can be issued on successful OAuth callback.",
+				);
+			}
 
 			const authorizeLimiter = createRateLimiter({ max: 20, window: 60 });
 
@@ -151,13 +155,25 @@ export function oauth(config: OAuthPluginConfig): KavachPlugin {
 						}
 
 						// Create session and redirect
-						if (sessionManager && userId !== "__pending__") {
+						if (userId !== "__pending__") {
 							const { session, token } = await sessionManager.create(userId);
-							const callbackUrl = `${baseUrl}/?session=${encodeURIComponent(JSON.stringify({ token, user: { id: userId, email }, expiresAt: session.expiresAt }))}`;
-							return redirectResponse(callbackUrl);
+							const maxAge = Math.floor((session.expiresAt.getTime() - Date.now()) / 1000);
+							const cookie = buildSetCookie("kavach_session", token, maxAge);
+
+							// Pass user info (not the token) as a URL param for the frontend
+							const userInfo = encodeURIComponent(JSON.stringify({ id: userId, email }));
+							const callbackUrl = `${baseUrl}/?auth_user=${userInfo}`;
+
+							return new Response(null, {
+								status: 302,
+								headers: {
+									Location: callbackUrl,
+									"Set-Cookie": cookie,
+								},
+							});
 						}
 
-						// Fallback: return JSON if no session manager
+						// Fallback: return JSON if userId is still pending
 						return jsonResponse({
 							isNewAccount: result.isNewAccount,
 							account: result.account,

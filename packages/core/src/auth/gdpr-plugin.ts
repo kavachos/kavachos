@@ -21,27 +21,9 @@
  * ```
  */
 
+import { json, parseBody } from "../plugin/helpers.js";
 import type { KavachPlugin } from "../plugin/types.js";
 import { createGdprModule } from "./gdpr.js";
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function jsonResponse(body: unknown, status = 200): Response {
-	return new Response(JSON.stringify(body), {
-		status,
-		headers: { "Content-Type": "application/json" },
-	});
-}
-
-async function parseBody(request: Request): Promise<Record<string, unknown>> {
-	try {
-		return (await request.json()) as Record<string, unknown>;
-	} catch {
-		return {};
-	}
-}
 
 // ---------------------------------------------------------------------------
 // Plugin factory
@@ -66,17 +48,14 @@ export function gdpr(): KavachPlugin {
 				async handler(request, endpointCtx) {
 					const user = await endpointCtx.getUser(request);
 					if (!user) {
-						return jsonResponse({ error: "Authentication required" }, 401);
+						return json({ error: "Authentication required" }, 401);
 					}
 
 					try {
 						const data = await module.exportUserData(user.id);
-						return jsonResponse(data);
+						return json(data);
 					} catch (err) {
-						return jsonResponse(
-							{ error: err instanceof Error ? err.message : "Export failed" },
-							500,
-						);
+						return json({ error: err instanceof Error ? err.message : "Export failed" }, 500);
 					}
 				},
 			});
@@ -94,14 +73,15 @@ export function gdpr(): KavachPlugin {
 				async handler(request, endpointCtx) {
 					const user = await endpointCtx.getUser(request);
 					if (!user) {
-						return jsonResponse({ error: "Authentication required" }, 401);
+						return json({ error: "Authentication required" }, 401);
 					}
 
-					const body = await parseBody(request);
+					const bodyResult = await parseBody(request);
+					if (!bodyResult.ok) return bodyResult.response;
 
 					// Require explicit confirmation to prevent accidental deletion
-					if (body.confirm !== "delete my account") {
-						return jsonResponse(
+					if (bodyResult.data.confirm !== "delete my account") {
+						return json(
 							{
 								error:
 									'Confirmation required. Send { "confirm": "delete my account" } in the request body.',
@@ -110,21 +90,23 @@ export function gdpr(): KavachPlugin {
 						);
 					}
 
-					const keepAuditLogs = typeof body.keepAuditLogs === "boolean" ? body.keepAuditLogs : true;
+					const keepAuditLogs =
+						typeof bodyResult.data.keepAuditLogs === "boolean"
+							? bodyResult.data.keepAuditLogs
+							: true;
 					const deleteOrganizations =
-						typeof body.deleteOrganizations === "boolean" ? body.deleteOrganizations : false;
+						typeof bodyResult.data.deleteOrganizations === "boolean"
+							? bodyResult.data.deleteOrganizations
+							: false;
 
 					try {
 						const result = await module.deleteUser(user.id, {
 							keepAuditLogs,
 							deleteOrganizations,
 						});
-						return jsonResponse({ success: true, ...result });
+						return json({ success: true, ...result });
 					} catch (err) {
-						return jsonResponse(
-							{ error: err instanceof Error ? err.message : "Deletion failed" },
-							500,
-						);
+						return json({ error: err instanceof Error ? err.message : "Deletion failed" }, 500);
 					}
 				},
 			});
@@ -141,14 +123,14 @@ export function gdpr(): KavachPlugin {
 				async handler(request, endpointCtx) {
 					const user = await endpointCtx.getUser(request);
 					if (!user) {
-						return jsonResponse({ error: "Authentication required" }, 401);
+						return json({ error: "Authentication required" }, 401);
 					}
 
 					try {
 						await module.anonymizeUser(user.id);
-						return jsonResponse({ success: true });
+						return json({ success: true });
 					} catch (err) {
-						return jsonResponse(
+						return json(
 							{ error: err instanceof Error ? err.message : "Anonymization failed" },
 							500,
 						);
