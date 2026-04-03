@@ -48,8 +48,22 @@ export function getCookie(request: Request, name: string): string | null {
 /**
  * Build a Set-Cookie header value.
  */
-export function buildSetCookie(name: string, value: string, maxAge: number, path = "/"): string {
-	return `${name}=${encodeURIComponent(value)}; HttpOnly; Secure; SameSite=Lax; Path=${path}; Max-Age=${maxAge}`;
+export function buildSetCookie(
+	name: string,
+	value: string,
+	maxAge: number,
+	path = "/",
+	secure = true,
+): string {
+	const parts = [
+		`${name}=${encodeURIComponent(value)}`,
+		"HttpOnly",
+		"SameSite=Lax",
+		`Path=${path}`,
+		`Max-Age=${maxAge}`,
+	];
+	if (secure) parts.splice(1, 0, "Secure");
+	return parts.join("; ");
 }
 
 /**

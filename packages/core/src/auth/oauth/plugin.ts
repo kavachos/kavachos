@@ -158,7 +158,8 @@ export function oauth(config: OAuthPluginConfig): KavachPlugin {
 						if (userId !== "__pending__") {
 							const { session, token } = await sessionManager.create(userId);
 							const maxAge = Math.floor((session.expiresAt.getTime() - Date.now()) / 1000);
-							const cookie = buildSetCookie("kavach_session", token, maxAge);
+							const isSecure = baseUrl.startsWith("https://");
+							const cookie = buildSetCookie("kavach_session", token, maxAge, "/", isSecure);
 
 							// Pass user info (not the token) as a URL param for the frontend
 							const userInfo = encodeURIComponent(JSON.stringify({ id: userId, email }));

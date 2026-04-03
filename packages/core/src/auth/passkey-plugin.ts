@@ -170,7 +170,13 @@ export function passkey(config: PasskeyConfig): KavachPlugin {
 									status: 200,
 									headers: {
 										"Content-Type": "application/json",
-										"Set-Cookie": buildSetCookie("kavach_session", token, maxAge),
+										"Set-Cookie": buildSetCookie(
+											"kavach_session",
+											token,
+											maxAge,
+											"/",
+											(ctx.config.baseUrl ?? "").startsWith("https://"),
+										),
 									},
 								},
 							);
