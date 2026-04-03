@@ -235,6 +235,33 @@ function buildStatements(provider: DatabaseConfig["provider"]): string[] {
 )`,
 
 		// ------------------------------------------------------------------
+		// kavach_oauth_accounts (provider account linking)
+		// ------------------------------------------------------------------
+		`CREATE TABLE ${ifne} kavach_oauth_accounts (
+  id                   TEXT NOT NULL PRIMARY KEY,
+  user_id              TEXT NOT NULL REFERENCES kavach_users(id) ON DELETE CASCADE,
+  provider             TEXT NOT NULL,
+  provider_account_id  TEXT NOT NULL,
+  access_token         TEXT NOT NULL,
+  refresh_token        TEXT,
+  expires_at           ${tsNull},
+  created_at           ${ts} NOT NULL,
+  updated_at           ${ts} NOT NULL
+)`,
+
+		// ------------------------------------------------------------------
+		// kavach_oauth_states (PKCE state for CSRF protection)
+		// ------------------------------------------------------------------
+		`CREATE TABLE ${ifne} kavach_oauth_states (
+  state          TEXT NOT NULL PRIMARY KEY,
+  code_verifier  TEXT NOT NULL,
+  redirect_uri   TEXT NOT NULL,
+  provider       TEXT NOT NULL,
+  expires_at     ${ts} NOT NULL,
+  created_at     ${ts} NOT NULL
+)`,
+
+		// ------------------------------------------------------------------
 		// kavach_budget_policies
 		// ------------------------------------------------------------------
 		`CREATE TABLE ${ifne} kavach_budget_policies (
